@@ -66,6 +66,18 @@ main{display:grid;grid-template-columns:1fr 470px;height:calc(100% - 52px)}
 .layers b{font-size:11px;text-transform:uppercase;color:var(--mut);letter-spacing:.5px}
 .layers label{display:flex;gap:6px;align-items:center;cursor:pointer}
 .layers input{accent-color:var(--acc)}
+.zbox{position:absolute;z-index:1001;top:84px;left:56px;width:200px;background:#fff;color:#1b2536;border-radius:8px;box-shadow:0 2px 10px rgba(0,0,0,.35);padding:8px 10px;font-size:12px}
+.zbox .zhd{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px}
+.zbox .zhd b{font-size:13px}
+.zbox .zhd button{border:0;background:none;cursor:pointer;font-size:15px;padding:2px 4px;border-radius:5px}
+.zbox .zhd button:hover{background:#fde2e3}
+.zbox .zrow{display:flex;gap:6px;align-items:center;margin-bottom:4px;color:#5a687d}
+.zbox .zrow input{width:62px;border:1px solid #cfd8e3;border-radius:5px;padding:3px 5px;color:#1b2536;background:#fff}
+.zbox .zmeta{color:#1b2536;font-weight:600;margin-top:4px}
+.zbox .zmeta span{color:#5a687d;font-weight:400}
+.addrlist{display:none;position:absolute;top:32px;left:0;width:300px;background:#fff;color:#1b2536;border-radius:8px;box-shadow:0 4px 16px rgba(0,0,0,.4);overflow:hidden;z-index:1003}
+.addrlist div{padding:8px 10px;cursor:pointer;font-size:12.5px;border-bottom:1px solid #eef1f5}
+.addrlist div:hover{background:#e8f0fe}
 .legend i.sq{border-radius:2px}
 .offmap{position:absolute;z-index:1002;top:50px;left:50%;transform:translateX(-50%);width:min(440px,90%);background:rgba(8,16,29,.96);border:1px solid var(--ora);border-radius:10px;padding:12px 14px;font-size:12.5px;line-height:1.5;color:#e6eefb;display:none;box-shadow:0 6px 24px rgba(0,0,0,.5)}
 .offmap b{color:var(--ora)}
@@ -138,6 +150,8 @@ table.t th{color:var(--mut);font-weight:500}
   .layers{top:auto;bottom:8px;right:8px;font-size:11px;padding:6px 8px}
   .tools{left:52px}
   .tools .btn{padding:6px 9px;font-size:12px}
+  .zbox{top:auto;bottom:8px;left:8px;width:180px}
+  #addrIn{width:150px!important}
 }
 </style>
 </head>
@@ -156,6 +170,7 @@ table.t th{color:var(--mut);font-weight:500}
   <div id="mapwrap">
     <div id="map"></div>
     <div class="tools">
+      <div style="position:relative"><input id="addrIn" class="btn sm" placeholder="🔎 Adresse, ville ou GPS…" autocomplete="off" style="width:220px;text-align:left"><div id="addrList" class="addrlist"></div></div>
       <button class="btn sm" id="tPoly">✏️ Polygone</button>
       <button class="btn sm" id="tCircle">⭕ Cercle</button>
       <button class="btn sm" id="tUndo" title="Retirer le dernier point">↩︎</button>
@@ -167,6 +182,12 @@ table.t th{color:var(--mut);font-weight:500}
       <button class="btn sm" id="tCoords">⌨︎ Coordonnées</button>
     </div>
     <div class="offmap" id="offmap"><button class="btn sm" onclick="this.parentNode.style.display='none'">OK</button><b>Carte officielle des restrictions non chargée.</b><br>Ce navigateur (ici l'aperçu Claude) bloque les cartes externes. Ouvre la <b>version hébergée</b> de l'outil : la carte de l'hexagone s'affiche alors avec les zones rouge, rose et jaunes de cartes.gouv.fr.</div>
+    <div class="zbox" id="zbox" style="display:none">
+      <div class="zhd"><b id="zbTitle">Zone de vol</b><button id="zbDel" title="Supprimer la zone">🗑</button></div>
+      <div class="zrow"><input type="number" id="zbBuf" min="10" step="5"><span>Contingence (m, min 10)</span></div>
+      <div class="zrow"><input type="number" id="zbH" min="0" step="5"><span>Hauteur max (m)</span></div>
+      <div class="zmeta" id="zbMeta"></div>
+    </div>
     <div class="hint" id="hint">Choisis <b>Polygone</b> ou <b>Cercle</b>, puis clique sur la carte pour découper ta zone de vol.</div>
     <div class="layers" id="layersBox">
       <b>Fond</b>
@@ -176,6 +197,10 @@ table.t th{color:var(--mut);font-weight:500}
       <b style="margin-top:6px">Calques</b>
       <label><input type="checkbox" id="lyUas" checked> Restrictions UAS (DGAC)</label>
       <input type="range" id="lyUasOp" min="0.2" max="1" step="0.05" value="0.75">
+      <label><input type="checkbox" id="lySia"> Zones UAS du SIA (fichier)</label>
+      <label><input type="checkbox" id="lyZic"> ZICAD (captation interdite)</label>
+      <label><input type="checkbox" id="lyEnrC"> Espaces aériens civils</label>
+      <label><input type="checkbox" id="lyEnrM"> Espaces aériens militaires</label>
       <label><input type="checkbox" id="lyAd" checked> Aérodromes (base interne)</label>
       <span class="small" id="layerState">Chargement…</span>
     </div>
@@ -201,7 +226,7 @@ table.t th{color:var(--mut);font-weight:500}
       <button class="tab" data-v="fleet"><span class="n">3</span>AlphaTango</button>
       <button class="tab" data-v="cst"><span class="n">4</span>Contraintes</button>
       <button class="tab" data-v="scn"><span class="n">5</span>Réglementation</button>
-      <button class="tab" data-v="auth"><span class="n">6</span>Autorisations</button>
+      <button class="tab" data-v="auth"><span class="n">6</span>Qui contacter</button>
       <button class="tab" data-v="notam"><span class="n">7</span>NOTAM / SUP AIP</button>
       <button class="tab" data-v="meteo"><span class="n">8</span>Météo</button>
       <button class="tab" data-v="dos"><span class="n">9</span>Dossier de vol</button>
@@ -225,9 +250,12 @@ table.t th{color:var(--mut);font-weight:500}
       <h3>Centre de la zone</h3>
       <div class="card mono" id="zCenter">Aucune zone tracée</div>
       <div class="grid2">
-        <div class="fld"><label>Zone tampon / contingence (m)</label><input type="number" id="bufferIn" min="0" step="5" value="30"></div>
+        <div class="fld"><label>Contingence (m, 10 minimum)</label><input type="number" id="contIn" min="10" step="5" value="10"></div>
         <div class="fld"><label>Hauteur max (m sol)</label><input type="number" id="heightIn" min="0" max="500" step="5" value="120"></div>
       </div>
+      <div class="fld"><label>Zone tampon donnée par le fabricant (m, facultatif – sinon calculée)</label><input type="number" id="gbMfrIn" min="0" step="1" placeholder="auto"></div>
+      <h3>Bandes de sécurité et environnement</h3>
+      <div class="card" id="envBox"><span class="small">Trace une zone.</span></div>
       <h3>Sommets</h3>
       <div class="card" id="zVerts"><span class="small">Les sommets apparaîtront ici. Tu peux les déplacer sur la carte en les faisant glisser.</span></div>
       <h3>Points de passage / contexte</h3>
@@ -258,7 +286,7 @@ table.t th{color:var(--mut);font-weight:500}
 
     <!-- 4 AUTORISATIONS -->
     <section class="view" id="v-auth">
-      <h2>À qui demander l'autorisation ?</h2>
+      <h2>Qui contacter</h2>
       <div id="authList"></div>
     </section>
 
@@ -270,6 +298,11 @@ table.t th{color:var(--mut);font-weight:500}
       <a class="lnk" href="https://www.sia.aviation-civile.gouv.fr" target="_blank" rel="noopener">SIA – eAIP, SUP AIP, AIC, cartes VAC <span>SIA ↗</span></a>
       <a class="lnk" href="https://cartes.gouv.fr/explorer-les-cartes/" target="_blank" rel="noopener">Carte des restrictions UAS <span>cartes.gouv.fr ↗</span></a>
       <a class="lnk" href="https://aviation.meteo.fr" target="_blank" rel="noopener">Météo aéronautique <span>Météo-France ↗</span></a>
+      <h3>Zones géographiques UAS du SIA</h3>
+      <p class="small">Le SIA publie gratuitement toutes les zones drones (aérodromes, CTR, zones P/R/D, parcs…) avec leurs <b>gestionnaires et contacts</b>, mises à jour tous les 28 jours (cycle AIRAC). ZoneVol s'en sert pour lister les démarches exactes.</p>
+      <ul class="steps"><li>Sur le site du SIA, page <a href="https://www.sia.aviation-civile.gouv.fr/produits-numeriques-en-libre-disposition/donnees-zones-geographiques-uas.html" target="_blank" rel="noopener">Données zones géographiques UAS</a> : ajoute le dernier cycle au panier (gratuit) et télécharge le ZIP.</li><li>Charge-le ici (gardé sur cet appareil), ou dépose-le sur GitHub dans un dossier <span class="mono">data/</span> sous le nom <span class="mono">uaszones.zip</span> : il sera alors chargé pour tous les appareils.</li></ul>
+      <div class="fld"><input type="file" id="siaFile" accept=".zip"></div>
+      <div id="siaBox"></div>
       <h3>Coller des NOTAM</h3>
       <p class="small">Colle un ou plusieurs NOTAM bruts (copiés depuis SOFIA). La ligne <b>Q)</b> est lue pour placer le cercle sur la carte et vérifier s'il touche ta zone. Sépare les NOTAM par une ligne vide.</p>
       <div class="fld"><textarea id="notamIn" rows="6" placeholder="LFFA-R1234/26&#10;Q) LFFF/QRTCA/IV/BO/W/000/035/4851N00221E003&#10;A) LFFF B) 2611250800 C) 2611251700&#10;E) ZONE REGLEMENTEE TEMPORAIRE ..."></textarea></div>
@@ -320,6 +353,8 @@ table.t th{color:var(--mut);font-weight:500}
         <button class="btn pri sm" id="copySum">Copier le résumé</button>
         <button class="btn sm" id="copyKml">Copier le KML</button>
         <button class="btn sm" id="dlKml">Télécharger KML</button>
+        <button class="btn sm" id="dlGeo">GeoJSON</button>
+        <button class="btn sm" id="dlPng">Plan de vol (image)</button>
         <button class="btn sm" id="copyJson">Exporter (JSON)</button>
         <button class="btn sm" id="impJson">Importer</button>
       </div>
@@ -334,6 +369,7 @@ table.t th{color:var(--mut);font-weight:500}
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
 <script>
 /* =========================================================
@@ -559,16 +595,18 @@ const FIELDS = [
  {id:"e_sens",l:"Site sensible / ZICAD / installation militaire à proximité",t:"check"},
  {id:"e_priv",l:"Propriété privée (accord du propriétaire)",t:"check"},
  {id:"e_infra",l:"Voie ferrée, autoroute ou ligne HT à proximité",t:"check"},
- {id:"e_secu",l:"Mesures de sécurisation prévues",t:"area",ph:"Balisage, signaleurs, rubalise, arrêté municipal, horaires d'affluence…"}
+ {id:"e_secu",l:"Mesures de sécurisation prévues",t:"area",ph:"Balisage, signaleurs, rubalise, arrêté municipal, horaires d'affluence…"},
+ {id:"m_lowspeed",l:"Mode basse vitesse (≤ 3 m/s : 5 m des personnes au lieu de 30 m en A2)",t:"check"},
+ {id:"e_gear",l:"Matériel prévu (repris dans le dossier de vol)",t:"multi",o:["Rubalise / ruban de balisage","Cônes ou plots","Barrières type Vauban","Panneaux « Zone de vol drone »","Autorisations affichées sur site","Observateur(s)","Gilets haute visibilité","Talkies-walkies / téléphones","Casques de protection","Trousse de premiers secours","Extincteur","Sac ignifugé pour batteries LiPo","Parachute du drone","Feu anticollision (obligatoire de nuit)","Piste de décollage (landing pad)","Batteries de rechange chargées","Hélices de rechange","Anémomètre","Kit C5 / C6","Cartes mémoire","MANEX et attestations du télépilote","Attestation d'assurance RC","Dossier de vol et plan imprimés"]}
 ];
 
 function newId(){ return String(Math.floor(Date.now()/1000)%1000000+Math.floor(Math.random()*90+10)*1000000).slice(-6); }
-function norm(o){ const b=blank(); const s=Object.assign(b,o||{}); s.m=Object.assign(blank().m,(o&&o.m)||{}); ["pilot_cert","op_docs","d_equip","m_uas2"].forEach(k=>{ if(!Array.isArray(s.m[k])) s.m[k]=s.m[k]?[s.m[k]]:[]; }); if(!s.wps) s.wps=[]; return s; }
+function norm(o){ const b=blank(); const s=Object.assign(b,o||{}); s.m=Object.assign(blank().m,(o&&o.m)||{}); ["pilot_cert","op_docs","d_equip","m_uas2","e_gear"].forEach(k=>{ if(!Array.isArray(s.m[k])) s.m[k]=s.m[k]?[s.m[k]]:[]; }); if(!s.wps) s.wps=[]; return s; }
 let S = blank(), MISSIONS=[];
 function blank(){
   const m={}; FIELDS.forEach(f=>{ if(f.id) m[f.id]= f.t==="check"? !!f.v : (f.v||(f.o?f.o[0]:"")); });
-  m.pilot_cert=["Formation A1/A3 (en ligne)"]; m.op_docs=[]; m.d_equip=[]; m.m_uas2=[];
-  return {id:newId(),status:"Brouillon",created:Date.now(),zone:{type:null,pts:[],center:null,radius:0},buffer:30,height:120,m,notams:[],sup:[],cz:[],checks:{},wps:[],scn:""};
+  m.pilot_cert=["Formation A1/A3 (en ligne)"]; m.op_docs=[]; m.d_equip=[]; m.m_uas2=[]; m.e_gear=[];
+  return {id:newId(),status:"Brouillon",created:Date.now(),cont:10,gbMfr:"",steps:{},geo:null,ground:null,zone:{type:null,pts:[],center:null,radius:0},buffer:30,height:120,m,notams:[],sup:[],cz:[],checks:{},wps:[],scn:""};
 }
 try{ const ms=localStorage.getItem("zonevol_missions"); if(ms){ const o=JSON.parse(ms); MISSIONS=(o.list||[]).map(norm); S=MISSIONS.find(x=>x.id===o.cur)||MISSIONS[0]||blank(); }
   else { const sv=localStorage.getItem("zonevol_v1"); if(sv){ S=norm(JSON.parse(sv)); } } }catch(e){}
@@ -616,7 +654,7 @@ function holidays(y){ if(holCache[y]) return holCache[y]; const e=easter(y); con
 function ouvrable(d){ return d.getDay()!==0 && !holidays(d.getFullYear()).has(key(d)); }
 function nthOuvrableAfter(d,n){let c=0,x=new Date(d);while(c<n){x=addD(x,1);if(ouvrable(x))c++;}return x;}
 function sendWindow(mission){ // fenêtre d'envoi : vol entre J+10 et J+30 ouvrables après l'envoi
-  let first=null,last=null; for(let i=60;i>=1;i--){const s=addD(mission,-i); const e=nthOuvrableAfter(s,10), l=nthOuvrableAfter(s,30); if(e<=mission && mission<=l){ if(!first) first=s; last=s; } } return {first,last}; }
+  let first=null,last=null; for(let i=60;i>=1;i--){const s=addD(mission,-i); const e=nthOuvrableAfter(s,10), l=nthOuvrableAfter(s,30); if(e<mission && mission<=l){ if(!first) first=s; last=s; } } return {first,last}; }
 function fdate(d){return d? d.toLocaleDateString("fr-FR",{weekday:"short",day:"2-digit",month:"short",year:"numeric"}):"–";}
 function parseDate(s){ if(!s) return null; const [y,m,d]=s.split("-").map(Number); return new Date(y,m-1,d); }
 function sun(dateStr,lat,lon){ // équation du lever/coucher (précision ~1-2 min)
@@ -642,17 +680,19 @@ const UAS=GPF("TRANSPORTS.DRONES.RESTRICTIONS","image/png",15); UAS.setOpacity(.
 let curBase=BASES.plan; curBase.addTo(map); UAS.addTo(map);
 let tileErr=0, tileOk=0;
 Object.values(BASES).concat([UAS]).forEach(l=>{ l.on("tileerror",()=>{tileErr++; if(tileErr===4&&!tileOk) offline(true);}); l.on("tileload",()=>{tileOk++; offline(false);}); });
-function offline(on){ document.getElementById("offmap").style.display=on?"block":"none"; document.getElementById("tileWarn").style.display=on?"block":"none"; document.getElementById("layerState").textContent=on?"⚠ fonds officiels non chargés ici":"✓ données IGN / DGAC en ligne"; }
+function offline(on){ ONLINE=!on; if(on){ map.addLayer(fallbackLayer); } else { map.removeLayer(fallbackLayer); } if(typeof upCities==="function") upCities(); document.getElementById("offmap").style.display=on?"block":"none"; document.getElementById("tileWarn").style.display=on?"block":"none"; document.getElementById("layerState").textContent=on?"⚠ fonds officiels non chargés ici":"✓ données IGN / DGAC en ligne"; }
 // Fond vectoriel hors-ligne
-L.polygon(FR,{color:"#2f5d93",weight:1.2,fillColor:"#13294a",fillOpacity:.35,interactive:false}).addTo(map);
-L.polygon(CORSE,{color:"#2f5d93",weight:1.2,fillColor:"#13294a",fillOpacity:.35,interactive:false}).addTo(map);
-const grat=L.layerGroup().addTo(map);
+const fallbackLayer=L.layerGroup().addTo(map);
+L.polygon(FR,{color:"#2f5d93",weight:1.2,fillColor:"#13294a",fillOpacity:.35,interactive:false}).addTo(fallbackLayer);
+L.polygon(CORSE,{color:"#2f5d93",weight:1.2,fillColor:"#13294a",fillOpacity:.35,interactive:false}).addTo(fallbackLayer);
+const grat=L.layerGroup().addTo(fallbackLayer);
 for(let la=41;la<=52;la++) L.polyline([[la,-6],[la,10]],{color:"#1b3355",weight:.6,interactive:false}).addTo(grat);
 for(let lo=-5;lo<=10;lo++) L.polyline([[41,lo],[52,lo]],{color:"#1b3355",weight:.6,interactive:false}).addTo(grat);
 const cities=L.layerGroup().addTo(map);
 DEPTS.forEach(d=>{ if(d[3]==null) return; L.circleMarker([d[3],d[4]],{radius:2.5,color:"#6f86a8",weight:1,fillOpacity:1,interactive:false}).addTo(cities);
   L.marker([d[3],d[4]],{icon:L.divIcon({className:"lbl-city",html:d[1].replace(" (Préfecture de police)",""),iconSize:null,iconAnchor:[-5,6]}),interactive:false}).addTo(cities); });
-function upCities(){ if(map.getZoom()>=7) map.addLayer(cities); else map.removeLayer(cities); }
+let ONLINE=false;
+function upCities(){ if(map.getZoom()>=7&&!ONLINE) map.addLayer(cities); else map.removeLayer(cities); }
 map.on("zoomend",()=>{upCities();upAdRings();}); upCities();
 const adLayer=L.layerGroup().addTo(map), adRings=L.layerGroup();
 AD.forEach(a=>{ const col=a[4]==="M"?"#c084fc":"#f5a524";
@@ -682,7 +722,9 @@ map.on("mousemove",e=>{ if(mode==="circle"&&tmpCenter){ tmpLayer.clearLayers(); 
 map.on("dblclick",()=>{ if(mode==="polygon"){ setMode(null); refresh(); } });
 function drawZone(){ zoneLayer.clearLayers(); vtxLayer.clearLayers(); const z=S.zone;
   const poly=zonePoly();
-  if(poly){ const b=bufferPoly(poly,+S.buffer||0); if(b) L.polygon(b,{color:"#f5a524",weight:1.5,dashArray:"6 5",fillOpacity:.05,interactive:false}).addTo(zoneLayer); }
+  if(poly){ const bd=bands(); const c=bufferPoly(poly,bd.cont), b=bufferPoly(poly,bd.tot);
+    if(b) L.polygon(b,{color:"#e0262b",weight:2,dashArray:"7 6",fill:true,fillColor:"#e0262b",fillOpacity:.05,interactive:false}).addTo(zoneLayer);
+    if(c) L.polygon(c,{color:"#f08c00",weight:2.5,dashArray:"5 5",fillOpacity:0,interactive:false}).addTo(zoneLayer); }
   if(z.type==="circle"&&z.center){ L.circle(z.center,{radius:z.radius,color:"#3d8bfd",weight:2.5,fillColor:"#3d8bfd",fillOpacity:.22}).addTo(zoneLayer);
     const mk=L.marker(z.center,{draggable:true,icon:L.divIcon({className:"",html:'<div class="vtx"></div>',iconSize:[12,12],iconAnchor:[6,6]})}).addTo(vtxLayer);
     mk.on("drag",ev=>{z.center=[+ev.latlng.lat.toFixed(6),+ev.latlng.lng.toFixed(6)];drawZoneLight();}); mk.on("dragend",()=>{drawZone();refresh();}); }
@@ -692,7 +734,7 @@ function drawZone(){ zoneLayer.clearLayers(); vtxLayer.clearLayers(); const z=S.
       mk.bindTooltip(String.fromCharCode(65+(i%26))+(i>=26?Math.floor(i/26):""),{permanent:false});
       mk.on("drag",ev=>{z.pts[i]=[+ev.latlng.lat.toFixed(6),+ev.latlng.lng.toFixed(6)];drawZoneLight();}); mk.on("dragend",()=>{drawZone();refresh();}); }); } }
 let lightTimer; function drawZoneLight(){ clearTimeout(lightTimer); lightTimer=setTimeout(()=>{ const keep=vtxLayer.getLayers(); zoneLayer.clearLayers(); const z=S.zone; const poly=zonePoly(); if(!poly) return;
-  if(z.type==="circle") L.circle(z.center,{radius:z.radius,color:"#3d8bfd",weight:2.5,fillOpacity:.22}).addTo(zoneLayer); else L.polygon(z.pts,{color:"#3d8bfd",weight:2.5,fillOpacity:.22}).addTo(zoneLayer); },16); }
+  if(z.type==="circle") L.circle(z.center,{radius:z.radius,color:"#3d8bfd",weight:2.5,fillOpacity:.22}).addTo(zoneLayer); else L.polygon(z.pts,{color:"#3d8bfd",weight:2.5,fillOpacity:.22}).addTo(zoneLayer); updateZoneBox(); },16); }
 
 document.getElementById("tPoly").onclick=()=>{ setMode(mode==="polygon"?null:"polygon"); };
 document.getElementById("tCircle").onclick=()=>setMode(mode==="circle"?null:"circle");
@@ -861,13 +903,13 @@ function buildForm(){ const box=document.getElementById("missionForm"); let html
     if(f.t==="fleetPilot"){ el.onchange=()=>{ const p=F.pilots[+el.value]; S.m.m_pilot=el.value; if(p){ S.m.pilot_name=p.name; S.m.pilot_phone=p.phone; const pc=(p.cert||"").toUpperCase(); const opts=FIELDS.find(x=>x.id==="pilot_cert").o; const found=opts.filter(o=>{ const k=o.toUpperCase(); return (pc.includes("A1")&&k.startsWith("FORMATION A1"))||(pc.includes("A2")&&k.includes("A2"))||(pc.includes("STS-01")&&k==="CATS STS-01")||(pc.includes("STS-02")&&k==="CATS STS-02")||(pc.includes("CATT")&&k.startsWith("CATT")); }); if(found.length) S.m.pilot_cert=found; buildForm(); } refresh(); }; return; }
     el.addEventListener(f.t==="check"||f.t==="select"||f.t==="dept"?"change":"input",()=>{ S.m[f.id]= f.t==="check"? el.checked : el.value; refresh(); }); });
 }
-document.getElementById("bufferIn").oninput=e=>{S.buffer=+e.target.value||0;drawZone();refresh();};
+
 document.getElementById("heightIn").oninput=e=>{S.height=+e.target.value||0;refresh();};
 
 /* =========================================================
    ANALYSE
    ========================================================= */
-function deptOf(c){ if(S.m.m_dept) return DEPTS.find(d=>d[0]===S.m.m_dept); if(!c) return null; let best=null,bd=Infinity; DEPTS.forEach(d=>{ if(d[3]==null) return; const x=hav(c,[d[3],d[4]]); if(x<bd){bd=x;best=d;} }); return best; }
+function deptOf(c){ if(S.m.m_dept) return DEPTS.find(d=>d[0]===S.m.m_dept); const g=deptFromGeo(); if(g) return g; if(!c) return null; let best=null,bd=Infinity; DEPTS.forEach(d=>{ if(d[3]==null) return; const x=hav(c,[d[3],d[4]]); if(x<bd){bd=x;best=d;} }); return best; }
 function analyze(){
   const poly=zonePoly(), c=poly?centroid(poly):null, m=S.m, H=+S.height||0;
   const r={poly,c,dept:deptOf(c),deptAuto:!S.m.m_dept,ads:[],sens:[],notamHits:[],czHits:[],list:[],sun:null,night:false};
@@ -898,7 +940,8 @@ function analyze(){
   if(m.e_pop.startsWith("Zone peuplée")) add("orange","🏘️","Vol en zone peuplée","Déclaration préalable au préfet territorialement compétent : vol au plus tôt 10 jours ouvrables et au plus tard 30 jours ouvrables après l'envoi (dimanches et fériés exclus). Le préfet peut interdire ou restreindre le vol.");
   if(m.e_pop.startsWith("Rassemblement")) add("red","👥","Rassemblement de personnes à moins de 150 m","Vol considéré en zone peuplée : déclaration préfectorale obligatoire. Survol de rassemblement interdit en catégorie Ouverte ; en général autorisation d'exploitation DSAC nécessaire.");
   if(m.e_over) add("orange","🚶","Survol de personnes non impliquées","Possible uniquement en A1 (C0/C1, jamais au-dessus d'un rassemblement). Interdit en A2/A3 et en STS (zone contrôlée au sol).");
-  if(r.night) add("red","🌙","Vol de nuit aéronautique",`La plage horaire sort de la période de jour (lever −30 min ${hmM(r.nightWin.sr)} / coucher +30 min ${hmM(r.nightWin.ss)}). Vol de nuit interdit sauf dérogation préfectorale (30 jours avant).`);
+  if(r.night&&!(m.e_gear||[]).some(g=>/anticollision/.test(g))) add("orange","🚨","Feu anticollision","Obligatoire de nuit : à cocher dans le matériel prévu.");
+  if(r.night) add("red","🌙","Vol de nuit aéronautique",`La plage horaire sort de la période de jour (lever −30 min ${hmM(r.nightWin.sr)} / coucher +30 min ${hmM(r.nightWin.ss)}). Vol de nuit interdit sauf dérogation préfectorale, à demander au moins 30 jours avant (formulaire R5-UAS-DEROG). En catégorie spécifique, une exemption existe sous conditions (notamment hauteur < 50 m) : voir l'encadré du formulaire.`);
   else if(r.sun) add("green","☀️","Vol de jour",`Lever ${hm(r.sun.rise)} · Coucher ${hm(r.sun.set)} (heure de Paris). Fenêtre de jour aéronautique : ${hmM(r.nightWin.sr)} – ${hmM(r.nightWin.ss)}.`);
   if(m.e_park) add("orange","🌲","Espace naturel protégé","Cœur de parc national / réserve : survol souvent réglementé (hauteur minimale ou interdiction, périodes de nidification). Contacter le gestionnaire de l'espace.");
   if(m.e_sens) add("orange","🛡️","Site sensible / ZICAD","Les ZICAD et emprises militaires sont interdites de survol. La Préfecture de police demande la mention des ZICAD dans le dossier (Paris).");
@@ -913,6 +956,18 @@ function analyze(){
         else if(x.h!=null) add(H>x.h?"red":"orange","📐",`${x.zc.n.split(" – ")[0]} DGAC : hauteur max ${x.h} m${H>x.h?` (tu prévois ${H} m)`:""}`,x.txt+(H>x.h?" — au-delà : accord de l'organisme indiqué / du gestionnaire.":""));
         else add("orange","🗺️","Restriction UAS DGAC sur la zone",x.txt); });
       if(buf.length) add("orange","🗺️",`${buf.length} zone(s) de restriction DGAC dans la zone tampon`,buf.slice(0,3).map(x=>x.txt).join(" | ")); } }
+  // Zones UAS du SIA / ZICAD / environnement
+  r.sia=siaHits(); r.zic=zicHits(); r.geo=S.geo;
+  if(poly&&SIA.st!=="ok") add("blue","🗂️","Zones géographiques UAS du SIA non chargées","Charge le ZIP du SIA (onglet NOTAM / SUP AIP) pour connaître les zones exactes, leurs gestionnaires et leurs contacts.");
+  r.sia.forEach(z=>{ const lv=z.restr==="PROHIBITED"?"red":z.restr==="REQ_AUTHORISATION"?"orange":z.restr==="CONDITIONAL"?"orange":"blue"; const a=z.auth[0]||{};
+    add(lv,"🛩️",`Zone UAS SIA : ${z.name}${z.inZone?"":" (zone tampon)"}`,`${(RESTR[z.restr]||[z.restr])[0]} · ${limTxt(z.lo,z.loRef)} → ${limTxt(z.up,z.upRef)}${a.name?" · gestionnaire : "+a.name:""}${z.msg?" – "+z.msg.slice(0,220):""}`); });
+  r.zic.forEach(z=>add("red","📵",`ZICAD : ${z.name}`,"Captation de données (photo, vidéo, capteurs) interdite sauf dérogation, à demander au moins 2 mois avant."));
+  if(poly&&ZIC.st==="none") loadZICAD();
+  if(ENV.st==="ok"){ if(ENV.bat>=150&&m.e_pop.startsWith("Hors")) add("orange","🏘️",`${ENV.bat} bâtiments à moins de 300 m`,"Agglomération probable : vérifie le champ Environnement de la fiche mission (déclaration préfectorale).");
+    if(ENV.roads.length) add("orange","🛣️",`${ENV.roads.length} voie(s) dans la zone contrôlée au sol`,ENV.roads.slice(0,6).map(x=>x.name||x.nature).join(", ")+" : prévoir fermeture ou contrôle des accès.");
+    if(ENV.rails.length) add(ENV.rails.some(x=>x.inCtrl)?"red":"orange","🚆","Voie ferrée à moins de 300 m","Distance de sécurité et accord du gestionnaire si la zone contrôlée au sol la touche.");
+    if(ENV.power.length) add("orange","⚡",`Ligne électrique à ${fmtD(ENV.power[0].d)}`,"Risque de collision et d'interférences : repérer le tracé sur place.");
+    if(ENV.obst.length) add("blue","🗼",`${ENV.obst.length} obstacle(s) ponctuel(s) à moins de 300 m`,ENV.obst.slice(0,4).map(o=>`${o.nature} à ${fmtD(o.d)}`).join(", ")); }
   // Points de passage
   const T=(S.wps||[]).find(w=>w.t==="Télépilote");
   if(poly&&T){ const dmax=Math.max(...poly.map(p=>hav([T.lat,T.lon],p))); const lim=+m.v_dist||500; add(dmax>lim?"orange":"green","🧍",`Distance max télépilote ↔ zone : ${fmtD(dmax)}`,dmax>lim?`Supérieure à la distance maximale prévue (${fmtD(lim)}) : vérifier la vue directe ou ajouter des observateurs.`:"Compatible avec la distance maximale prévue."); }
@@ -950,7 +1005,7 @@ function scenarios(r){
      ["Enregistrement exploitant AlphaTango","Formation en ligne A1/A3 (sauf C0)","En agglomération : déclaration préalable au préfet"],["Le télépilote estime qu'aucune personne ne participant pas à l'exploitation ne sera survolée","Si survol imprévu de tiers : réduction au minimum de la durée de survol"]);
   S_("Ouverte A2","OUVERTE-A2","Proche des personnes",[
      [cls==="C2","Aéronef de classe C2","UAS.OPEN.030 (2)"],[has("A2"),"Télépilote titulaire du certificat A2","UAS.OPEN.030 (2)(c)"],[isVLOS,"Exploitation en vue directe","art. 4 (1)(d)"],[H<=120,"Hauteur maximale 120 m","UAS.OPEN.010 (2)"],
-     [!m.e_over&&!gath,"Aucun survol de tiers ; 30 m horizontaux des personnes (5 m en mode basse vitesse)","UAS.OPEN.030 (1)"],[!r.night,"Vol de jour (ou dérogation)","Arrêté du 3 déc. 2020"]],
+     [!m.e_over&&!gath,`Aucun survol de tiers ; ${m.m_lowspeed?"5 m (mode basse vitesse activé)":"30 m"} horizontaux des personnes`,"UAS.OPEN.030 (1)"],[!r.night,"Vol de jour (ou dérogation)","Arrêté du 3 déc. 2020"]],
      ["Certificat d'aptitude A2","Signalement électronique","En agglomération : déclaration préfectorale"],["Distance horizontale de sécurité de 30 m avec les tiers (5 m en mode basse vitesse)"]);
   S_("Ouverte A3","OUVERTE-A3","Loin des personnes",[
      [["C2","C3","C4"].includes(cls)||(legacy&&mass<25),"Aéronef C2/C3/C4 ou sans classe < 25 kg","UAS.OPEN.040 (3)"],[isVLOS,"Exploitation en vue directe","art. 4 (1)(d)"],[H<=120,"Hauteur maximale 120 m","UAS.OPEN.010 (2)"],
@@ -976,13 +1031,14 @@ function retained(r){ const l=scenarios(r); return l.find(s=>s.name===S.scn)||l.
 function esc(s){return String(s??"").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));}
 function refresh(noQ){ window._refreshing=true; try{ refreshInner(noQ); } finally { window._refreshing=false; } }
 function refreshInner(noQ){
+  S.buffer=bands().tot;
   const r=analyze(); window._r=r;
   document.getElementById("hdrName").textContent=S.m.m_name||"Nouvelle mission";
   // Zone
   const poly=r.poly;
   if(poly){ const ap=S.zone.type==="circle"?{a:Math.PI*S.zone.radius**2,per:2*Math.PI*S.zone.radius}:areaPer(poly);
     sArea.textContent=fmtA(ap.a); sPer.textContent=fmtD(ap.per); sPts.textContent=S.zone.type==="circle"?"⭕ R "+fmtD(S.zone.radius):S.zone.pts.length;
-    zCenter.innerHTML=`${r.c[0].toFixed(6)}, ${r.c[1].toFixed(6)}<br>${dms(r.c[0],1)} ${dms(r.c[1],0)}<br><span style="color:#8aa0c0">Département : ${r.dept?esc(r.dept[0]+" – "+r.dept[1]):"–"}${r.deptAuto?" (estimé – confirmer dans Mission)":""}</span>`;
+    zCenter.innerHTML=`${r.c[0].toFixed(6)}, ${r.c[1].toFixed(6)}<br>${dms(r.c[0],1)} ${dms(r.c[1],0)}<br>Format aéro : ${dmTxt(r.c)}${S.geo?"<br>"+esc(S.geo.label):""}<br><span style="color:#8aa0c0">Département : ${r.dept?esc(r.dept[0]+" – "+r.dept[1]):"–"}${r.deptAuto?(deptFromGeo()?" (d'après l'adresse)":" (estimé – confirmer dans Mission)"):""}</span>`;
     zVerts.innerHTML=S.zone.type==="circle"?`<div class="mono">Centre ${S.zone.center.map(v=>v.toFixed(6)).join(", ")} · rayon ${S.zone.radius} m</div>`:
       `<table class="t mono">${S.zone.pts.map((p,i)=>`<tr><td>${String.fromCharCode(65+(i%26))}</td><td>${p[0].toFixed(6)}</td><td>${p[1].toFixed(6)}</td></tr>`).join("")}</table>`;
     const [la,lo]=r.c;
@@ -990,12 +1046,12 @@ function refreshInner(noQ){
       <a class="lnk" target="_blank" rel="noopener" href="https://www.openstreetmap.org/?mlat=${la}&mlon=${lo}#map=16/${la}/${lo}">OpenStreetMap <span>↗</span></a>
       <a class="lnk" target="_blank" rel="noopener" href="https://www.google.com/maps/@${la},${lo},17z/data=!3m1!1e3">Google Maps satellite <span>↗</span></a>`;
   } else { sArea.textContent="–"; sPer.textContent="–"; sPts.textContent=S.zone.pts.length; zCenter.textContent="Aucune zone tracée"; }
-  document.getElementById("bufferIn").value=S.buffer; document.getElementById("heightIn").value=S.height;
+  { const ci=document.getElementById("contIn"), gi=document.getElementById("gbMfrIn"); if(document.activeElement!==ci) ci.value=bands().cont; if(document.activeElement!==gi) gi.value=S.gbMfr||""; } document.getElementById("heightIn").value=S.height;
   // Contraintes
   const order={red:0,orange:1,blue:2,green:3};
   document.getElementById("cstList").innerHTML=r.list.slice().sort((a,b)=>order[a.lv]-order[b.lv]).map(x=>`<div class="cst ${x.lv}"><div class="ic">${x.ic}</div><div><b>${esc(x.t)}</b><p>${esc(x.p)}</p></div></div>`).join("");
   document.querySelectorAll('.tab[data-v="cst"] .n')[0].style.background=r.list.some(x=>x.lv==="red")?"var(--red)":r.list.some(x=>x.lv==="orange")?"var(--ora)":"";
-  renderAuth(r); renderNotams(r); renderScn(r); renderDossier(r); drawWps(); save(true); if(!noQ) queryUAS(); if(document.getElementById("v-meteo").classList.contains("act")) loadMeteo();
+  renderAuth(r); renderNotams(r); renderScn(r); renderDossier(r); drawWps(); updateZoneBox(); renderZoneExtra(); renderSiaBox(); save(true); if(!noQ){ queryUAS(); loadAlt(); revGeo(); loadEnv(); } if(document.getElementById("v-meteo").classList.contains("act")) loadMeteo();
 }
 
 function copyBtn(id,label="Copier"){ return `<button class="btn sm" data-copy="${id}">${label}</button>`; }
@@ -1005,7 +1061,7 @@ function zoneText(r){ if(!r.poly) return "(zone non définie)"; if(S.zone.type==
 function datesTxt(){ const m=S.m; return `${m.m_date?fdate(parseDate(m.m_date)):"(date à préciser)"}${m.m_date2&&m.m_date2!==m.m_date?" au "+fdate(parseDate(m.m_date2)):""}, de ${m.m_start||"--:--"} à ${m.m_end||"--:--"} (heure locale)`; }
 
 function renderAuth(r){
-  const m=S.m, d=r.dept, populated=!m.e_pop.startsWith("Hors"), box=document.getElementById("authList"); let h="";
+  const m=S.m, d=r.dept, populated=!m.e_pop.startsWith("Hors"), box=document.getElementById("authList"); let h=renderDemarches(r)+`<h3 style="margin-top:22px">Détails et modèles de messages</h3>`;
   // --- 1. Préfecture
   const need=populated||r.night||(+S.height>120);
   h+=`<div class="card"><div class="row" style="justify-content:space-between"><b>1 · Préfecture</b><span class="pill ${need?"orange":"green"}">${need?"Déclaration requise":"Non requise a priori"}</span></div>`;
@@ -1016,7 +1072,7 @@ function renderAuth(r){
   h+=`<p class="small" style="margin-top:8px">Source : tableau DGAC « Contacts drones préfectures » (avril 2025, en cours de constitution) – vérifie l'adresse sur le site de la préfecture avant envoi.</p>`;
   if(m.m_date){ const md=parseDate(m.m_date), w=sendWindow(md);
     h+=`<h3 style="margin-top:12px">Délais (zone peuplée / agglomération)</h3><table class="t"><tr><th>Envoyer au plus tôt</th><td>${fdate(w.first)}</td></tr><tr><th>Envoyer au plus tard</th><td><b>${fdate(w.last)}</b></td></tr><tr><th>Dérogation nuit / hauteur</th><td>avant le ${fdate(addD(md,-30))} (30 jours)</td></tr></table>
-    <p class="small">Calcul : vol au plus tôt 10 jours ouvrables et au plus tard 30 jours ouvrables après le jour d'envoi, dimanches et jours fériés exclus. Une déclaration par jour si les vols s'étalent sur plusieurs jours.</p>`; }
+    <p class="small">Calcul prudent : 10 jours ouvrables pleins entre l'envoi et le vol (au plus 30), dimanches et jours fériés exclus. Une déclaration par jour si les vols s'étalent sur plusieurs jours.</p>`; }
   h+=`<h3>Comment déclarer</h3><ul class="steps">
     <li><b>Catégorie spécifique</b> : notification en ligne via <a href="https://alphatango.aviation-civile.gouv.fr" target="_blank" rel="noopener">AlphaTango</a> (voie privilégiée).</li>
     <li><b>Catégorie ouverte en agglomération</b> : CERFA 15476*04 + annexe obligatoire, par mail à l'adresse ci-dessus (<a href="https://entreprendre.service-public.gouv.fr/vosdroits/R42699" target="_blank" rel="noopener">formulaire</a>).</li>
@@ -1036,7 +1092,7 @@ MISSION : ${m.m_type}${m.m_client?" pour "+m.m_client:""}
 DATE(S) : ${datesTxt()}
 LIEU : ${m.m_address||"[adresse]"}, ${m.m_commune||"[commune]"} (${d?d[0]:"[dépt]"})
 ZONE : ${zoneText(r)}
-HAUTEUR MAXIMALE : ${S.height} m / sol – zone tampon ${S.buffer} m
+HAUTEUR MAXIMALE : ${S.height} m / sol – ${bandTxt()}
 MODE DE VOL : ${m.v_vlos} – distance max ${m.v_dist} m
 
 MESURES DE SÉCURISATION : ${m.e_secu||"[balisage, signaleurs, périmètre…]"}
@@ -1070,7 +1126,7 @@ Nous sollicitons l'accord de votre organisme (et, le cas échéant, l'établisse
 
 POSITION : ${fmtD(tgt.d)} au ${Math.round(tgt.b)}° (${card16(tgt.b)}) de l'aérodrome
 ZONE : ${zoneText(r)}
-HAUTEUR MAXIMALE : ${S.height} m / sol – zone tampon ${S.buffer} m
+HAUTEUR MAXIMALE : ${S.height} m / sol – ${bandTxt()}
 DATE(S) ET CRÉNEAUX : ${datesTxt()}
 AÉRONEF : ${m.d_model||"[modèle]"} – classe ${m.d_class} – ${m.d_mass} kg – signalement électronique ${m.d_rid?"actif":"non"}
 MODE : ${m.v_vlos}
@@ -1153,7 +1209,7 @@ function kml(){ const p=zonePoly(); if(!p) return ""; const ring=p.concat([p[0]]
 <Style id="z"><LineStyle><color>fffd8b3d</color><width>3</width></LineStyle><PolyStyle><color>553d8bfd</color></PolyStyle></Style>
 <Style id="b"><LineStyle><color>ff24a5f5</color><width>2</width></LineStyle><PolyStyle><color>2224a5f5</color></PolyStyle></Style>
 <Placemark><name>Zone de vol – ${nm}</name><description>Hauteur max ${S.height} m sol – ${esc(datesTxt())}</description><styleUrl>#z</styleUrl><Polygon><outerBoundaryIs><LinearRing><coordinates>${ring}</coordinates></LinearRing></outerBoundaryIs></Polygon></Placemark>
-${b?`<Placemark><name>Zone tampon ${S.buffer} m</name><styleUrl>#b</styleUrl><Polygon><outerBoundaryIs><LinearRing><coordinates>${bring}</coordinates></LinearRing></outerBoundaryIs></Polygon></Placemark>`:""}
+${b?`<Placemark><name>Zone controlee au sol (${S.buffer} m)</name><styleUrl>#b</styleUrl><Polygon><outerBoundaryIs><LinearRing><coordinates>${bring}</coordinates></LinearRing></outerBoundaryIs></Polygon></Placemark>`:""}
 </Document></kml>`; }
 function renderDossier(r){ const m=S.m, scn=scenarios(r);
   const lines=[
@@ -1161,7 +1217,7 @@ function renderDossier(r){ const m=S.m, scn=scenarios(r);
   "▌MISSION",`Type : ${m.m_type}${m.m_client?" – client : "+m.m_client:""}`,`Date(s) : ${datesTxt()}`,`Lieu : ${m.m_address||"-"}, ${m.m_commune||"-"} – dépt ${r.dept?r.dept[0]+" "+r.dept[1]:"-"}`,m.m_desc?`Description : ${m.m_desc}`:"","",
   "▌EXPLOITANT / TÉLÉPILOTE",`${m.op_name||"-"} – ${m.op_uas||"-"} – ${m.op_mail||""}`,`Télépilote : ${m.pilot_name||"-"} (${certs()}) – ${m.pilot_phone||"-"}`,`Assurance : ${m.insurance||"-"}`,"",
   "▌AÉRONEF",`${m.d_model||"-"} – ${m.d_reg||"UAS-FR ?"} – classe ${m.d_class} – ${m.d_mass} kg – S/N ${m.d_serial||"-"} – Remote ID ${m.d_rid?"oui":"non"}`,"",
-  "▌VOLUME",zoneText(r),`Hauteur max : ${S.height} m sol – zone tampon : ${S.buffer} m – ${m.v_vlos} – distance max ${m.v_dist} m – observateurs : ${m.v_obs}`,
+  "▌VOLUME",zoneText(r),`Hauteur max : ${S.height} m sol – ${bandTxt()} – ${m.v_vlos} – distance max ${m.v_dist} m – observateurs : ${m.v_obs}`,
   r.sun?`Soleil : lever ${hm(r.sun.rise)} / coucher ${hm(r.sun.set)}${r.night?" – ⚠ VOL DE NUIT":""}`:"","",
   "▌ENVIRONNEMENT",`${m.e_pop}${m.e_over?" – survol de tiers":""}${m.e_ground?" – zone contrôlée au sol":""}${m.e_ctr?" – espace contrôlé":""}`,m.e_secu?`Sécurisation : ${m.e_secu}`:"","",
   "▌CONTRAINTES",...r.list.map(x=>`[${{red:"BLOQUANT",orange:"ATTENTION",blue:"INFO",green:"OK"}[x.lv]}] ${x.t}`),"",
@@ -1291,7 +1347,8 @@ async function mapImage(o){ // o: {w,h,pts:[[lat,lon]...] pour cadrage, poly, bu
     const path=(pts,close=true)=>{ g.beginPath(); pts.forEach((p,i)=>{ const q=P(p); i?g.lineTo(q[0],q[1]):g.moveTo(q[0],q[1]); }); if(close) g.closePath(); };
     (o.hits||[]).forEach(hh=>hh.rings.forEach(rg=>{ path(rg); g.fillStyle=hh.zc.c+"44"; g.fill(); g.strokeStyle=hh.zc.c; g.lineWidth=2; g.stroke(); }));
     (o.circles||[]).forEach(c=>{ const q=P(c.c), r=c.r/ (156543.03*Math.cos(c.c[0]*rad)/2**z); g.beginPath(); g.arc(q[0],q[1],r,0,2*Math.PI); g.fillStyle=c.col+"22"; g.fill(); g.strokeStyle=c.col; g.lineWidth=2; g.setLineDash([8,6]); g.stroke(); g.setLineDash([]); });
-    if(o.buffer){ path(o.buffer); g.strokeStyle="#f5a524"; g.lineWidth=3; g.setLineDash([10,7]); g.stroke(); g.setLineDash([]); }
+    if(o.buffer){ path(o.buffer); g.fillStyle="rgba(224,38,43,.08)"; g.fill(); g.strokeStyle="#e0262b"; g.lineWidth=3; g.setLineDash([10,7]); g.stroke(); g.setLineDash([]); }
+    if(o.cont){ path(o.cont); g.strokeStyle="#f08c00"; g.lineWidth=3; g.setLineDash([7,6]); g.stroke(); g.setLineDash([]); }
     if(o.poly){ path(o.poly); g.fillStyle="rgba(61,139,253,.35)"; g.fill(); g.strokeStyle="#1f6fe5"; g.lineWidth=4; g.stroke(); }
     (o.ads||[]).forEach(a=>{ const q=P([a[2],a[3]]); g.beginPath(); g.arc(q[0],q[1],9,0,2*Math.PI); g.fillStyle="#fff"; g.fill(); g.strokeStyle=a[4]==="M"?"#9333ea":"#e08a00"; g.lineWidth=4; g.stroke(); g.fillStyle="#111"; g.font="bold 20px Helvetica,Arial"; g.fillText(a[0],q[0]+14,q[1]+7); });
     (o.wps||[]).forEach((w,i)=>{ const q=P([w.lat,w.lon]), c=(WPC[w.t]||["#888"])[0]; g.beginPath(); g.arc(q[0],q[1],15,0,2*Math.PI); g.fillStyle=c; g.fill(); g.strokeStyle="#fff"; g.lineWidth=3; g.stroke(); g.fillStyle="#fff"; g.font="bold 16px Helvetica,Arial"; g.textAlign="center"; g.fillText(String(i+1),q[0],q[1]+6); g.textAlign="left"; });
@@ -1306,12 +1363,12 @@ async function mapImage(o){ // o: {w,h,pts:[[lat,lon]...] pour cadrage, poly, bu
 const PDFT=s=>String(s??"").replace(/≤/g,"<=").replace(/≥/g,">=").replace(/✓/g,"OK").replace(/✗/g,"X").replace(/→|↗/g,"->").replace(/[“”]/g,'"').replace(/[‘’]/g,"'").replace(/[\u{1F000}-\u{1FFFF}☀-➿️]/gu,"").replace(/ | /g," ");
 async function makePDF(){
   const st=document.getElementById("pdfState"); const J=window.jspdf&&window.jspdf.jsPDF; if(!J){ toast("Module PDF non chargé (connexion requise)",true); return; }
-  st.textContent="Préparation des cartes…"; const r=analyze(); const m=S.m, poly=r.poly, buf=poly?bufferPoly(poly,+S.buffer||0):null, ret=retained(r);
+  st.textContent="Préparation des cartes…"; const r=analyze(); const m=S.m, poly=r.poly, bd=bands(), buf=poly?bufferPoly(poly,bd.tot):null, cbuf=poly?bufferPoly(poly,bd.cont):null, ret=retained(r);
   if(poly) await loadMeteo(); const mm=meteoMission();
-  const imgZone=poly?await mapImage({w:1200,h:800,pts:(buf||poly).concat(S.wps.map(w=>[w.lat,w.lon])),poly,buffer:buf,wps:[],pad:1.2}):null;
+  const imgZone=poly?await mapImage({w:1200,h:800,pts:(buf||poly).concat(S.wps.map(w=>[w.lat,w.lon])),poly,buffer:buf,cont:cbuf,wps:[],pad:1.2}):null;
   const nearAd=r.ads.filter(x=>x.d<12000).slice(0,3);
-  const imgCst=poly?await mapImage({w:1200,h:800,pts:poly.concat(nearAd.map(x=>[x.a[2],x.a[3]])),poly,buffer:buf,hits:UASD.hits||[],ads:nearAd.map(x=>x.a),circles:r.sens.map(x=>({c:[x.s[1],x.s[2]],r:x.s[3]*1000,col:"#e0262b"})),pad:.6}):null;
-  const imgCtx=poly&&S.wps.length?await mapImage({w:1200,h:800,pts:(buf||poly).concat(S.wps.map(w=>[w.lat,w.lon])),poly,buffer:buf,wps:S.wps,pad:.5}):null;
+  const imgCst=poly?await mapImage({w:1200,h:800,pts:poly.concat(nearAd.map(x=>[x.a[2],x.a[3]])),poly,buffer:buf,cont:cbuf,hits:UASD.hits||[],ads:nearAd.map(x=>x.a),circles:r.sens.map(x=>({c:[x.s[1],x.s[2]],r:x.s[3]*1000,col:"#e0262b"})),pad:.6}):null;
+  const imgCtx=poly&&S.wps.length?await mapImage({w:1200,h:800,pts:(buf||poly).concat(S.wps.map(w=>[w.lat,w.lon])),poly,buffer:buf,cont:cbuf,wps:S.wps,pad:.5}):null;
   st.textContent="Mise en page…";
   const doc=new J({unit:"mm",format:"a4"}); const PW=210,PH=297,M=18; let y=M; const toc=[]; const NAVY=[15,27,46], BLUE=[31,111,229], GREY=[90,104,125];
   const np=()=>{ doc.addPage(); y=M+6; };
@@ -1337,8 +1394,9 @@ async function makePDF(){
   H1(1,"Vue d'ensemble");
   KV([["Titre",m.m_name],["Activité",m.m_type],["Client",m.m_client||"—"]]);
   P_("Zone de vol",{b:true,c:NAVY}); IMG(imgZone,105);
+  P_("Lecture du plan : zone de vol en bleu (trait plein) ; contingence en orange pointillé ("+bd.cont+" m, espace réservé aux manoeuvres d'urgence) ; zone tampon risque sol en rouge pointillé ("+bd.tot+" m au total autour de la zone), où aucune personne non impliquée ne doit se trouver.",{s:9,c:GREY});
   const ap=poly?(S.zone.type==="circle"?{a:Math.PI*S.zone.radius**2}:areaPer(poly)):null;
-  KV([["Localisation",[m.m_address,m.m_commune,r.dept?r.dept[1]:"","France"].filter(Boolean).join(", ")],["Coordonnées (centre)",r.c?`${dms(r.c[0],1)} ${dms(r.c[1],0)} (${r.c[0].toFixed(5)}, ${r.c[1].toFixed(5)})`:"—"],["Surface / zone tampon",ap?`${fmtA(ap.a)} – tampon ${S.buffer} m`:"—"],["Date",dt],["Hauteur maximum (mètres)",String(S.height)],["Vitesse maximale (km/h)",m.m_speed||"—"],["Durée de vol prévue",m.m_dur?m.m_dur+" min":"—"],["Mode de vol",m.v_vlos]]);
+  KV([["Localisation",[m.m_address,m.m_commune,r.dept?r.dept[1]:"","France"].filter(Boolean).join(", ")],["Coordonnées (centre)",r.c?`${dms(r.c[0],1)} ${dms(r.c[1],0)} (${r.c[0].toFixed(5)}, ${r.c[1].toFixed(5)})`:"—"],["Surface",ap?fmtA(ap.a):"—"],["Bandes de sécurité",`Contingence ${bd.cont} m + zone tampon ${bd.gb} m = zone contrôlée au sol à ${bd.tot} m`],["Format aéronautique",dmTxt(r.c)],["Altitude sol / plafond",S.ground!=null?ceilTxt():"—"],["Date",dt],["Hauteur maximum (mètres)",String(S.height)],["Vitesse maximale (km/h)",m.m_speed||"—"],["Durée de vol prévue",m.m_dur?m.m_dur+" min":"—"],["Mode de vol",m.v_vlos]]);
   if(m.m_desc){ P_("Informations complémentaires",{b:true,c:NAVY}); P_(m.m_desc); }
   // --- 2
   H1(2,"Informations générales");
@@ -1365,7 +1423,9 @@ async function makePDF(){
   P_("Carte des contraintes (zone, restrictions UAS DGAC, aérodromes et sites sensibles proches)",{b:true,c:NAVY}); IMG(imgCst,100);
   H2("4.2","Détails"); cl.forEach((x,i)=>{ H2(`4.2.${i+1}`,`Contrainte #${i+1} (${lvl[x.lv]})`,2); P_(x.t,{b:true}); if(x.p) P_(x.p,{s:9.5,c:[60,60,60]}); });
   // --- 5
-  H1(5,"Autorisations et délais"); const populated=!m.e_pop.startsWith("Hors");
+  H1(5,"Qui contacter"); const populated=!m.e_pop.startsWith("Hors");
+  const dl=demarches(r); P_(`${dl.filter(x=>!/Si besoin|À lire/.test(x.lv)).length} démarche(s) avant de voler, classées par urgence :`);
+  TB(["#","Service","Niveau","Échéance","État"],dl.map((x,i)=>[String(i+1).padStart(2,"0"),x.t,x.lv,x.due?x.due.toLocaleDateString("fr-FR"):(x.delay||"—"),(S.steps||{})[x.k]||"À faire"]),{cs:{0:{cellWidth:10},3:{cellWidth:26},4:{cellWidth:20}}});
   H2("5.1","Préfecture"); const w=m.m_date?sendWindow(parseDate(m.m_date)):null;
   KV([["Département",r.dept?r.dept[0]+" – "+r.dept[1]:"—"],["Contact drones",r.dept?r.dept[2]:"—"],["Déclaration requise",populated||r.night||S.height>120?"Oui (zone peuplée / nuit / hauteur)":"Non a priori"],["Envoi au plus tôt",w?fdate(w.first):"—"],["Envoi au plus tard",w?fdate(w.last):"—"],["Dérogation nuit / hauteur",m.m_date?"avant le "+fdate(addD(parseDate(m.m_date),-30)):"—"]]);
   H2("5.2","Aérodromes et contrôle aérien"); TB(["Aérodrome","Type","Distance","Relèvement"],r.ads.slice(0,4).map(x=>[`${x.a[0]} ${x.a[1]}`,x.a[4]==="M"?"Militaire":x.a[4]==="C"?"Civil contrôlé":"Civil",fmtD(x.d),`${Math.round(x.b)}° ${card16(x.b)}`]));
@@ -1383,6 +1443,7 @@ async function makePDF(){
   H1(8,"Contexte"); H2("8.1","Carte"); IMG(imgCtx||imgZone,105);
   H2("8.2","Liste"); if(S.wps.length) TB(["#","Type","Intitulé","Latitude","Longitude"],S.wps.map((w,i)=>[i+1,w.t,w.n||"",w.lat.toFixed(6),w.lon.toFixed(6)])); else P_("Aucun point de contexte placé.",{c:GREY});
   if(m.e_secu){ H2("8.3","Mesures de sécurisation"); P_(m.e_secu); }
+  if((m.e_gear||[]).length){ H2("8.4","Matériel prévu"); BL(m.e_gear); }
   // --- 9
   H1(9,"Engagement");
   P_(`Je soussigné(e) ${m.op_resp||m.pilot_name||"……………………"}, représentant l'exploitant ${m.op_name||"……………………"}, atteste l'exactitude des informations contenues dans le présent dossier et m'engage à respecter la réglementation applicable ainsi que les conditions des accords obtenus.`);
@@ -1400,8 +1461,195 @@ async function makePDF(){
 }
 document.getElementById("pdfGo").onclick=()=>makePDF().catch(e=>{ document.getElementById("pdfState").textContent=""; toast("Erreur PDF : "+e.message,true); console.error(e); });
 
+
+/* ---- Encart de zone (façon Flyby) ---- */
+let lastZone=null;
+function updateZoneBox(){ const box=document.getElementById("zbox"), p=zonePoly(); if(!p){ box.style.display="none"; return; } box.style.display="block";
+  const circ=S.zone.type==="circle", ap=circ?{a:Math.PI*S.zone.radius**2,per:2*Math.PI*S.zone.radius}:areaPer(p);
+  document.getElementById("zbTitle").textContent=circ?"Zone de vol (cercle)":"Zone de vol (polygone)";
+  const bi=document.getElementById("zbBuf"), hi=document.getElementById("zbH"); if(document.activeElement!==bi) bi.value=bands().cont; if(document.activeElement!==hi) hi.value=S.height;
+  document.getElementById("zbMeta").innerHTML=`${(ap.a/10000).toFixed(3)} ha <span>/</span> ${circ?"R "+fmtD(S.zone.radius):fmtD(ap.per)}<br><span>${circ?"":S.zone.pts.length+" sommets · "}${fmtA(ap.a)}</span><br><span>Tampon ${bands().gb} m${bands().mfr?"":" (auto)"} · total ${bands().tot} m</span>${S.ground!=null?`<br><span>${ceilTxt()}</span>`:""}`; }
+document.getElementById("zbBuf").oninput=e=>{ S.cont=+e.target.value||0; drawZone(); refresh(); };
+document.getElementById("zbH").oninput=e=>{ S.height=+e.target.value||0; refresh(); };
+document.getElementById("zbDel").onclick=()=>{ lastZone=JSON.parse(JSON.stringify(S.zone)); S.zone={type:null,pts:[],center:null,radius:0}; setMode(null); refresh();
+  const el=document.getElementById("toast"); el.innerHTML='Zone supprimée <button class="btn sm" id="undoZ" style="margin-left:8px;pointer-events:auto">Annuler</button>'; el.style.background="var(--card)"; el.style.color="var(--txt)"; el.style.pointerEvents="auto"; el.classList.add("show"); clearTimeout(el._t);
+  el._t=setTimeout(()=>{ el.classList.remove("show"); el.style.pointerEvents="none"; },6000);
+  document.getElementById("undoZ").onclick=()=>{ if(lastZone){ S.zone=lastZone; lastZone=null; drawZone(); refresh(); } el.classList.remove("show"); el.style.pointerEvents="none"; }; };
+
+/* =========================================================
+   V4 – BANDES DE SÉCURITÉ, ALTITUDE, ADRESSE, COUCHES AÉRO / SIA / ZICAD,
+   ENVIRONNEMENT AU SOL, DÉMARCHES SUIVIES, EXPORTS
+   ========================================================= */
+// ---- Bandes : contingence (≥ 10 m) + zone tampon risque sol (UAS.STS-01.020, tableau hauteur × masse)
+function gbAuto(){ const H=+S.height||0, m=+S.m.d_mass||0; if(H>120) return Math.ceil(H); const T=[[30,10,20],[60,15,30],[90,20,45],[120,25,60]]; const row=T.find(t=>H<=t[0])||T[3]; return m>10?row[2]:row[1]; }
+function bands(){ const cont=Math.max(10,+S.cont||10); const mfr=+S.gbMfr>0; const gb=mfr?+S.gbMfr:gbAuto(); return {cont,gb,tot:cont+gb,mfr}; }
+function bandTxt(){ const b=bands(); return `contingence ${b.cont} m + zone tampon ${b.gb} m${b.mfr?" (fabricant)":""} = ${b.tot} m autour de la zone`; }
+function dm(v,isLat){ const h=isLat?(v>=0?"N":"S"):(v>=0?"E":"W"); v=Math.abs(v); let d=Math.floor(v), mn=Math.round((v-d)*60); if(mn===60){d++;mn=0;} return String(d).padStart(isLat?2:3,"0")+String(mn).padStart(2,"0")+h; }
+function dmTxt(c){ return c?`${dm(c[0],1)} ${dm(c[1],0)}`:"—"; }
+// ---- Altitude sol IGN + plafond
+let ALT={key:"",z:null};
+async function loadAlt(){ const p=zonePoly(); if(!p) return; const c=centroid(p), key=c.map(v=>v.toFixed(4)).join(); if(ALT.key===key) return; ALT={key,z:null};
+  try{ const r=await fetch(`https://data.geopf.fr/altimetrie/1.0/calcul/alti/rest/elevation.json?lon=${c[1].toFixed(6)}&lat=${c[0].toFixed(6)}&resource=ign_rge_alti_wld&zonly=true`); const j=await r.json(); const z=j.elevations&&j.elevations[0]; ALT.z=(typeof z==="number"&&z>-500)?z:null; }catch(e){}
+  if(ALT.key===key){ S.ground=ALT.z; updateZoneBox(); renderZoneExtra(); } }
+function ceilTxt(){ if(S.ground==null) return ""; const c=S.ground+(+S.height||0); return `sol ${Math.round(S.ground)} m · plafond ${Math.round(c)} m d'altitude (${Math.round(c*3.28084)} ft)`; }
+// ---- Adresse (géocodage IGN) : recherche + adresse de la zone
+let GEO={key:"",d:null};
+async function revGeo(){ const p=zonePoly(); if(!p) return; const c=centroid(p), key=c.map(v=>v.toFixed(4)).join(); if(GEO.key===key) return; GEO={key,d:null};
+  try{ const r=await fetch(`https://data.geopf.fr/geocodage/reverse?lon=${c[1].toFixed(6)}&lat=${c[0].toFixed(6)}&limit=1`); const j=await r.json(); const f=j.features&&j.features[0]; if(f) GEO.d=f.properties; }catch(e){}
+  if(GEO.key!==key||!GEO.d) return; const g=GEO.d; S.geo={label:g.label,city:g.city,postcode:g.postcode,citycode:g.citycode};
+  let ch=false; if(!S.m.m_address){ S.m.m_address=g.name&&g.type!=="municipality"?g.name:g.label; ch=true; } if(!S.m.m_commune){ S.m.m_commune=g.city; ch=true; }
+  if(ch){ buildForm(); } refresh(true); }
+function deptFromGeo(){ const c=S.geo&&S.geo.citycode; if(!c) return null; const k=/^97/.test(c)?c.slice(0,3):c.slice(0,2); return DEPTS.find(d=>d[0]===k)||null; }
+async function geocode(q){ const r=await fetch(`https://data.geopf.fr/geocodage/search?q=${encodeURIComponent(q)}&limit=5`); const j=await r.json(); return (j.features||[]).map(f=>({label:f.properties.label,lat:f.geometry.coordinates[1],lon:f.geometry.coordinates[0],type:f.properties.type})); }
+const addrIn=document.getElementById("addrIn"), addrList=document.getElementById("addrList"); let addrT;
+addrIn.addEventListener("input",()=>{ clearTimeout(addrT); const q=addrIn.value.trim(); const ll=parseLL(q); if(ll||q.length<3){ addrList.style.display="none"; return; }
+  addrT=setTimeout(async()=>{ try{ const res=await geocode(q); addrList.innerHTML=res.map((x,i)=>`<div data-geo="${i}">${esc(x.label)}</div>`).join(""); addrList.style.display=res.length?"block":"none"; addrList._res=res; }catch(e){ addrList.style.display="none"; } },300); });
+addrIn.addEventListener("keydown",async e=>{ if(e.key!=="Enter") return; const ll=parseLL(addrIn.value); if(ll){ map.setView(ll,17); addrList.style.display="none"; return; } try{ const res=addrList._res&&addrList._res.length?addrList._res:await geocode(addrIn.value); if(res[0]){ map.setView([res[0].lat,res[0].lon],res[0].type==="municipality"?14:18); addrList.style.display="none"; } else toast("Adresse introuvable",true); }catch(err){ toast("Recherche d'adresse indisponible ici",true); } });
+addrList.addEventListener("click",e=>{ const d=e.target.closest("[data-geo]"); if(!d) return; const x=addrList._res[+d.dataset.geo]; map.setView([x.lat,x.lon],x.type==="municipality"?14:18); addrIn.value=x.label; addrList.style.display="none"; });
+
+// ---- Couches aéronautiques IGN/SIA (libres)
+const ENRC=L.tileLayer("https://data.geopf.fr/wmts?SERVICE=WMTS&REQUEST=GetTile&VERSION=1.0.0&LAYER=ENR.AERO.CIVIL&STYLE=ENR.AERO.CIVIL&TILEMATRIXSET=PM_6_18&TILEMATRIX={z}&TILEROW={y}&TILECOL={x}&FORMAT=image/png",{minZoom:6,maxZoom:19,maxNativeZoom:18,opacity:.85});
+const ENRM=L.tileLayer("https://data.geopf.fr/wmts?SERVICE=WMTS&REQUEST=GetTile&VERSION=1.0.0&LAYER=ENR.AERO.MILITAIRE&STYLE=ENR.AERO.MILITAIRE&TILEMATRIXSET=PM_6_18&TILEMATRIX={z}&TILEROW={y}&TILECOL={x}&FORMAT=image/png",{minZoom:6,maxZoom:19,maxNativeZoom:18,opacity:.85});
+document.getElementById("lyEnrC").onchange=e=>e.target.checked?ENRC.addTo(map):map.removeLayer(ENRC);
+document.getElementById("lyEnrM").onchange=e=>e.target.checked?ENRM.addTo(map):map.removeLayer(ENRM);
+
+// ---- Lecture des fichiers ZIP (JSZip)
+async function unzipFirst(buf,re){ if(!window.JSZip) throw new Error("module ZIP non chargé"); const z=await JSZip.loadAsync(buf); const f=Object.values(z.files).find(f=>!f.dir&&re.test(f.name)); if(!f) throw new Error("fichier introuvable dans le ZIP"); return {name:f.name,text:await f.async("string")}; }
+// IndexedDB minimal
+function idb(){ return new Promise((res,rej)=>{ try{ const r=indexedDB.open("zonevol",1); r.onupgradeneeded=()=>r.result.createObjectStore("kv"); r.onsuccess=()=>res(r.result); r.onerror=()=>rej(r.error); }catch(e){ rej(e); } }); }
+async function idbGet(k){ try{ const db=await idb(); return await new Promise(res=>{ const q=db.transaction("kv").objectStore("kv").get(k); q.onsuccess=()=>res(q.result); q.onerror=()=>res(null); }); }catch(e){ return null; } }
+async function idbSet(k,v){ try{ const db=await idb(); await new Promise(res=>{ const t=db.transaction("kv","readwrite"); t.objectStore("kv").put(v,k); t.oncomplete=res; t.onerror=res; }); }catch(e){} }
+
+// ---- Zones géographiques UAS du SIA (format ED-269, ZIP téléchargé sur le site du SIA)
+let SIA={st:"none",zones:[],file:"",date:""}; const siaLayer=L.layerGroup(); const canvasR=L.canvas({padding:.3});
+const RESTR={PROHIBITED:["Interdite","#e0262b"],REQ_AUTHORISATION:["Autorisation requise","#f08c00"],CONDITIONAL:["Conditions","#e6c200"],NO_RESTRICTION:["Information","#3d8bfd"]};
+function isoDays(d){ if(!d) return null; const m=String(d).match(/P(?:(\d+)D)?(?:T(?:(\d+)H)?)?/); if(!m) return null; return (+m[1]||0)+((+m[2]||0)/24); }
+function parseSIA(text,fname){ const j=JSON.parse(text); const feats=j.features||j.UASZoneList||j; const out=[];
+  (Array.isArray(feats)?feats:[]).forEach(f=>{ (f.geometry||[]).forEach(g=>{ const hp=g.horizontalProjection||g; let rings=[];
+      if(hp.type==="Circle"&&hp.center) rings=[circlePts([hp.center[1],hp.center[0]],+hp.radius||0,48)];
+      else if(hp.type==="Polygon") rings=[hp.coordinates[0].map(c=>[c[1],c[0]])];
+      else if(hp.type==="MultiPolygon") rings=hp.coordinates.map(p=>p[0].map(c=>[c[1],c[0]]));
+      if(!rings.length) return; const lats=rings.flat().map(p=>p[0]), lons=rings.flat().map(p=>p[1]);
+      const ft=/FT/i.test(g.uomDimensions||""); const cv=v=>v==null?null:(ft?(+v)*0.3048:+v);
+      out.push({id:f.identifier,name:f.name||f.identifier||"Zone UAS",type:f.type,restr:f.restriction||"",reason:[].concat(f.reason||[]).join(", "),msg:f.message||f.otherReasonInfo||"",
+        auth:(f.zoneAuthority||[]).map(a=>({name:a.name,service:a.service,contact:a.contactName,email:a.email,phone:a.phone,url:a.siteURL,purpose:a.purpose,days:isoDays(a.intervalBefore)})),
+        lo:cv(g.lowerLimit),loRef:g.lowerVerticalReference||"",up:cv(g.upperLimit),upRef:g.upperVerticalReference||"",rings,bb:[Math.min(...lats),Math.min(...lons),Math.max(...lats),Math.max(...lons)],appl:f.applicability||[]}); }); });
+  const dt=(fname.match(/UASZones_(\d{4}-\d{2}-\d{2})/)||[])[1]||""; return {zones:out,date:dt}; }
+async function loadSIA(buf,fname,save){ try{ const f=await unzipFirst(buf,/\.json$/i); const p=parseSIA(f.text,f.name||fname); SIA={st:"ok",zones:p.zones,file:f.name,date:p.date}; if(save) await idbSet("sia",{buf,fname}); drawSIA(); refresh(true); toast(`${p.zones.length} zones UAS du SIA chargées`); }
+  catch(e){ SIA.st="err"; SIA.err=String(e.message||e); renderSiaBox(); toast("ZIP SIA illisible : "+SIA.err,true); } }
+async function initSIA(){ try{ const r=await fetch("data/uaszones.zip",{cache:"no-cache"}); if(r.ok){ await loadSIA(await r.arrayBuffer(),"uaszones.zip",false); SIA.src="site"; return; } }catch(e){}
+  const s=await idbGet("sia"); if(s&&s.buf){ await loadSIA(s.buf,s.fname,false); SIA.src="appareil"; } else renderSiaBox(); }
+function drawSIA(){ siaLayer.clearLayers(); if(!document.getElementById("lySia").checked||SIA.st!=="ok") return; if(map.getZoom()<8){ return; } const v=map.getBounds().pad(.2);
+  SIA.zones.forEach(z=>{ if(z.bb[2]<v.getSouth()||z.bb[0]>v.getNorth()||z.bb[3]<v.getWest()||z.bb[1]>v.getEast()) return; const col=(RESTR[z.restr]||["","#8aa0c0"])[1];
+    z.rings.forEach(rg=>L.polygon(rg,{renderer:canvasR,color:col,weight:1.2,fillColor:col,fillOpacity:.08}).bindPopup(()=>siaPopup(z)).addTo(siaLayer)); }); }
+function limTxt(v,ref){ return v==null?"—":`${Math.round(v)} m ${ref||""}`.trim(); }
+function siaPopup(z){ const a=z.auth[0]||{}; return `<b>${esc(z.name)}</b><br><span style="color:${(RESTR[z.restr]||["",""])[1]}">${esc((RESTR[z.restr]||[z.restr])[0])}</span> · ${limTxt(z.lo,z.loRef)} → ${limTxt(z.up,z.upRef)}<br><span style="color:#8aa0c0">${esc((z.msg||"").slice(0,260))}</span>${a.name?`<br><b>${esc(a.name)}</b>${a.phone?" · "+esc(a.phone):""}${a.email?"<br>"+esc(a.email):""}`:""}`; }
+map.on("moveend",()=>{ drawSIA(); });
+document.getElementById("lySia").onchange=e=>{ if(e.target.checked){ siaLayer.addTo(map); drawSIA(); } else map.removeLayer(siaLayer); };
+function siaHits(){ const p=zonePoly(); if(!p||SIA.st!=="ok") return []; const b=bufferPoly(p,bands().tot)||p; const la=b.map(x=>x[0]), lo=b.map(x=>x[1]); const bb=[Math.min(...la),Math.min(...lo),Math.max(...la),Math.max(...lo)];
+  const H=+S.height||0, ceil=S.ground!=null?S.ground+H:null;
+  return SIA.zones.filter(z=>!(z.bb[2]<bb[0]||z.bb[0]>bb[2]||z.bb[3]<bb[1]||z.bb[1]>bb[3])).filter(z=>{ if(z.lo!=null){ if(/AGL|SFC/i.test(z.loRef)&&z.lo>H) return false; if(/AMSL|MSL/i.test(z.loRef)&&ceil!=null&&z.lo>ceil) return false; } return z.rings.some(rg=>polysTouch(b,rg)); })
+    .map(z=>({...z,inZone:z.rings.some(rg=>polysTouch(p,rg))})); }
+function renderSiaBox(){ const el=document.getElementById("siaBox"); if(!el) return;
+  el.innerHTML=SIA.st==="ok"?`<div class="cst green"><div style="flex:1"><b>${SIA.zones.length} zones chargées</b><p>Fichier ${esc(SIA.file)}${SIA.date?" · en vigueur au "+SIA.date.split("-").reverse().join("/"):""} · source : ${SIA.src==="site"?"dossier data/ du site":"cet appareil"}. À renouveler à chaque cycle AIRAC (28 jours).</p></div></div>`:
+   SIA.st==="err"?`<div class="cst red"><div><b>Fichier non lu</b><p>${esc(SIA.err||"")}</p></div></div>`:`<p class="small">Aucun fichier chargé.</p>`; }
+document.getElementById("siaFile").onchange=e=>{ const f=e.target.files[0]; if(!f) return; f.arrayBuffer().then(b=>loadSIA(b,f.name,true)); };
+
+// ---- ZICAD (arrêté du 17/11/2025, KML IGN)
+let ZIC={st:"none",zones:[]}; const zicLayer=L.layerGroup();
+function parseKML(txt){ const doc=new DOMParser().parseFromString(txt,"text/xml"); const out=[];
+  doc.querySelectorAll("Placemark").forEach(pm=>{ const name=(pm.querySelector("name")||{}).textContent||"ZICAD"; const desc=((pm.querySelector("description")||{}).textContent||"").replace(/<[^>]+>/g," ").replace(/\s+/g," ").trim();
+    const rings=[...pm.querySelectorAll("Polygon outerBoundaryIs coordinates, Polygon coordinates")].slice(0,20).map(c=>c.textContent.trim().split(/\s+/).map(t=>t.split(",").map(Number)).filter(a=>a.length>=2&&!isNaN(a[1])).map(a=>[a[1],a[0]])).filter(r=>r.length>2);
+    const uniq=[]; rings.forEach(r=>{ if(!uniq.some(u=>u.length===r.length&&u[0][0]===r[0][0])) uniq.push(r); });
+    if(uniq.length){ const all=uniq.flat(); out.push({name:name.trim(),desc,rings:uniq,bb:[Math.min(...all.map(p=>p[0])),Math.min(...all.map(p=>p[1])),Math.max(...all.map(p=>p[0])),Math.max(...all.map(p=>p[1]))]}); } }); return out; }
+async function loadZICAD(){ if(ZIC.st==="ok"||ZIC.st==="loading") return; ZIC.st="loading";
+  try{ const r=await fetch("https://data.geopf.fr/annexes/ressources/documentation/ZICAD_17-11-2025.zip"); const f=await unzipFirst(await r.arrayBuffer(),/\.kml$/i); ZIC={st:"ok",zones:parseKML(f.text)}; drawZIC(); refresh(true); }
+  catch(e){ ZIC={st:"err",zones:[],err:String(e.message||e)}; } }
+function drawZIC(){ zicLayer.clearLayers(); if(ZIC.st!=="ok") return; ZIC.zones.forEach(z=>z.rings.forEach(rg=>L.polygon(rg,{renderer:canvasR,color:"#9333ea",weight:1.5,fillColor:"#9333ea",fillOpacity:.18}).bindPopup(`<b>ZICAD</b><br>${esc(z.name)}<br><span style="color:#8aa0c0">Captation de données interdite (photo, vidéo, capteurs) sauf dérogation.</span>`).addTo(zicLayer))); }
+document.getElementById("lyZic").onchange=e=>{ if(e.target.checked){ zicLayer.addTo(map); loadZICAD(); } else map.removeLayer(zicLayer); };
+function zicHits(){ const p=zonePoly(); if(!p||ZIC.st!=="ok") return []; const b=bufferPoly(p,bands().tot)||p; return ZIC.zones.filter(z=>z.rings.some(rg=>polysTouch(b,rg))); }
+
+// ---- Environnement au sol (IGN BD TOPO via Géoplateforme)
+let ENV={key:"",st:"idle"}; const envLayer=L.layerGroup().addTo(map);
+function lineTouch(line,poly){ if(line.some(p=>inPoly(p,poly))) return true; for(let i=0;i<line.length-1;i++) for(let j=0;j<poly.length;j++) if(segX(line[i],line[i+1],poly[j],poly[(j+1)%poly.length])) return true; return false; }
+async function wfsJSON(type,bb,count=400){ const r=await fetch(`https://data.geopf.fr/wfs/ows?SERVICE=WFS&VERSION=2.0.0&REQUEST=GetFeature&TYPENAMES=${type}&OUTPUTFORMAT=application/json&SRSNAME=EPSG:4326&COUNT=${count}&BBOX=${bb}`); if(!r.ok) throw new Error(r.status); return (await r.json()).features||[]; }
+async function loadEnv(){ const p=zonePoly(); if(!p) return; const key=JSON.stringify(p.map(x=>x.map(v=>v.toFixed(5))))+"|"+bands().tot; if(ENV.key===key) return; ENV={key,st:"loading"}; renderZoneExtra();
+  const ctrl=bufferPoly(p,bands().tot)||p, ring300=bufferPoly(p,300); const la=ring300.map(x=>x[0]),lo=ring300.map(x=>x[1]);
+  const a=toM(Math.min(...la),Math.min(...lo)), b=toM(Math.max(...la),Math.max(...lo)), bb=`${a[0]},${a[1]},${b[0]},${b[1]},EPSG:3857`; const res={key,st:"ok",roads:[],rails:[],power:[],obst:[],bat:null,err:[]};
+  const L2=g=>g.type==="LineString"?[g.coordinates.map(c=>[c[1],c[0]])]:g.type==="MultiLineString"?g.coordinates.map(l=>l.map(c=>[c[1],c[0]])):[];
+  await Promise.all([
+    (async()=>{ try{ const r=await fetch(`https://data.geopf.fr/wfs/ows?SERVICE=WFS&VERSION=2.0.0&REQUEST=GetFeature&TYPENAMES=BDTOPO_V3:batiment&RESULTTYPE=hits&BBOX=${bb}`); const x=await r.text(); res.bat=+((x.match(/numberMatched="(\d+)"/)||[])[1]||0); }catch(e){ res.err.push("bâtiments"); } })(),
+    (async()=>{ try{ const fs=await wfsJSON("BDTOPO_V3:troncon_de_route",bb,500); const seen={}; fs.forEach(f=>{ const ls=L2(f.geometry); if(!ls.some(l=>lineTouch(l,ctrl))) return; const pr=f.properties; const n=pr.nom_collaboratif_gauche||pr.nom_voie_ban_gauche||pr.cpx_numero||""; const k=(n||"?")+pr.nature; if(seen[k]) return; seen[k]=1; res.roads.push({name:n,nature:pr.nature,imp:+pr.importance||6,lines:ls}); }); res.roads.sort((x,y)=>x.imp-y.imp); }catch(e){ res.err.push("routes"); } })(),
+    (async()=>{ try{ const fs=await wfsJSON("BDTOPO_V3:troncon_de_voie_ferree",bb,200); fs.forEach(f=>{ const ls=L2(f.geometry); if(ls.some(l=>lineTouch(l,ring300))) res.rails.push({nature:f.properties.nature||"Voie ferrée",lines:ls,inCtrl:ls.some(l=>lineTouch(l,ctrl))}); }); }catch(e){ res.err.push("voies ferrées"); } })(),
+    (async()=>{ try{ const fs=await wfsJSON("BDTOPO_V3:ligne_electrique",bb,200); fs.forEach(f=>{ const ls=L2(f.geometry); if(!ls.length) return; const d=Math.min(...ls.flat().map(q=>distToPoly(q,p))); if(d<=300) res.power.push({v:f.properties.voltage||"",d,lines:ls}); }); res.power.sort((x,y)=>x.d-y.d); }catch(e){ res.err.push("lignes électriques"); } })(),
+    (async()=>{ try{ const fs=await wfsJSON("BDTOPO_V3:construction_ponctuelle",bb,200); fs.forEach(f=>{ if(f.geometry.type!=="Point") return; const q=[f.geometry.coordinates[1],f.geometry.coordinates[0]]; const d=distToPoly(q,p); if(d<=300) res.obst.push({nature:f.properties.nature||"Construction",h:f.properties.hauteur,d,pt:q}); }); res.obst.sort((x,y)=>x.d-y.d); }catch(e){ res.err.push("obstacles"); } })() ]);
+  if(ENV.key!==key) return; ENV=res; drawEnv(); refresh(true); }
+function drawEnv(){ envLayer.clearLayers(); if(ENV.st!=="ok") return; ENV.roads.slice(0,30).forEach(r=>r.lines.forEach(l=>L.polyline(l,{color:"#ff7a00",weight:4,opacity:.8}).bindTooltip(esc(r.name||r.nature)).addTo(envLayer)));
+  ENV.rails.forEach(r=>r.lines.forEach(l=>L.polyline(l,{color:"#111",weight:4,dashArray:"8 6"}).bindTooltip("Voie ferrée").addTo(envLayer)));
+  ENV.power.forEach(r=>r.lines.forEach(l=>L.polyline(l,{color:"#e0262b",weight:2.5,dashArray:"2 5"}).bindTooltip("Ligne électrique "+esc(r.v)).addTo(envLayer)));
+  ENV.obst.forEach(o=>L.circleMarker(o.pt,{radius:5,color:"#fff",weight:1.5,fillColor:"#111",fillOpacity:1}).bindTooltip(`${esc(o.nature)}${o.h?" · "+Math.round(o.h)+" m":""}`).addTo(envLayer)); }
+function renderZoneExtra(){ const el=document.getElementById("envBox"); if(!el) return; const b=bands(); let h=`<table class="t"><tr><th>Contingence</th><td>${b.cont} m</td></tr><tr><th>Zone tampon risque sol</th><td>${b.gb} m ${b.mfr?"(fabricant)":"(calculée : hauteur "+S.height+" m, drone "+(+S.m.d_mass>10?"> 10 kg":"≤ 10 kg")+")"}</td></tr><tr><th>Zone contrôlée au sol</th><td><b>${b.tot} m</b> autour de la zone de vol</td></tr>${S.ground!=null?`<tr><th>Altitude</th><td>${ceilTxt()}</td></tr>`:""}</table>`;
+  if(ENV.st==="loading") h+=`<p class="small">Analyse de l'environnement au sol…</p>`;
+  if(ENV.st==="ok"){ h+=`<h3>Autour de la zone (IGN BD TOPO)</h3><ul class="small" style="padding-left:18px;line-height:1.6">`+
+    (ENV.bat!=null?`<li><b>${ENV.bat}</b> bâtiments à moins de 300 m ${ENV.bat>=150?"→ agglomération probable":ENV.bat>=30?"→ zone bâtie":""}</li>`:"")+
+    `<li>Routes dans la zone contrôlée au sol : ${ENV.roads.length?ENV.roads.slice(0,8).map(r=>esc(r.name||r.nature)).join(", ")+(ENV.roads.length>8?` (+${ENV.roads.length-8})`:""):"aucune"}</li>`+
+    `<li>Voies ferrées à moins de 300 m : ${ENV.rails.length?ENV.rails.length+(ENV.rails.some(x=>x.inCtrl)?" (dont dans la zone contrôlée)":""):"aucune"}</li>`+
+    `<li>Lignes électriques à moins de 300 m : ${ENV.power.length?ENV.power.slice(0,3).map(x=>`${esc(x.v||"ligne")} à ${fmtD(x.d)}`).join(", "):"aucune"}</li>`+
+    `<li>Obstacles ponctuels à moins de 300 m : ${ENV.obst.length?ENV.obst.slice(0,5).map(o=>`${esc(o.nature)} à ${fmtD(o.d)}`).join(", "):"aucun"}</li></ul>`+
+    (ENV.err.length?`<p class="small">Données indisponibles : ${ENV.err.join(", ")}.</p>`:""); }
+  el.innerHTML=h; }
+document.getElementById("contIn").oninput=e=>{ S.cont=Math.max(0,+e.target.value||0); drawZone(); refresh(); };
+document.getElementById("gbMfrIn").oninput=e=>{ S.gbMfr=e.target.value; drawZone(); refresh(); };
+
+// ---- Démarches classées par urgence, avec suivi
+const DSTAT=["À faire","Envoyée","Accord","Refus"];
+function ouvresAvant(d,n){ let x=new Date(d),c=0; while(c<n){ x=addD(x,-1); if(x.getDay()!==0&&x.getDay()!==6&&!holidays(x.getFullYear()).has(key(x))) c++; } return x; }
+function demarches(r){ const m=S.m, out=[], md=m.m_date?parseDate(m.m_date):null, populated=!m.e_pop.startsWith("Hors"), ret=retained(r), spec=/SPECIFIQUE/.test(ret.code), d=r.dept;
+  if(populated||(r.geo&&ENV.bat>=150)){ const w=md?sendWindow(md):null;
+    out.push({k:"pref",t:`Préfecture ${d?d[1]+" ("+d[0]+")":""}`,lv:"Obligatoire",due:w&&w.last,delay:"10 jours ouvrables",
+      body:spec?"Vol en zone peuplée en catégorie spécifique : déclaration préalable au préfet par la notification de vol AlphaTango (pas de Cerfa).":"Vol en agglomération en catégorie ouverte : Cerfa 15476*04 et son annexe, par e-mail à la préfecture.",
+      acts:spec?[["AlphaTango – notifier le vol","https://alphatango.aviation-civile.gouv.fr/login.jsp"]]:(d?[["E-mail : "+d[2],"mailto:"+d[2]],["Formulaire Cerfa","https://entreprendre.service-public.gouv.fr/vosdroits/R42699"]]:[]),
+      src:"Arrêté du 3/12/2020 modifié (préavis 10 jours ouvrables depuis le 01/01/2026)"}); }
+  if(r.night||(+S.height>120)) out.push({k:"derog",t:"Préfet – dérogation (nuit / hauteur)",lv:"Obligatoire",due:md?addD(md,-30):null,delay:"30 jours",body:`Dérogation ${r.night?"pour le vol de nuit":""}${r.night&&S.height>120?" et ":""}${S.height>120?"pour une hauteur > 120 m":""} : formulaire R5-UAS-DEROG.`,acts:[],src:"Arrêté du 3/12/2020"});
+  const sh=r.sia||[]; const seenA={};
+  sh.filter(z=>z.restr!=="NO_RESTRICTION").forEach(z=>{ const a=z.auth[0]||{}; const kk="sia:"+(a.name||z.name); if(seenA[kk]) return; seenA[kk]=1; const days=a.days;
+    out.push({k:kk,t:a.name||z.name,lv:z.restr==="PROHIBITED"?"Interdit sauf accord":z.restr==="REQ_AUTHORISATION"?"Obligatoire":"Conditions",due:md?(days?addD(md,-Math.ceil(days)):ouvresAvant(md,5)):null,delay:days?`${Math.ceil(days)} jours (publié)`:"J-5 ouvrés (conseillé)",
+      body:`${z.name} : ${(RESTR[z.restr]||[z.restr])[0]}${z.msg?" – "+z.msg.slice(0,300):""}`,acts:[a.email?["E-mail : "+a.email,"mailto:"+a.email]:null,a.phone?["☎ "+a.phone,"tel:"+a.phone.replace(/\s/g,"")]:null,a.url?["Site du gestionnaire",a.url]:null].filter(Boolean),src:`Zones géographiques UAS du SIA${SIA.date?" (en vigueur au "+SIA.date.split("-").reverse().join("/")+")":""}`}); });
+  if(!sh.length){ r.ads.filter(x=>x.d<10000&&x.a[4]!=="A"||x.d<3000).slice(0,2).forEach(x=>out.push({k:"ad:"+x.a[0],t:`${x.a[1]} (${x.a[0]})`,lv:"À vérifier",due:md?ouvresAvant(md,5):null,delay:"J-5 ouvrés (conseillé)",body:`Aérodrome à ${fmtD(x.d)} : accord de l'organisme de la circulation aérienne probable. Charge le fichier des zones UAS du SIA pour obtenir la zone exacte et le contact.`,acts:[],src:"Base interne ZoneVol (indicative)"})); }
+  (r.zic||[]).forEach(z=>out.push({k:"zicad:"+z.name,t:"ZICAD – "+z.name,lv:"Interdit sauf dérogation",due:md?addD(md,-61):null,delay:"2 mois",body:"Captation de données (photo, vidéo, capteurs) interdite dans cette zone sauf dérogation.",acts:[["Demande de dérogation ZICAD","https://demarche.numerique.gouv.fr/commencer/derogation-zicad"]],src:"Arrêté du 17/11/2025 (ZICAD)"}));
+  if(ENV.st==="ok"&&ENV.roads.length&&(spec||m.e_ground)) out.push({k:"roads",t:"Routes dans la zone contrôlée au sol",lv:"À lire",due:null,delay:"",body:`${ENV.roads.slice(0,5).map(x=>x.name||x.nature).join(", ")} traversent la zone contrôlée au sol : aucune personne non impliquée ne doit s'y trouver pendant le vol. Prévoir la fermeture ou le contrôle de la voie avec la mairie.`,acts:[],src:"IGN BD TOPO"});
+  if(ENV.st==="ok"&&ENV.rails.some(x=>x.inCtrl)) out.push({k:"rail",t:"Gestionnaire ferroviaire",lv:"Obligatoire",due:md?ouvresAvant(md,10):null,delay:"conseillé J-10",body:"Une voie ferrée traverse la zone contrôlée au sol : accord du gestionnaire (SNCF Réseau ou autre).",acts:[],src:"IGN BD TOPO"});
+  if(m.e_park) out.push({k:"park",t:"Gestionnaire de l'espace protégé",lv:"Si besoin",due:null,delay:"",body:"Parc national, réserve, Natura 2000 : vérifier la réglementation de survol et demander l'accord du gestionnaire.",acts:[],src:""});
+  out.push({k:"mairie",t:`Mairie${m.m_commune?" – "+m.m_commune:""}`,lv:"Si besoin",due:null,delay:"Selon le lieu",body:"Si le décollage ou le balisage se fait sur l'espace public (rue, parc, stade municipal), ou pour un arrêté de circulation.",acts:[],src:""});
+  out.push({k:"proprio",t:"Propriétaire du terrain",lv:m.e_priv?"Obligatoire":"Si besoin",due:null,delay:"Selon le lieu",body:"Décollage, atterrissage ou balisage sur un terrain privé : accord écrit.",acts:[],src:""});
+  const rank={"Obligatoire":0,"Interdit sauf accord":0,"Interdit sauf dérogation":0,"Conditions":1,"À vérifier":1,"À lire":2,"Si besoin":3};
+  return out.sort((a,b)=>(a.due&&b.due)?a.due-b.due:a.due?-1:b.due?1:(rank[a.lv]-rank[b.lv])); }
+function renderDemarches(r){ const list=demarches(r), today=new Date(); today.setHours(0,0,0,0); S.steps=S.steps||{};
+  const req=list.filter(x=>!/Si besoin|À lire/.test(x.lv)); const first=req.find(x=>x.due&&(S.steps[x.k]||"À faire")==="À faire");
+  let h=`<div class="card" style="border-color:var(--acc)"><b style="font-size:15px">${req.length} démarche${req.length>1?"s":""} avant de voler</b>${first?`<p class="small" style="margin:4px 0 0">Commence par <b>${esc(first.t)}</b> : au plus tard le ${first.due.toLocaleDateString("fr-FR")}, ${Math.round((first.due-today)/864e5)>=0?"dans "+Math.round((first.due-today)/864e5)+" jours":"<span style='color:var(--red)'>délai dépassé</span>"}.</p>`:""}</div>`;
+  list.forEach((x,i)=>{ const st=S.steps[x.k]||"À faire"; const late=x.due&&x.due<today&&st==="À faire"; const col=/Obligatoire|Interdit/.test(x.lv)?"orange":x.lv==="À lire"?"blue":/Conditions|vérifier/.test(x.lv)?"orange":"blue";
+    h+=`<div class="sc"><div class="hd"><div><span class="small mono">${String(i+1).padStart(2,"0")}</span> <b>${esc(x.t)}</b><div class="small">${x.delay?esc(x.delay):""}${x.due?` · <b style="color:${late?"var(--red)":"inherit"}">jusqu'au ${x.due.toLocaleDateString("fr-FR")}</b>`:""}</div></div><span class="pill ${col}">${esc(x.lv)}</span></div>
+     <p class="small" style="margin:4px 0 8px">${esc(x.body)}</p>${x.acts.length?`<div class="row" style="margin-bottom:8px">${x.acts.map(a=>`<a class="btn sm" style="text-decoration:none" href="${esc(a[1])}" target="_blank" rel="noopener">${esc(a[0])}</a>`).join("")}</div>`:""}
+     ${/Si besoin|À lire/.test(x.lv)&&x.lv!=="Obligatoire"&&x.k!=="proprio"&&x.k!=="mairie"?"":`<div class="row">${DSTAT.map(s=>`<button class="btn sm ${s===st?"on":""}" data-dstep="${esc(x.k)}" data-dval="${s}">${s}</button>`).join("")}</div>`}
+     ${x.src?`<p class="small" style="margin:6px 0 0;font-size:11px">Source : ${esc(x.src)}</p>`:""}</div>`; });
+  return h; }
+document.addEventListener("click",e=>{ const b=e.target.closest("[data-dstep]"); if(!b) return; S.steps=S.steps||{}; S.steps[b.dataset.dstep]=b.dataset.dval; refresh(true); });
+
+// ---- Exports GeoJSON et plan PNG
+function geojson(){ const p=zonePoly(); if(!p) return null; const ring=a=>a.concat([a[0]]).map(q=>[+q[1].toFixed(7),+q[0].toFixed(7)]); const b=bands();
+  const fs=[{type:"Feature",properties:{role:"zone de vol",nom:S.m.m_name||"",hauteur_max_m:+S.height},geometry:{type:"Polygon",coordinates:[ring(p)]}},
+    {type:"Feature",properties:{role:"contingence",distance_m:b.cont},geometry:{type:"Polygon",coordinates:[ring(bufferPoly(p,b.cont))]}},
+    {type:"Feature",properties:{role:"zone tampon (zone contrôlée au sol)",distance_m:b.tot},geometry:{type:"Polygon",coordinates:[ring(bufferPoly(p,b.tot))]}}]
+    .concat((S.wps||[]).map(w=>({type:"Feature",properties:{role:w.t,intitule:w.n||""},geometry:{type:"Point",coordinates:[w.lon,w.lat]}})));
+  return JSON.stringify({type:"FeatureCollection",features:fs},null,1); }
+async function saveFile(fn,data,mime){ if(DL){ try{ await DL.save({filename:fn,data}); toast("Fichier enregistré"); return; }catch(e){ if(e&&e.code==="declined") return; } }
+  try{ const a=document.createElement("a"); a.href=URL.createObjectURL(data instanceof Blob?data:new Blob([data],{type:mime})); a.download=fn; document.body.appendChild(a); a.click(); a.remove(); }catch(e){ if(typeof data==="string") copyText(data); } }
+document.getElementById("dlGeo").onclick=()=>{ const g=geojson(); if(!g){toast("Trace d'abord une zone",true);return;} saveFile(`zone_${S.id}.json`,g,"application/json"); };
+document.getElementById("dlPng").onclick=async()=>{ const p=zonePoly(); if(!p){toast("Trace d'abord une zone",true);return;} const b=bands(); const outer=bufferPoly(p,b.tot);
+  const d=await mapImage({w:1800,h:1200,pts:outer.concat(S.wps.map(w=>[w.lat,w.lon])),poly:p,cont:bufferPoly(p,b.cont),buffer:outer,wps:S.wps,pad:.4}); const bl=await (await fetch(d)).blob(); saveFile(`plan_de_vol_${S.id}.jpg`,bl,"image/jpeg"); };
+
 /* ---- utilitaires UI ---- */
-function toast(t,err){ const el=document.getElementById("toast"); el.textContent=t; el.style.background=err?"var(--red)":"var(--grn)"; el.style.color=err?"#fff":"#04240f"; el.classList.add("show"); clearTimeout(el._t); el._t=setTimeout(()=>el.classList.remove("show"),2200); }
+function toast(t,err){ const el=document.getElementById("toast"); el.style.pointerEvents="none"; el.textContent=t; el.style.background=err?"var(--red)":"var(--grn)"; el.style.color=err?"#fff":"#04240f"; el.classList.add("show"); clearTimeout(el._t); el._t=setTimeout(()=>el.classList.remove("show"),2200); }
 function copyText(t){ const ok=()=>toast("Copié dans le presse-papiers"); try{ navigator.clipboard.writeText(t).then(ok).catch(()=>fallbackCopy(t)); }catch(e){ fallbackCopy(t); } }
 function fallbackCopy(t){ openModal(`<h2>Copier</h2><p class="small">La copie automatique est bloquée : sélectionne le texte ci-dessous puis copie-le.</p><textarea class="mono" style="width:100%;height:260px;background:#0b1626;border:1px solid var(--line);border-radius:8px;padding:8px">${esc(t)}</textarea><div class="row" style="margin-top:8px"><button class="btn" onclick="closeModal()">Fermer</button></div>`); const ta=mbox.querySelector("textarea"); ta.focus(); ta.select(); }
 let saveT; function save(silent){ clearTimeout(saveT); saveT=setTimeout(()=>{ S.updated=Date.now(); const i=MISSIONS.findIndex(x=>x.id===S.id); if(i>=0) MISSIONS[i]=S; else MISSIONS.unshift(S); renderMissions(); try{ localStorage.setItem("zonevol_missions",JSON.stringify({cur:S.id,list:MISSIONS})); if(!silent) toast("Mission enregistrée sur cet appareil"); }catch(e){ if(!silent) toast("Stockage local indisponible – utilise Exporter",true); } }, silent?400:0); }
@@ -1410,7 +1658,7 @@ document.getElementById("btnNew").onclick=()=>newMission();
 document.getElementById("tabs").addEventListener("click",e=>{ const b=e.target.closest(".tab"); if(!b) return; showTab(b.dataset.v); });
 
 /* ---- init ---- */
-renderFleet(); buildForm(); setMode(null); refresh(); renderMissions();
+renderFleet(); buildForm(); setMode(null); refresh(); renderMissions(); initSIA();
 const p0=zonePoly(); if(p0) map.fitBounds(L.latLngBounds(p0).pad(.4));
 setTimeout(()=>map.invalidateSize(),200);
 </script>

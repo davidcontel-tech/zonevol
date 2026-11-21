@@ -1,0 +1,1418 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ZoneVol UAS – Préparation de mission drone</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<style>
+/* ---- Leaflet minimal (inliné) ---- */
+.leaflet-pane,.leaflet-tile,.leaflet-marker-icon,.leaflet-marker-shadow,.leaflet-tile-container,.leaflet-pane>svg,.leaflet-pane>canvas,.leaflet-zoom-box,.leaflet-image-layer,.leaflet-layer{position:absolute;left:0;top:0}
+.leaflet-container{overflow:hidden;-webkit-tap-highlight-color:transparent;touch-action:none;outline:0}
+.leaflet-tile{visibility:hidden;user-select:none}.leaflet-tile-loaded{visibility:inherit}
+.leaflet-container img.leaflet-tile{max-width:none!important;max-height:none!important}
+.leaflet-zoom-animated{transform-origin:0 0}
+.leaflet-zoom-anim .leaflet-zoom-animated{transition:transform .25s cubic-bezier(0,0,.25,1)}
+.leaflet-zoom-anim .leaflet-tile,.leaflet-pan-anim .leaflet-tile{transition:none}
+.leaflet-pane{z-index:400}.leaflet-tile-pane{z-index:200}.leaflet-overlay-pane{z-index:400}.leaflet-shadow-pane{z-index:500}.leaflet-marker-pane{z-index:600}.leaflet-tooltip-pane{z-index:650}.leaflet-popup-pane{z-index:700}
+.leaflet-pane>svg path{pointer-events:none}.leaflet-pane>svg path.leaflet-interactive{pointer-events:visiblePainted;pointer-events:auto}
+.leaflet-interactive{cursor:pointer}.leaflet-grab{cursor:grab}.leaflet-dragging .leaflet-grab{cursor:grabbing}
+.leaflet-marker-icon{display:block}
+.leaflet-control{position:relative;z-index:800;pointer-events:auto;float:left;clear:both}
+.leaflet-top,.leaflet-bottom{position:absolute;z-index:1000;pointer-events:none}.leaflet-top{top:0}.leaflet-right{right:0}.leaflet-bottom{bottom:0}.leaflet-left{left:0}
+.leaflet-right .leaflet-control{float:right}.leaflet-top .leaflet-control{margin-top:10px}.leaflet-bottom .leaflet-control{margin-bottom:10px}.leaflet-left .leaflet-control{margin-left:10px}.leaflet-right .leaflet-control{margin-right:10px}
+.leaflet-bar{border-radius:8px;overflow:hidden;box-shadow:0 2px 8px rgba(0,0,0,.35)}
+.leaflet-bar a{display:block;width:34px;height:34px;line-height:34px;text-align:center;text-decoration:none;background:#14233a;color:#e6eefb;font:600 18px Inter,sans-serif;border-bottom:1px solid #22385a}
+.leaflet-bar a:last-child{border-bottom:0}.leaflet-bar a:hover{background:#1d3252}
+.leaflet-control-attribution{background:rgba(10,20,35,.75);color:#8aa0c0;font-size:10px;padding:2px 6px;margin:0!important}
+.leaflet-control-attribution a{color:#9fc1ff}
+.leaflet-control-scale-line{border:2px solid #8aa0c0;border-top:0;color:#cfe0ff;font-size:11px;padding:0 5px;background:rgba(10,20,35,.6)}
+.leaflet-popup{position:absolute;text-align:center;margin-bottom:20px}
+.leaflet-popup-content-wrapper{padding:1px;text-align:left;border-radius:10px;background:#14233a;color:#e6eefb;box-shadow:0 3px 14px rgba(0,0,0,.5)}
+.leaflet-popup-content{margin:10px 14px;line-height:1.35;font-size:13px;min-width:160px}
+.leaflet-popup-tip-container{width:40px;height:20px;position:absolute;left:50%;margin-top:-1px;margin-left:-20px;overflow:hidden;pointer-events:none}
+.leaflet-popup-tip{width:17px;height:17px;padding:1px;margin:-10px auto 0;transform:rotate(45deg);background:#14233a}
+.leaflet-popup-close-button{position:absolute;top:2px;right:6px;color:#8aa0c0;text-decoration:none;font:18px/22px sans-serif}
+.leaflet-tooltip{position:absolute;padding:3px 7px;background:#0b1626;color:#e6eefb;border:1px solid #2a4570;border-radius:5px;white-space:nowrap;pointer-events:none;font-size:11px}
+.leaflet-tooltip-top:before,.leaflet-tooltip-bottom:before,.leaflet-tooltip-left:before,.leaflet-tooltip-right:before{display:none}
+
+/* ---- App ---- */
+:root{--bg:#0a1322;--panel:#0f1b2e;--card:#14233a;--line:#22385a;--txt:#e6eefb;--mut:#8aa0c0;--acc:#3d8bfd;--acc2:#22d3ee;--red:#f2545b;--ora:#f5a524;--grn:#2fbf71;--blu:#5aa9ff}
+*{box-sizing:border-box}
+html,body{margin:0;height:100%;background:var(--bg);color:var(--txt);font-family:Inter,system-ui,sans-serif;font-size:14px}
+button,input,select,textarea{font:inherit;color:inherit}
+header{height:52px;display:flex;align-items:center;gap:12px;padding:0 14px;background:#08101d;border-bottom:1px solid var(--line)}
+.logo{display:flex;align-items:center;gap:8px;font-weight:700;letter-spacing:.3px}
+.logo svg{width:26px;height:26px}
+.logo small{color:var(--mut);font-weight:500;margin-left:4px}
+header .sp{flex:1}
+header .mname{color:var(--mut);font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:40vw}
+.btn{background:var(--card);border:1px solid var(--line);border-radius:8px;padding:7px 12px;cursor:pointer;white-space:nowrap}
+.btn:hover{border-color:var(--acc)}
+.btn.pri{background:var(--acc);border-color:var(--acc);color:#fff}
+.btn.sm{padding:4px 9px;font-size:12px}
+.btn.on{background:var(--acc);border-color:var(--acc);color:#fff}
+main{display:grid;grid-template-columns:1fr 470px;height:calc(100% - 52px)}
+#mapwrap{position:relative;min-height:300px}
+#map{position:absolute;inset:0;background:radial-gradient(ellipse at 50% 40%,#10243f 0%,#0a1322 75%)}
+.tools{position:absolute;z-index:1001;top:10px;left:56px;right:10px;display:flex;flex-wrap:wrap;gap:6px;pointer-events:none}
+.tools>*{pointer-events:auto}
+.tools .btn{background:rgba(20,35,58,.95);box-shadow:0 2px 8px rgba(0,0,0,.35)}
+.hint{position:absolute;z-index:1001;bottom:28px;left:50%;transform:translateX(-50%);background:rgba(8,16,29,.92);border:1px solid var(--line);padding:7px 12px;border-radius:8px;font-size:12px;color:var(--mut);max-width:90%;text-align:center}
+.hint b{color:var(--txt)}
+.legend{position:absolute;z-index:1001;bottom:28px;right:10px;background:rgba(8,16,29,.9);border:1px solid var(--line);border-radius:8px;padding:7px 10px;font-size:11px;color:var(--mut);line-height:1.7}
+.layers{position:absolute;z-index:1001;top:52px;right:10px;background:rgba(8,16,29,.92);border:1px solid var(--line);border-radius:8px;padding:8px 10px;font-size:12px;display:flex;flex-direction:column;gap:3px;max-width:220px}
+.layers b{font-size:11px;text-transform:uppercase;color:var(--mut);letter-spacing:.5px}
+.layers label{display:flex;gap:6px;align-items:center;cursor:pointer}
+.layers input{accent-color:var(--acc)}
+.legend i.sq{border-radius:2px}
+.offmap{position:absolute;z-index:1002;top:50px;left:50%;transform:translateX(-50%);width:min(440px,90%);background:rgba(8,16,29,.96);border:1px solid var(--ora);border-radius:10px;padding:12px 14px;font-size:12.5px;line-height:1.5;color:#e6eefb;display:none;box-shadow:0 6px 24px rgba(0,0,0,.5)}
+.offmap b{color:var(--ora)}
+.offmap button{float:right;margin-left:8px}
+.legend i{display:inline-block;width:10px;height:10px;border-radius:50%;margin-right:6px;vertical-align:-1px}
+#panel{background:var(--panel);border-left:1px solid var(--line);display:flex;flex-direction:column;min-height:0}
+.tabs{display:flex;overflow-x:auto;border-bottom:1px solid var(--line);scrollbar-width:none;flex-shrink:0}
+.tabs::-webkit-scrollbar{display:none}
+.tab{padding:11px 12px;cursor:pointer;color:var(--mut);white-space:nowrap;border-bottom:2px solid transparent;font-weight:500;font-size:13px;background:none;border-top:0;border-left:0;border-right:0}
+.tab.act{color:var(--txt);border-bottom-color:var(--acc)}
+.tab .n{display:inline-grid;place-items:center;width:18px;height:18px;border-radius:50%;background:var(--card);font-size:10px;margin-right:5px}
+.tab.act .n{background:var(--acc)}
+.view{display:none;overflow-y:auto;padding:14px;flex:1}
+.view.act{display:block}
+h2{font-size:16px;margin:2px 0 10px}
+h3{font-size:13px;text-transform:uppercase;letter-spacing:.6px;color:var(--mut);margin:18px 0 8px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:12px;margin-bottom:10px}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.fld{display:flex;flex-direction:column;gap:4px;margin-bottom:8px}
+.fld label{font-size:12px;color:var(--mut)}
+.fld input,.fld select,.fld textarea{background:#0b1626;border:1px solid var(--line);border-radius:7px;padding:8px 9px;width:100%}
+.fld textarea{min-height:64px;resize:vertical}
+.fld input:focus,.fld select:focus,.fld textarea:focus{outline:none;border-color:var(--acc)}
+.chk{display:flex;gap:8px;align-items:flex-start;margin:6px 0;font-size:13px;cursor:pointer}
+.chk input{margin-top:2px;accent-color:var(--acc)}
+.mchk{background:#0b1626;border:1px solid var(--line);border-radius:7px;padding:4px 9px}
+.stat{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.stat div{background:#0b1626;border:1px solid var(--line);border-radius:8px;padding:8px}
+.stat b{display:block;font-size:16px}
+.stat span{font-size:11px;color:var(--mut)}
+.cst{display:flex;gap:10px;padding:10px;border-radius:9px;background:var(--card);border:1px solid var(--line);margin-bottom:8px;border-left:4px solid var(--blu)}
+.cst.red{border-left-color:var(--red)}.cst.orange{border-left-color:var(--ora)}.cst.green{border-left-color:var(--grn)}
+.cst .ic{font-size:16px;line-height:1.2}
+.cst b{display:block;margin-bottom:2px}
+.cst p{margin:0;color:var(--mut);font-size:12.5px;line-height:1.45}
+.pill{display:inline-block;padding:2px 8px;border-radius:20px;font-size:11px;font-weight:600}
+.pill.red{background:rgba(242,84,91,.15);color:var(--red)}.pill.orange{background:rgba(245,165,36,.15);color:var(--ora)}.pill.green{background:rgba(47,191,113,.15);color:var(--grn)}.pill.blue{background:rgba(90,169,255,.15);color:var(--blu)}
+.mono{font-family:"JetBrains Mono",monospace;font-size:12px}
+pre.tpl{white-space:pre-wrap;background:#0b1626;border:1px solid var(--line);border-radius:8px;padding:10px;font-family:"JetBrains Mono",monospace;font-size:11.5px;line-height:1.45;max-height:320px;overflow:auto;margin:8px 0}
+.row{display:flex;gap:6px;flex-wrap:wrap;align-items:center}
+.steps{counter-reset:s;list-style:none;padding:0;margin:6px 0}
+.steps li{counter-increment:s;position:relative;padding:4px 0 8px 30px;font-size:13px;line-height:1.45;color:#cbd8ee}
+.steps li:before{content:counter(s);position:absolute;left:0;top:3px;width:20px;height:20px;border-radius:50%;background:var(--acc);display:grid;place-items:center;font-size:11px;font-weight:700;color:#fff}
+a{color:#7fb5ff}
+.lnk{display:flex;justify-content:space-between;align-items:center;padding:9px 10px;background:#0b1626;border:1px solid var(--line);border-radius:8px;margin-bottom:6px;text-decoration:none;color:var(--txt)}
+.lnk span{color:var(--mut);font-size:12px}
+.sc{border-radius:10px;border:1px solid var(--line);padding:12px;margin-bottom:10px;background:var(--card)}
+.sc .hd{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:6px}
+.sc .hd b{font-size:14px}
+.sc ul{margin:6px 0 0;padding-left:18px;color:#cbd8ee;font-size:12.5px;line-height:1.5}
+.sc ul li.ko{color:var(--red)}.sc ul li.ok{color:#9fe3bd}
+.small{font-size:12px;color:var(--mut);line-height:1.45}
+.warnbox{background:rgba(245,165,36,.08);border:1px solid rgba(245,165,36,.35);border-radius:9px;padding:10px;font-size:12px;color:#f3d39b;line-height:1.45;margin-bottom:10px}
+.toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:var(--grn);color:#04240f;padding:8px 14px;border-radius:8px;font-weight:600;z-index:5000;opacity:0;transition:opacity .2s;pointer-events:none}
+.toast.show{opacity:1}
+.modal{position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:4000;display:none;align-items:center;justify-content:center;padding:16px}
+.modal.show{display:flex}
+.modal .box{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:16px;width:min(520px,100%);max-height:90vh;overflow:auto}
+.vtx{width:12px;height:12px;border-radius:50%;background:#fff;border:3px solid var(--acc);box-shadow:0 0 0 2px rgba(0,0,0,.3)}
+.lbl-city{color:#6f86a8;font-size:10px;white-space:nowrap;text-shadow:0 0 3px #000}
+table.t{width:100%;border-collapse:collapse;font-size:12.5px}
+table.t td,table.t th{padding:6px 4px;border-bottom:1px solid var(--line);text-align:left;vertical-align:top}
+table.t th{color:var(--mut);font-weight:500}
+@media (max-width:900px){
+  main{grid-template-columns:1fr;grid-template-rows:48vh auto;height:auto}
+  #panel{border-left:0;border-top:1px solid var(--line)}
+  .view{overflow:visible}
+  header .mname{display:none}
+  .legend{display:none}
+  .layers{top:auto;bottom:8px;right:8px;font-size:11px;padding:6px 8px}
+  .tools{left:52px}
+  .tools .btn{padding:6px 9px;font-size:12px}
+}
+</style>
+</head>
+<body>
+<header>
+  <div class="logo">
+    <svg viewBox="0 0 32 32" fill="none"><circle cx="16" cy="16" r="14" stroke="#3d8bfd" stroke-width="2"/><path d="M16 6l3 8h8l-6.5 5 2.5 8L16 22l-7 5 2.5-8L5 14h8z" fill="#22d3ee" opacity=".9"/></svg>
+    ZoneVol <small>UAS</small>
+  </div>
+  <div class="mname" id="hdrName">Nouvelle mission</div>
+  <div class="sp"></div>
+  <button class="btn sm" id="btnNew">Nouvelle</button>
+  <button class="btn sm pri" id="btnSave">Enregistrer</button>
+</header>
+<main>
+  <div id="mapwrap">
+    <div id="map"></div>
+    <div class="tools">
+      <button class="btn sm" id="tPoly">✏️ Polygone</button>
+      <button class="btn sm" id="tCircle">⭕ Cercle</button>
+      <button class="btn sm" id="tUndo" title="Retirer le dernier point">↩︎</button>
+      <button class="btn sm" id="tDone">✔ Terminer</button>
+      <button class="btn sm" id="tWp">📌 Point</button>
+      <select class="btn sm" id="wpType" title="Type de point" style="width:auto;max-width:180px"><option>Décollage</option><option>Atterrissage</option><option>Télépilote</option><option>Atterrissage d'urgence</option><option>Observateur</option><option>Point d'intérêt</option></select>
+      <button class="btn sm" id="tClear">🗑</button>
+      <button class="btn sm" id="tGoto">📍 Aller à</button>
+      <button class="btn sm" id="tCoords">⌨︎ Coordonnées</button>
+    </div>
+    <div class="offmap" id="offmap"><button class="btn sm" onclick="this.parentNode.style.display='none'">OK</button><b>Carte officielle des restrictions non chargée.</b><br>Ce navigateur (ici l'aperçu Claude) bloque les cartes externes. Ouvre la <b>version hébergée</b> de l'outil : la carte de l'hexagone s'affiche alors avec les zones rouge, rose et jaunes de cartes.gouv.fr.</div>
+    <div class="hint" id="hint">Choisis <b>Polygone</b> ou <b>Cercle</b>, puis clique sur la carte pour découper ta zone de vol.</div>
+    <div class="layers" id="layersBox">
+      <b>Fond</b>
+      <label><input type="radio" name="base" value="plan" checked> Plan IGN</label>
+      <label><input type="radio" name="base" value="ortho"> Photo aérienne</label>
+      <label><input type="radio" name="base" value="osm"> OpenStreetMap</label>
+      <b style="margin-top:6px">Calques</b>
+      <label><input type="checkbox" id="lyUas" checked> Restrictions UAS (DGAC)</label>
+      <input type="range" id="lyUasOp" min="0.2" max="1" step="0.05" value="0.75">
+      <label><input type="checkbox" id="lyAd" checked> Aérodromes (base interne)</label>
+      <span class="small" id="layerState">Chargement…</span>
+    </div>
+    <div class="legend">
+      <b style="color:var(--txt);font-size:11px">Restrictions UAS (DGAC)</b>
+      <div><i class="sq" style="background:#e0262b"></i>Vol interdit</div>
+      <div><i class="sq" style="background:#f39bb0"></i>Hauteur max 30 m</div>
+      <div><i class="sq" style="background:#f5d000"></i>Hauteur max 50 m</div>
+      <div><i class="sq" style="background:#fbf3a6"></i>Hauteur max 100 m</div>
+      <div><i class="sq" style="background:transparent;border:1px solid #8aa0c0"></i>Sans couleur : 120 m max</div>
+      <b style="color:var(--txt);font-size:11px;margin-top:4px;display:block">Outil</b>
+      <div><i style="background:#3d8bfd"></i>Zone de vol</div>
+      <div><i style="background:#f5a524"></i>Aérodrome civil</div>
+      <div><i style="background:#c084fc"></i>Aérodrome militaire</div>
+      <div><i style="background:#22d3ee"></i>NOTAM saisi</div>
+    </div>
+  </div>
+  <aside id="panel">
+    <nav class="tabs" id="tabs">
+      <button class="tab act" data-v="list"><span class="n">☰</span>Missions</button>
+      <button class="tab" data-v="zone"><span class="n">1</span>Zone</button>
+      <button class="tab" data-v="mission"><span class="n">2</span>Mission</button>
+      <button class="tab" data-v="fleet"><span class="n">3</span>AlphaTango</button>
+      <button class="tab" data-v="cst"><span class="n">4</span>Contraintes</button>
+      <button class="tab" data-v="scn"><span class="n">5</span>Réglementation</button>
+      <button class="tab" data-v="auth"><span class="n">6</span>Autorisations</button>
+      <button class="tab" data-v="notam"><span class="n">7</span>NOTAM / SUP AIP</button>
+      <button class="tab" data-v="meteo"><span class="n">8</span>Météo</button>
+      <button class="tab" data-v="dos"><span class="n">9</span>Dossier de vol</button>
+    </nav>
+
+    <!-- MISSIONS -->
+    <section class="view act" id="v-list">
+      <div class="row" style="justify-content:space-between;margin-bottom:10px"><h2 style="margin:0">Mes missions</h2><button class="btn pri sm" id="btnCreate">+ Créer une mission</button></div>
+      <div class="fld"><input id="mSearch" placeholder="Rechercher une mission…"></div>
+      <div id="mList"></div>
+    </section>
+
+    <!-- 1 ZONE -->
+    <section class="view" id="v-zone">
+      <h2>Zone de vol</h2>
+      <div class="stat" id="zoneStats">
+        <div><b id="sArea">–</b><span>Surface</span></div>
+        <div><b id="sPer">–</b><span>Périmètre</span></div>
+        <div><b id="sPts">0</b><span>Sommets</span></div>
+      </div>
+      <h3>Centre de la zone</h3>
+      <div class="card mono" id="zCenter">Aucune zone tracée</div>
+      <div class="grid2">
+        <div class="fld"><label>Zone tampon / contingence (m)</label><input type="number" id="bufferIn" min="0" step="5" value="30"></div>
+        <div class="fld"><label>Hauteur max (m sol)</label><input type="number" id="heightIn" min="0" max="500" step="5" value="120"></div>
+      </div>
+      <h3>Sommets</h3>
+      <div class="card" id="zVerts"><span class="small">Les sommets apparaîtront ici. Tu peux les déplacer sur la carte en les faisant glisser.</span></div>
+      <h3>Points de passage / contexte</h3>
+      <div class="card" id="wpBox"><span class="small">Bouton <b>📌 Point</b> : choisis le type (décollage, télépilote, atterrissage d'urgence…) puis clique sur la carte.</span></div>
+      <h3>Ouvrir la zone dans…</h3>
+      <div id="zLinks"><span class="small">Trace une zone pour obtenir les liens.</span></div>
+      <div class="warnbox" id="tileWarn" style="display:none">Dans l'aperçu Claude, le navigateur bloque les images et requêtes vers des sites extérieurs : le Plan IGN, la couche <b>Restrictions UAS</b> et l'analyse automatique des zones DGAC ne peuvent pas s'afficher ici. Tu vois un fond simplifié. <b>Une fois le fichier hébergé sur ton propre site</b> (GitHub Pages, Netlify, serveur web…), la carte officielle s'affiche dès l'ouverture.</div>
+    </section>
+
+    <!-- 2 MISSION -->
+    <section class="view" id="v-mission">
+      <h2>Informations de vol</h2>
+      <div id="missionForm"></div>
+    </section>
+
+    <!-- ALPHATANGO -->
+    <section class="view" id="v-fleet">
+      <h2>Exploitant & flotte (AlphaTango)</h2>
+      <div id="fleetBox"></div>
+    </section>
+
+    <!-- 3 CONTRAINTES -->
+    <section class="view" id="v-cst">
+      <h2>Contraintes de la zone</h2>
+      <div class="warnbox">Analyse indicative calculée à partir d'une base embarquée (aérodromes principaux, sites sensibles) et de tes saisies. Elle ne remplace pas la carte officielle des restrictions UAS (cartes.gouv.fr), la carte VAC ni la consultation NOTAM / SUP AIP.</div>
+      <div id="cstList"></div>
+    </section>
+
+    <!-- 4 AUTORISATIONS -->
+    <section class="view" id="v-auth">
+      <h2>À qui demander l'autorisation ?</h2>
+      <div id="authList"></div>
+    </section>
+
+    <!-- 5 NOTAM -->
+    <section class="view" id="v-notam">
+      <h2>NOTAM & SUP AIP</h2>
+      <h3>Sources officielles</h3>
+      <a class="lnk" href="https://sofia-briefing.aviation-civile.gouv.fr" target="_blank" rel="noopener">SOFIA Briefing – NOTAM & dossiers de vol <span>DGAC ↗</span></a>
+      <a class="lnk" href="https://www.sia.aviation-civile.gouv.fr" target="_blank" rel="noopener">SIA – eAIP, SUP AIP, AIC, cartes VAC <span>SIA ↗</span></a>
+      <a class="lnk" href="https://cartes.gouv.fr/explorer-les-cartes/" target="_blank" rel="noopener">Carte des restrictions UAS <span>cartes.gouv.fr ↗</span></a>
+      <a class="lnk" href="https://aviation.meteo.fr" target="_blank" rel="noopener">Météo aéronautique <span>Météo-France ↗</span></a>
+      <h3>Coller des NOTAM</h3>
+      <p class="small">Colle un ou plusieurs NOTAM bruts (copiés depuis SOFIA). La ligne <b>Q)</b> est lue pour placer le cercle sur la carte et vérifier s'il touche ta zone. Sépare les NOTAM par une ligne vide.</p>
+      <div class="fld"><textarea id="notamIn" rows="6" placeholder="LFFA-R1234/26&#10;Q) LFFF/QRTCA/IV/BO/W/000/035/4851N00221E003&#10;A) LFFF B) 2611250800 C) 2611251700&#10;E) ZONE REGLEMENTEE TEMPORAIRE ..."></textarea></div>
+      <div class="row"><button class="btn pri sm" id="notamParse">Analyser les NOTAM</button><button class="btn sm" id="notamClear">Effacer</button></div>
+      <div id="notamList" style="margin-top:10px"></div>
+      <h3>SUP AIP à prendre en compte</h3>
+      <div class="grid2">
+        <div class="fld"><label>N° SUP AIP</label><input id="supNum" placeholder="ex. 123/26"></div>
+        <div class="fld"><label>Validité</label><input id="supVal" placeholder="du … au …"></div>
+      </div>
+      <div class="fld"><label>Objet / impact sur la mission</label><input id="supObj" placeholder="ex. ZRT exercice militaire, activation H24…"></div>
+      <button class="btn sm" id="supAdd">+ Ajouter le SUP AIP</button>
+      <div id="supList" style="margin-top:10px"></div>
+      <h3>Ajouter une zone réglementée manuelle (P / R / D / ZRT / ZICAD)</h3>
+      <div class="grid2">
+        <div class="fld"><label>Nom</label><input id="czName" placeholder="ex. R 45 A"></div>
+        <div class="fld"><label>Type</label><select id="czType"><option>P</option><option>R</option><option>D</option><option>ZRT</option><option>ZICAD</option><option>Autre</option></select></div>
+        <div class="fld"><label>Centre (lat, lon)</label><input id="czCenter" placeholder="48.85, 2.35"></div>
+        <div class="fld"><label>Rayon (km)</label><input id="czRad" type="number" step="0.1" value="2"></div>
+      </div>
+      <button class="btn sm" id="czAdd">+ Ajouter la zone</button>
+      <div id="czList" style="margin-top:10px"></div>
+      <h3>Check-list information aéronautique</h3>
+      <div id="aeroChecks"></div>
+    </section>
+
+    <!-- 6 SCENARIOS -->
+    <section class="view" id="v-scn">
+      <h2>Réglementation – scénarios de vol</h2>
+      <p class="small">Évalués à partir de la fiche mission (classe du drone, masse, vue directe, hauteur, environnement). Les scénarios nationaux S-1, S-2, S-3 ne sont plus utilisables depuis le 1er janvier 2026 : seuls la catégorie Ouverte, les STS européens et les autorisations (PDRA / SORA) restent possibles.</p>
+      <div id="scnList"></div>
+    </section>
+
+    <!-- METEO -->
+    <section class="view" id="v-meteo">
+      <h2>Météo</h2>
+      <div class="grid2"><div class="fld"><label>Vent max supporté par le drone (km/h)</label><input type="number" id="windLim" value="38"></div><div class="fld"><label>&nbsp;</label><button class="btn sm" id="meteoGo">↻ Actualiser</button></div></div>
+      <div id="meteoBox"><p class="small">Trace une zone pour obtenir les prévisions horaires (Open-Meteo, 16 jours).</p></div>
+    </section>
+
+    <!-- 7 DOSSIER -->
+    <section class="view" id="v-dos">
+      <h2>Dossier de vol</h2>
+      <div class="card"><b>Dossier de vol PDF</b><p class="small">Document complet de la mission : vue d'ensemble, déclarant, télépilote, machines, classification réglementaire, contraintes détaillées, autorisations, information aéronautique, météo et points de passage – avec cartes.</p>
+        <div class="row"><button class="btn pri" id="pdfGo">📄 Générer le dossier de vol (PDF)</button><span class="small" id="pdfState"></span></div></div>
+      <h3>Autres exports</h3>
+      <div class="row" style="margin-bottom:10px">
+        <button class="btn pri sm" id="copySum">Copier le résumé</button>
+        <button class="btn sm" id="copyKml">Copier le KML</button>
+        <button class="btn sm" id="dlKml">Télécharger KML</button>
+        <button class="btn sm" id="copyJson">Exporter (JSON)</button>
+        <button class="btn sm" id="impJson">Importer</button>
+      </div>
+      <p class="small">Les préfectures demandent souvent un fichier KML/KMZ de la zone. Si le téléchargement est bloqué dans cet aperçu, copie le KML et colle-le dans un fichier <span class="mono">zone.kml</span>.</p>
+      <pre class="tpl" id="sumOut"></pre>
+    </section>
+  </aside>
+</main>
+
+<div class="modal" id="modal"><div class="box" id="modalBox"></div></div>
+<div class="toast" id="toast"></div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
+<script>
+/* =========================================================
+   DONNÉES DE RÉFÉRENCE
+   ========================================================= */
+// Contacts drones des préfectures (DGAC, « Contacts drones préfectures », 25/04/2025 – tableau en cours de constitution)
+const DEPTS = [
+["01","Ain","pref-manifestations-aeriennes@ain.gouv.fr",46.205,5.226],
+["02","Aisne","pref-bureau-reglementation@aisne.gouv.fr",49.564,3.620],
+["03","Allier","pref-declaration-drones@allier.gouv.fr",46.566,3.333],
+["04","Alpes-de-Haute-Provence","pref-declaration-drones@alpes-de-haute-provence.gouv.fr",44.092,6.236],
+["05","Hautes-Alpes","pref-declaration-drones@hautes-alpes.gouv.fr",44.559,6.079],
+["06","Alpes-Maritimes","pref-aeronautique@alpes-maritimes.gouv.fr",43.710,7.262],
+["07","Ardèche","pref-elections@ardeche.gouv.fr",44.735,4.599],
+["08","Ardennes","pref-drones@ardennes.gouv.fr",49.773,4.720],
+["09","Ariège","pref-drones@ariege.gouv.fr",42.965,1.607],
+["10","Aube","pref-declaration-drones@aube.gouv.fr",48.297,4.074],
+["11","Aude","pref-drones@aude.gouv.fr",43.212,2.353],
+["12","Aveyron","pref-declaration-drones@aveyron.gouv.fr",44.350,2.575],
+["13","Bouches-du-Rhône","pref-autorisations-aeriennes@bouches-du-rhone.gouv.fr",43.296,5.370],
+["14","Calvados","pref-drones@calvados.gouv.fr",49.182,-0.370],
+["15","Cantal","pref-declaration-drones@cantal.gouv.fr",44.926,2.440],
+["16","Charente","pref-reglementation@charente.gouv.fr",45.648,0.156],
+["17","Charente-Maritime","pref-manifestations-aeriennes@charente-maritime.gouv.fr",46.160,-1.151],
+["18","Cher","pref-drones@cher.gouv.fr",47.081,2.399],
+["19","Corrèze","pref-declaration-drones@correze.gouv.fr",45.267,1.771],
+["2A","Corse-du-Sud","pref-demande-survol@corse-du-sud.gouv.fr",41.919,8.739],
+["2B","Haute-Corse","pref-declaration-drones@haute-corse.gouv.fr",42.697,9.451],
+["21","Côte-d'Or","pref-drone@cote-dor.gouv.fr",47.322,5.041],
+["22","Côtes-d'Armor","pref-policedelair@cotes-darmor.gouv.fr",48.514,-2.765],
+["23","Creuse","pref-travail-aerien@creuse.gouv.fr",46.171,1.871],
+["24","Dordogne","pref-aeronautique@dordogne.gouv.fr",45.184,0.721],
+["25","Doubs","pref-polices-administratives@doubs.gouv.fr",47.238,6.024],
+["26","Drôme","pref-declaration-drones@drome.gouv.fr",44.933,4.892],
+["27","Eure","pref-aerien@eure.gouv.fr",49.024,1.151],
+["28","Eure-et-Loir","pref-manifestations-aeriennes@eure-et-loir.gouv.fr",48.446,1.489],
+["29","Finistère","sp-brest-activites-aeriennes@finistere.gouv.fr",47.996,-4.102],
+["30","Gard","pref-declaration-drones@gard.gouv.fr",43.837,4.360],
+["31","Haute-Garonne","pref-declaration-drones@haute-garonne.gouv.fr",43.605,1.444],
+["32","Gers","pref-drones@gers.gouv.fr",43.646,0.586],
+["33","Gironde","pref-declaration-drones@gironde.gouv.fr",44.838,-0.579],
+["34","Hérault","pref-drones@herault.gouv.fr",43.611,3.877],
+["35","Ille-et-Vilaine","pref-drones@ille-et-vilaine.gouv.fr",48.117,-1.678],
+["36","Indre","pref-defense-protection-civile@indre.gouv.fr",46.811,1.687],
+["37","Indre-et-Loire","pref-drones@indre-et-loire.gouv.fr",47.394,0.685],
+["38","Isère","pref-declaration-drones@isere.gouv.fr",45.188,5.724],
+["39","Jura","pref-declaration-drones@jura.gouv.fr",46.675,5.555],
+["40","Landes","pref-drones@landes.gouv.fr",43.893,-0.500],
+["41","Loir-et-Cher","pref-bpas@loir-et-cher.gouv.fr",47.586,1.335],
+["42","Loire","pref-declaration-drones@loire.gouv.fr",45.440,4.387],
+["43","Haute-Loire","pref-drones@haute-loire.gouv.fr",45.043,3.885],
+["44","Loire-Atlantique","pref-drones@loire-atlantique.gouv.fr",47.218,-1.554],
+["45","Loiret","pref-manif-aerienne@loiret.gouv.fr",47.903,1.909],
+["46","Lot","pref-drones@lot.gouv.fr",44.448,1.441],
+["47","Lot-et-Garonne","pref-domaineaerien@lot-et-garonne.gouv.fr",44.203,0.616],
+["48","Lozère","pref-declaration-drones@lozere.gouv.fr",44.518,3.500],
+["49","Maine-et-Loire","pref-ide-reglementation-generale@maine-et-loire.gouv.fr",47.478,-0.563],
+["50","Manche","pref-manifestations-aeriennes@manche.gouv.fr",49.116,-1.091],
+["51","Marne","pref-drones@marne.gouv.fr",48.957,4.363],
+["52","Haute-Marne","pref-declaration-drones@haute-marne.gouv.fr",48.111,5.139],
+["53","Mayenne","pref-reglementation-generale@mayenne.gouv.fr",48.073,-0.770],
+["54","Meurthe-et-Moselle","pref-declaration-drones@meurthe-et-moselle.gouv.fr",48.692,6.184],
+["55","Meuse","pref-polices-administratives@meuse.gouv.fr",48.773,5.161],
+["56","Morbihan","pref-brvc@morbihan.gouv.fr",47.658,-2.760],
+["57","Moselle","pref-manifestations-aeriennes@moselle.gouv.fr",49.120,6.176],
+["58","Nièvre","pref-manifestations-sportives@nievre.gouv.fr",46.990,3.159],
+["59","Nord","pref-drones@nord.gouv.fr",50.629,3.057],
+["60","Oise","pref-reglementation@oise.gouv.fr",49.430,2.081],
+["61","Orne","ddt-aviation-civile@orne.gouv.fr",48.432,0.091],
+["62","Pas-de-Calais","pref-drones@pas-de-calais.gouv.fr",50.291,2.777],
+["63","Puy-de-Dôme","pref-manif-sport-63@puy-de-dome.gouv.fr",45.778,3.087],
+["64","Pyrénées-Atlantiques","pref-declaration-drones@pyrenees-atlantiques.gouv.fr",43.295,-0.371],
+["65","Hautes-Pyrénées","pref-drones@hautes-pyrenees.gouv.fr",43.233,0.078],
+["66","Pyrénées-Orientales","pref-declaration-drones@pyrenees-orientales.gouv.fr",42.699,2.895],
+["67","Bas-Rhin","pref-drones@bas-rhin.gouv.fr",48.573,7.752],
+["68","Haut-Rhin","pref-declaration-drones@haut-rhin.gouv.fr",48.079,7.358],
+["69","Rhône","pref-manifestationsportive@rhone.gouv.fr",45.764,4.836],
+["70","Haute-Saône","pref-declaration-drones@haute-saone.gouv.fr",47.622,6.155],
+["71","Saône-et-Loire","pref-defense-protection-civile@saone-et-loire.gouv.fr",46.307,4.828],
+["72","Sarthe","pref-epreuves-sportives@sarthe.gouv.fr",48.006,0.199],
+["73","Savoie","pref-drone@savoie.gouv.fr",45.564,5.918],
+["74","Haute-Savoie","pref-declaration-drones@haute-savoie.gouv.fr",45.899,6.129],
+["75","Paris (Préfecture de police)","pp-cabinet-sdc-bvp-circul@interieur.gouv.fr",48.857,2.352],
+["76","Seine-Maritime","pref-rouen-aerien@seine-maritime.gouv.fr",49.443,1.100],
+["77","Seine-et-Marne","pref-drones@seine-et-marne.gouv.fr",48.540,2.661],
+["78","Yvelines","pref-police-aerienne@yvelines.gouv.fr",48.801,2.130],
+["79","Deux-Sèvres","pref-manifestations-aeriennes@deux-sevres.gouv.fr",46.323,-0.464],
+["80","Somme","pref-declaration-drones@somme.gouv.fr",49.894,2.296],
+["81","Tarn","pref-epreuves-sportives@tarn.gouv.fr",43.929,2.148],
+["82","Tarn-et-Garonne","pref-declaration-drones@tarn-et-garonne.gouv.fr",44.018,1.355],
+["83","Var","pref-aeronautique@var.gouv.fr",43.124,5.928],
+["84","Vaucluse","pref-declaration-drones@vaucluse.gouv.fr",43.949,4.806],
+["85","Vendée","emmanuel.poisblaud@vendee.gouv.fr",46.670,-1.426],
+["86","Vienne","pref-aerien@vienne.gouv.fr",46.580,0.340],
+["87","Haute-Vienne","pref-aerien@haute-vienne.gouv.fr",45.834,1.262],
+["88","Vosges","pref-drones@vosges.gouv.fr",48.173,6.450],
+["89","Yonne","pref-pole-securite-publique@yonne.gouv.fr",47.798,3.567],
+["90","Territoire de Belfort","pref-declaration-drones@territoire-de-belfort.gouv.fr",47.638,6.863],
+["91","Essonne","pref-reglementation-etampes@essonne.gouv.fr",48.629,2.441],
+["92","Hauts-de-Seine","pref-survol@hauts-de-seine.gouv.fr",48.892,2.207],
+["93","Seine-Saint-Denis","pref-manifvp-aerien@seine-saint-denis.gouv.fr",48.909,2.440],
+["94","Val-de-Marne","pref-police-administrative@val-de-marne.gouv.fr",48.790,2.455],
+["95","Val-d'Oise","pref-police-aerienne@val-doise.gouv.fr",49.036,2.076],
+["971","Guadeloupe","police-administrative@guadeloupe.pref.gouv.fr",null,null],
+["972","Martinique","reglementation@martinique.pref.gouv.fr",null,null],
+["973","Guyane","emzd@guyane.pref.gouv.fr",null,null],
+["974","La Réunion","drones@reunion.pref.gouv.fr",null,null],
+["975","Saint-Pierre-et-Miquelon","cabinet@spm975.gouv.fr",null,null],
+["976","Mayotte","defense-protection-civile@mayotte.pref.gouv.fr",null,null],
+["977","Saint-Barthélemy","reglementation@saint-barth-saint-martin.gouv.fr",null,null],
+["978","Saint-Martin","reglementation@saint-barth-saint-martin.gouv.fr",null,null],
+["987","Polynésie française","cab-polesecurite@polynesie-francaise.pref.gouv.fr",null,null],
+["988","Nouvelle-Calédonie","ordrepublic988@nouvelle-caledonie.gouv.fr",null,null],
+["PM","Préfecture maritime de la Manche","cabinet@premar-manche.gouv.fr",null,null]
+];
+const DEPT_NOTES = {
+ "06":"La préfecture des Alpes-Maritimes a fermé sa démarche en ligne (avril 2026) : déclaration via AlphaTango en catégorie spécifique, ou CERFA 15476*04 par mail en catégorie ouverte.",
+ "75":"Paris relève de la Préfecture de police : démarche dédiée sur demarche.numerique.gouv.fr (« survol drone Paris ») avec pièces justificatives et mention des ZICAD."
+};
+
+// Aérodromes principaux (coordonnées ARP approchées). Type : C = civil contrôlé, A = civil (AFIS/non contrôlé), M = militaire
+const AD = [
+["LFPG","Paris-Charles de Gaulle",49.009,2.548,"C"],["LFPO","Paris-Orly",48.723,2.379,"C"],["LFPB","Paris-Le Bourget",48.969,2.441,"C"],
+["LFPN","Toussus-le-Noble",48.751,2.106,"C"],["LFPT","Pontoise-Cormeilles",49.097,2.041,"C"],["LFPM","Melun-Villaroche",48.605,2.671,"A"],
+["LFPV","Villacoublay-Vélizy",48.774,2.192,"M"],["LFPC","Creil",49.253,2.519,"M"],["LFOB","Beauvais-Tillé",49.454,2.113,"C"],
+["LFQQ","Lille-Lesquin",50.562,3.087,"C"],["LFAT","Le Touquet",50.517,1.621,"A"],["LFOP","Rouen-Vallée de Seine",49.384,1.175,"A"],
+["LFOH","Le Havre-Octeville",49.534,0.088,"A"],["LFRG","Deauville-Normandie",49.365,0.154,"C"],["LFRK","Caen-Carpiquet",49.173,-0.450,"C"],
+["LFOE","Évreux-Fauville",49.029,1.220,"M"],["LFRB","Brest-Bretagne",48.448,-4.418,"C"],["LFRJ","Landivisiau",48.530,-4.152,"M"],
+["LFRL","Lanvéoc-Poulmic",48.282,-4.445,"M"],["LFRQ","Quimper-Pluguffan",47.975,-4.168,"A"],["LFRH","Lorient-Lann-Bihoué",47.760,-3.440,"M"],
+["LFRN","Rennes-Saint-Jacques",48.069,-1.734,"C"],["LFRD","Dinard-Pleurtuit",48.588,-2.080,"C"],["LFRT","Saint-Brieuc-Armor",48.538,-2.854,"A"],
+["LFRS","Nantes-Atlantique",47.157,-1.611,"C"],["LFRZ","Saint-Nazaire-Montoir",47.312,-2.149,"C"],["LFJR","Angers-Marcé",47.560,-0.312,"A"],
+["LFRM","Le Mans-Arnage",47.949,0.202,"A"],["LFOT","Tours-Val de Loire",47.432,0.728,"M"],["LFOJ","Orléans-Bricy",47.988,1.761,"M"],
+["LFLD","Bourges",47.058,2.370,"A"],["LFOA","Avord",47.053,2.633,"M"],["LFLX","Châteauroux-Déols",46.862,1.731,"C"],
+["LFBI","Poitiers-Biard",46.588,0.307,"C"],["LFBH","La Rochelle-Île de Ré",46.179,-1.195,"C"],["LFBG","Cognac-Châteaubernard",45.658,-0.318,"M"],
+["LFBL","Limoges-Bellegarde",45.861,1.180,"C"],["LFBD","Bordeaux-Mérignac",44.828,-0.716,"C"],["LFBC","Cazaux",44.533,-1.125,"M"],
+["LFBE","Bergerac-Dordogne",44.826,0.519,"A"],["LFBA","Agen-La Garenne",44.175,0.591,"A"],["LFBM","Mont-de-Marsan",43.912,-0.508,"M"],
+["LFBZ","Biarritz-Pays Basque",43.468,-1.523,"C"],["LFBP","Pau-Pyrénées",43.380,-0.419,"C"],["LFBT","Tarbes-Lourdes-Pyrénées",43.178,-0.006,"C"],
+["LFBO","Toulouse-Blagnac",43.629,1.364,"C"],["LFBF","Toulouse-Francazal",43.545,1.368,"C"],["LFCK","Castres-Mazamet",43.556,2.289,"A"],
+["LFCR","Rodez-Aveyron",44.408,2.483,"A"],["LFLW","Aurillac",44.891,2.421,"A"],["LFMK","Carcassonne",43.216,2.306,"C"],
+["LFMP","Perpignan-Rivesaltes",42.740,2.870,"C"],["LFMU","Béziers-Cap d'Agde",43.324,3.355,"A"],["LFMT","Montpellier-Méditerranée",43.576,3.963,"C"],
+["LFTW","Nîmes-Garons",43.757,4.416,"C"],["LFMV","Avignon-Provence",43.907,4.902,"C"],["LFMO","Orange-Caritat",44.140,4.867,"M"],
+["LFMI","Istres-Le Tubé",43.524,4.924,"M"],["LFMY","Salon-de-Provence",43.606,5.109,"M"],["LFML","Marseille-Provence",43.436,5.215,"C"],
+["LFTH","Toulon-Hyères",43.097,6.146,"M"],["LFMC","Le Luc-Le Cannet",43.385,6.387,"M"],["LFMD","Cannes-Mandelieu",43.542,6.953,"C"],
+["LFMN","Nice-Côte d'Azur",43.658,7.216,"C"],["LFKJ","Ajaccio-Napoléon Bonaparte",41.924,8.803,"C"],["LFKB","Bastia-Poretta",42.552,9.484,"C"],
+["LFKC","Calvi-Sainte-Catherine",42.530,8.793,"C"],["LFKF","Figari-Sud Corse",41.500,9.097,"C"],["LFKS","Solenzara",41.924,9.406,"M"],
+["LFLL","Lyon-Saint-Exupéry",45.726,5.091,"C"],["LFLY","Lyon-Bron",45.729,4.939,"C"],["LFMH","Saint-Étienne-Bouthéon",45.540,4.296,"C"],
+["LFLS","Grenoble-Alpes-Isère",45.363,5.329,"C"],["LFLB","Chambéry-Savoie",45.639,5.880,"C"],["LFLP","Annecy-Mont-Blanc",45.930,6.099,"A"],
+["LFLC","Clermont-Ferrand-Auvergne",45.786,3.169,"C"],["LFLV","Vichy-Charmeil",46.170,3.404,"A"],["LFHP","Le Puy-Loudes",45.081,3.763,"A"],
+["LFSD","Dijon-Longvic",47.269,5.090,"C"],["LFGJ","Dole-Jura",47.039,5.427,"A"],["LFSB","Bâle-Mulhouse",47.590,7.529,"C"],
+["LFGA","Colmar-Houssen",48.110,7.359,"A"],["LFST","Strasbourg-Entzheim",48.538,7.628,"C"],["LFSX","Luxeuil-Saint-Sauveur",47.783,6.364,"M"],
+["LFSO","Nancy-Ochey",48.583,5.955,"M"],["LFSN","Nancy-Essey",48.692,6.230,"A"],["LFJL","Metz-Nancy-Lorraine",48.982,6.251,"C"],
+["LFSI","Saint-Dizier-Robinson",48.636,4.899,"M"],["LFOK","Châlons-Vatry",48.776,4.206,"C"]
+];
+
+// Sites sensibles (rayons INDICATIFS – vérifier les zones P/R réelles sur carte)
+const SENS = [
+["Zone P 23 – Paris (approx.)",48.857,2.347,7.5],
+["CNPE Gravelines",51.015,2.136,5],["CNPE Penly",49.977,1.212,5],["CNPE Paluel",49.858,0.635,5],["CNPE Flamanville",49.536,-1.882,5],
+["Usine Orano La Hague",49.678,-1.879,5],["CNPE Chooz",50.090,4.790,5],["CNPE Cattenom",49.415,6.218,5],["CNPE Nogent-sur-Seine",48.515,3.518,5],
+["CNPE Dampierre",47.733,2.517,5],["CNPE Saint-Laurent",47.720,1.580,5],["CNPE Chinon",47.230,0.170,5],["CNPE Belleville",47.510,2.875,5],
+["CNPE Civaux",46.457,0.653,5],["CNPE Blayais",45.256,-0.693,5],["CNPE Golfech",44.106,0.845,5],["CNPE Bugey",45.798,5.271,5],
+["CNPE Saint-Alban",45.404,4.755,5],["CNPE Cruas",44.633,4.757,5],["CNPE Tricastin",44.330,4.732,5],["Site Marcoule",44.143,4.709,5]
+];
+
+// Contour simplifié de la France métropolitaine (fond hors-ligne)
+const FR = [[51.08,2.54],[50.95,1.85],[50.2,1.55],[49.95,1.2],[49.7,0.2],[49.45,0.1],[49.35,-0.1],[49.35,-0.9],[49.7,-1.25],[49.72,-1.95],[49.4,-1.85],[48.85,-1.55],[48.65,-1.4],[48.6,-2.0],[48.8,-3.0],[48.85,-3.6],[48.65,-4.5],[48.35,-4.75],[48.05,-4.6],[47.8,-4.2],[47.75,-3.5],[47.5,-3.1],[47.3,-2.5],[47.1,-2.2],[46.8,-2.15],[46.4,-1.8],[46.1,-1.15],[45.75,-1.25],[45.55,-1.1],[45.0,-1.2],[44.5,-1.25],[44.0,-1.35],[43.6,-1.45],[43.38,-1.78],[43.25,-1.4],[43.05,-0.75],[42.8,-0.3],[42.7,0.7],[42.6,1.45],[42.45,1.95],[42.45,2.65],[42.43,3.17],[42.8,3.05],[43.2,3.25],[43.45,3.65],[43.55,4.2],[43.35,4.8],[43.33,5.35],[43.1,5.8],[43.1,6.2],[43.2,6.7],[43.5,7.0],[43.7,7.3],[43.78,7.52],[44.15,7.65],[44.25,7.0],[44.6,6.9],[45.1,6.7],[45.3,7.1],[45.8,6.85],[46.1,6.9],[46.4,6.5],[46.25,6.1],[46.6,6.1],[47.0,6.7],[47.4,7.0],[47.5,7.5],[47.6,7.6],[48.1,7.6],[48.6,7.8],[48.97,8.2],[49.1,7.6],[49.15,6.85],[49.5,6.35],[49.5,5.8],[49.7,5.4],[49.9,4.85],[50.15,4.8],[49.98,4.15],[50.3,4.1],[50.45,3.6],[50.75,3.2],[50.8,2.65],[51.08,2.54]];
+const CORSE = [[43.0,9.4],[42.6,9.5],[42.0,9.45],[41.4,9.25],[41.4,9.05],[41.7,8.75],[42.1,8.6],[42.6,8.65],[43.0,9.35]];
+
+/* =========================================================
+   ÉTAT
+   ========================================================= */
+const FIELDS = [
+ {s:"Mission"},
+ {id:"m_name",l:"Nom de la mission",t:"text",ph:"ex. Inspection toiture – Mairie"},
+ {id:"m_client",l:"Client / donneur d'ordre",t:"text"},
+ {id:"m_type",l:"Activité",t:"select",o:["Audiovisuel / Publicité / Communication / Spectacle","Inspection / Surveillance d'ouvrages","Topographie / Cartographie / Photogrammétrie","Thermographie","BTP / Immobilier","Agriculture / Environnement","Événementiel","Sécurité / Secours","Formation / Entraînement","Recherche / Essais","Autre"]},
+ {id:"m_date",l:"Date du vol",t:"date",half:1},
+ {id:"m_date2",l:"Date de fin (si plusieurs jours)",t:"date",half:1},
+ {id:"m_start",l:"Heure début (locale)",t:"time",v:"09:00",half:1},
+ {id:"m_end",l:"Heure fin (locale)",t:"time",v:"12:00",half:1},
+ {id:"m_speed",l:"Vitesse max (km/h)",t:"number",v:"18",half:1},
+ {id:"m_dur",l:"Durée de vol totale (min)",t:"number",v:"60",half:1},
+ {id:"m_address",l:"Adresse / lieu-dit",t:"text"},
+ {id:"m_commune",l:"Commune",t:"text",half:1},
+ {id:"m_dept",l:"Département",t:"dept",half:1},
+ {id:"m_desc",l:"Description des opérations",t:"area"},
+ {s:"Exploitant & télépilote"},
+ {id:"m_pilot",l:"Télépilote (depuis l'onglet AlphaTango)",t:"fleetPilot"},
+ {id:"op_name",l:"Exploitant (société)",t:"text"},
+ {id:"op_resp",l:"Responsable",t:"text",half:1},
+ {id:"op_uas",l:"N° d'exploitant UAS (FRA…)",t:"text",half:1},
+ {id:"op_addr",l:"Adresse",t:"text"},
+ {id:"op_phone",l:"Téléphone",t:"text",half:1},
+ {id:"op_mail",l:"E-mail exploitant",t:"text",half:1},
+ {id:"op_docs",l:"Le déclarant atteste être en possession de :",t:"multi",o:["Manuel d'exploitation (MANEX)","Pièce d'identité","Attestation d'assurance RC","Extrait Kbis","Déclaration d'exploitant STS (accusé AlphaTango)","Autorisation d'exploitation DSAC"]},
+ {id:"pilot_name",l:"Télépilote",t:"text",half:1},
+ {id:"pilot_phone",l:"Téléphone joignable en vol",t:"text",half:1},
+ {id:"pilot_mail",l:"E-mail télépilote",t:"text"},
+ {id:"pilot_cert",l:"Pièces d'identité et compétences du télépilote",t:"multi",o:["Formation A1/A3 (en ligne)","Certificat A2","CATT (aptitude théorique télépilote)","CATS STS-01","CATS STS-02","Attestation de formation pratique STS-01","Attestation de formation pratique STS-02","Attestations pratiques S1 / S2 / S3 (anciennes)","Pièce d'identité"]},
+ {id:"insurance",l:"Assurance RC (assureur, n° police)",t:"text"},
+ {s:"Aéronef"},
+ {id:"m_uas",l:"Aéronef de la flotte AlphaTango",t:"fleetUas"},
+ {id:"d_reg",l:"N° d'enregistrement (UAS-FR-…)",t:"text"},
+ {id:"d_model",l:"Modèle",t:"text",ph:"ex. DJI Mavic 3 Enterprise",half:1},
+ {id:"d_serial",l:"N° de série",t:"text",half:1},
+ {id:"d_class",l:"Classe (marquage CE)",t:"select",o:["C0","C1","C2","C3","C4","C5","C6","Sans classe (ancien modèle)","Construction privée"],half:1},
+ {id:"d_mass",l:"Masse max au décollage (kg)",t:"number",v:"0.9",half:1},
+ {id:"d_vmax",l:"Vitesse max constructeur (km/h)",t:"number",half:1},
+ {id:"d_ridnum",l:"N° d'identification à distance",t:"text",half:1},
+ {id:"d_rid",l:"Signalement électronique (Remote ID) actif",t:"check",v:true},
+ {id:"d_equip",l:"Équipements additionnels",t:"multi",o:["Caméra","Caméra thermique","Capteur barométrique","Parachute avec alimentation indépendante","Coupe-circuit avec alimentation indépendante","Coupe-circuit sans alimentation indépendante","Dispositif d'identification lumineux","Feux de navigation / anticollision","Kit de classe C5"]},
+ {id:"m_uas2",l:"Machines complémentaires (flotte)",t:"fleetMulti"},
+ {s:"Volume de vol"},
+ {id:"v_vlos",l:"Mode de vol",t:"select",o:["VLOS – vue directe","EVLOS – avec observateurs","BVLOS – hors vue"]},
+ {id:"v_dist",l:"Distance max au télépilote (m)",t:"number",v:"500",half:1},
+ {id:"v_obs",l:"Nombre d'observateurs",t:"number",v:"0",half:1},
+ {s:"Environnement"},
+ {id:"e_pop",l:"Environnement",t:"select",o:["Hors zone peuplée","Zone peuplée (agglomération ou < 50 m)","Rassemblement de personnes (< 150 m)"]},
+ {id:"e_over",l:"Survol de personnes non impliquées",t:"check"},
+ {id:"e_ground",l:"Zone contrôlée au sol (périmètre balisé, accès interdit aux tiers)",t:"check"},
+ {id:"e_ctr",l:"Zone dans un espace aérien contrôlé (CTR/TMA vérifié sur carte)",t:"check"},
+ {id:"e_park",l:"Parc national / réserve naturelle / Natura 2000",t:"check"},
+ {id:"e_sens",l:"Site sensible / ZICAD / installation militaire à proximité",t:"check"},
+ {id:"e_priv",l:"Propriété privée (accord du propriétaire)",t:"check"},
+ {id:"e_infra",l:"Voie ferrée, autoroute ou ligne HT à proximité",t:"check"},
+ {id:"e_secu",l:"Mesures de sécurisation prévues",t:"area",ph:"Balisage, signaleurs, rubalise, arrêté municipal, horaires d'affluence…"}
+];
+
+function newId(){ return String(Math.floor(Date.now()/1000)%1000000+Math.floor(Math.random()*90+10)*1000000).slice(-6); }
+function norm(o){ const b=blank(); const s=Object.assign(b,o||{}); s.m=Object.assign(blank().m,(o&&o.m)||{}); ["pilot_cert","op_docs","d_equip","m_uas2"].forEach(k=>{ if(!Array.isArray(s.m[k])) s.m[k]=s.m[k]?[s.m[k]]:[]; }); if(!s.wps) s.wps=[]; return s; }
+let S = blank(), MISSIONS=[];
+function blank(){
+  const m={}; FIELDS.forEach(f=>{ if(f.id) m[f.id]= f.t==="check"? !!f.v : (f.v||(f.o?f.o[0]:"")); });
+  m.pilot_cert=["Formation A1/A3 (en ligne)"]; m.op_docs=[]; m.d_equip=[]; m.m_uas2=[];
+  return {id:newId(),status:"Brouillon",created:Date.now(),zone:{type:null,pts:[],center:null,radius:0},buffer:30,height:120,m,notams:[],sup:[],cz:[],checks:{},wps:[],scn:""};
+}
+try{ const ms=localStorage.getItem("zonevol_missions"); if(ms){ const o=JSON.parse(ms); MISSIONS=(o.list||[]).map(norm); S=MISSIONS.find(x=>x.id===o.cur)||MISSIONS[0]||blank(); }
+  else { const sv=localStorage.getItem("zonevol_v1"); if(sv){ S=norm(JSON.parse(sv)); } } }catch(e){}
+if(!MISSIONS.find(x=>x.id===S.id)) MISSIONS.unshift(S);
+function certs(){ return (S.m.pilot_cert||[]).join(", ")||"—"; }
+
+/* =========================================================
+   OUTILS GÉO
+   ========================================================= */
+const R=6371008.8, rad=Math.PI/180;
+function hav(a,b){const dφ=(b[0]-a[0])*rad,dλ=(b[1]-a[1])*rad;const x=Math.sin(dφ/2)**2+Math.cos(a[0]*rad)*Math.cos(b[0]*rad)*Math.sin(dλ/2)**2;return 2*R*Math.asin(Math.sqrt(x));}
+function bearing(a,b){const φ1=a[0]*rad,φ2=b[0]*rad,dλ=(b[1]-a[1])*rad;const y=Math.sin(dλ)*Math.cos(φ2),x=Math.cos(φ1)*Math.sin(φ2)-Math.sin(φ1)*Math.cos(φ2)*Math.cos(dλ);return (Math.atan2(y,x)/rad+360)%360;}
+function card16(b){return ["N","NNE","NE","ENE","E","ESE","SE","SSE","S","SSO","SO","OSO","O","ONO","NO","NNO"][Math.round(b/22.5)%16];}
+function proj(o){const k=Math.cos(o[0]*rad);return {f:p=>[(p[1]-o[1])*rad*R*k,(p[0]-o[0])*rad*R],i:q=>[o[0]+q[1]/R/rad,o[1]+q[0]/R/rad/k]};}
+function destPt(c,d,b){const δ=d/R,θ=b*rad,φ1=c[0]*rad,λ1=c[1]*rad;const φ2=Math.asin(Math.sin(φ1)*Math.cos(δ)+Math.cos(φ1)*Math.sin(δ)*Math.cos(θ));const λ2=λ1+Math.atan2(Math.sin(θ)*Math.sin(δ)*Math.cos(φ1),Math.cos(δ)-Math.sin(φ1)*Math.sin(φ2));return [φ2/rad,λ2/rad];}
+function circlePts(c,r,n=64){const a=[];for(let i=0;i<n;i++)a.push(destPt(c,r,i*360/n));return a;}
+function zonePoly(){ const z=S.zone; if(z.type==="circle"&&z.center) return circlePts(z.center,z.radius); if(z.type==="polygon"&&z.pts.length>=3) return z.pts; return null; }
+function centroid(p){let la=0,lo=0;p.forEach(q=>{la+=q[0];lo+=q[1]});return [la/p.length,lo/p.length];}
+function areaPer(p){const c=centroid(p),P=proj(c);const x=p.map(P.f);let a=0,per=0;for(let i=0;i<x.length;i++){const j=(i+1)%x.length;a+=x[i][0]*x[j][1]-x[j][0]*x[i][1];per+=Math.hypot(x[j][0]-x[i][0],x[j][1]-x[i][1]);}return {a:Math.abs(a)/2,per};}
+function hull(pts){pts=pts.slice().sort((a,b)=>a[0]-b[0]||a[1]-b[1]);const cr=(o,a,b)=>(a[0]-o[0])*(b[1]-o[1])-(a[1]-o[1])*(b[0]-o[0]);const lo=[],up=[];for(const p of pts){while(lo.length>=2&&cr(lo[lo.length-2],lo[lo.length-1],p)<=0)lo.pop();lo.push(p);}for(const p of pts.slice().reverse()){while(up.length>=2&&cr(up[up.length-2],up[up.length-1],p)<=0)up.pop();up.push(p);}return lo.slice(0,-1).concat(up.slice(0,-1));}
+function bufferPoly(p,d){ if(!d) return null; const c=centroid(p),P=proj(c);const s=[];p.forEach(q=>{const x=P.f(q);for(let i=0;i<24;i++){const t=i/24*2*Math.PI;s.push([x[0]+d*Math.cos(t),x[1]+d*Math.sin(t)]);}});return hull(s).map(P.i);}
+function inPoly(pt,poly){let ins=false;for(let i=0,j=poly.length-1;i<poly.length;j=i++){const xi=poly[i][1],yi=poly[i][0],xj=poly[j][1],yj=poly[j][0];if(((yi>pt[0])!==(yj>pt[0]))&&(pt[1]<(xj-xi)*(pt[0]-yi)/(yj-yi)+xi))ins=!ins;}return ins;}
+function distToPoly(pt,poly){ if(inPoly(pt,poly)) return 0; const P=proj(pt);const x=poly.map(P.f);let m=Infinity;for(let i=0;i<x.length;i++){const a=x[i],b=x[(i+1)%x.length];const dx=b[0]-a[0],dy=b[1]-a[1];let t=((-a[0])*dx+(-a[1])*dy)/(dx*dx+dy*dy||1);t=Math.max(0,Math.min(1,t));m=Math.min(m,Math.hypot(a[0]+t*dx,a[1]+t*dy));}return m;}
+function fmtD(m){return m<1000?Math.round(m)+" m":(m/1000).toFixed(m<10000?2:1)+" km";}
+function fmtA(a){return a<10000?Math.round(a)+" m²":a<1e6?(a/10000).toFixed(2)+" ha":(a/1e6).toFixed(2)+" km²";}
+function dms(v,isLat){const h=isLat?(v>=0?"N":"S"):(v>=0?"E":"W");v=Math.abs(v);const d=Math.floor(v),m=Math.floor((v-d)*60),s=((v-d)*60-m)*60;return `${d}°${String(m).padStart(2,"0")}'${s.toFixed(1).padStart(4,"0")}"${h}`;}
+function parseLL(str){ str=str.trim();
+  const dm=str.match(/(\d+)[°\s]+(\d+)['\s]+([\d.]+)"?\s*([NS])[,;\s]+(\d+)[°\s]+(\d+)['\s]+([\d.]+)"?\s*([EWO])/i);
+  if(dm){let la=+dm[1]+dm[2]/60+dm[3]/3600,lo=+dm[5]+dm[6]/60+dm[7]/3600;if(/S/i.test(dm[4]))la=-la;if(/[WO]/i.test(dm[8]))lo=-lo;return [la,lo];}
+  const n=str.replace(/;/g,",").match(/-?\d+(?:[.,]\d+)?/g); if(!n||n.length<2) return null;
+  let a=parseFloat(n[0].replace(",",".")),b=parseFloat(n[1].replace(",","."));
+  if(str.split(",").length>2){ // "48,85, 2,35" style
+    const parts=str.split(/\s*[;\s]\s*|,\s+/).filter(Boolean); if(parts.length>=2){a=parseFloat(parts[0].replace(",","."));b=parseFloat(parts[1].replace(",","."));}
+  }
+  if(isNaN(a)||isNaN(b)||Math.abs(a)>90||Math.abs(b)>180) return null; return [a,b]; }
+
+/* =========================================================
+   DATES : jours ouvrables, soleil
+   ========================================================= */
+function easter(y){const a=y%19,b=Math.floor(y/100),c=y%100,d=Math.floor(b/4),e=b%4,f=Math.floor((b+8)/25),g=Math.floor((b-f+1)/3),h=(19*a+b-d-g+15)%30,i=Math.floor(c/4),k=c%4,l=(32+2*e+2*i-h-k)%7,m=Math.floor((a+11*h+22*l)/451),mo=Math.floor((h+l-7*m+114)/31),da=((h+l-7*m+114)%31)+1;return new Date(y,mo-1,da);}
+function addD(d,n){const x=new Date(d);x.setDate(x.getDate()+n);return x;}
+function key(d){return d.getFullYear()+"-"+(d.getMonth()+1)+"-"+d.getDate();}
+const holCache={};
+function holidays(y){ if(holCache[y]) return holCache[y]; const e=easter(y); const s=new Set([[0,1],[4,1],[4,8],[6,14],[7,15],[10,1],[10,11],[11,25]].map(([m,d])=>key(new Date(y,m,d)))); [1,39,50].forEach(n=>s.add(key(addD(e,n)))); return holCache[y]=s; }
+function ouvrable(d){ return d.getDay()!==0 && !holidays(d.getFullYear()).has(key(d)); }
+function nthOuvrableAfter(d,n){let c=0,x=new Date(d);while(c<n){x=addD(x,1);if(ouvrable(x))c++;}return x;}
+function sendWindow(mission){ // fenêtre d'envoi : vol entre J+10 et J+30 ouvrables après l'envoi
+  let first=null,last=null; for(let i=60;i>=1;i--){const s=addD(mission,-i); const e=nthOuvrableAfter(s,10), l=nthOuvrableAfter(s,30); if(e<=mission && mission<=l){ if(!first) first=s; last=s; } } return {first,last}; }
+function fdate(d){return d? d.toLocaleDateString("fr-FR",{weekday:"short",day:"2-digit",month:"short",year:"numeric"}):"–";}
+function parseDate(s){ if(!s) return null; const [y,m,d]=s.split("-").map(Number); return new Date(y,m-1,d); }
+function sun(dateStr,lat,lon){ // équation du lever/coucher (précision ~1-2 min)
+  const [y,mo,d]=dateStr.split("-").map(Number); const ms=Date.UTC(y,mo-1,d,12); const Jd=ms/864e5+2440587.5;
+  const n=Math.ceil(Jd-2451545+0.0008); const Js=n-lon/360; const M=(357.5291+0.98560028*Js)%360; const Mr=M*rad;
+  const C=1.9148*Math.sin(Mr)+0.02*Math.sin(2*Mr)+0.0003*Math.sin(3*Mr); const L=(M+C+180+102.9372)%360; const Lr=L*rad;
+  const Jt=2451545+Js+0.0053*Math.sin(Mr)-0.0069*Math.sin(2*Lr); const δ=Math.asin(Math.sin(Lr)*Math.sin(23.44*rad));
+  const cw=(Math.sin(-0.833*rad)-Math.sin(lat*rad)*Math.sin(δ))/(Math.cos(lat*rad)*Math.cos(δ)); if(cw<-1||cw>1) return null;
+  const w=Math.acos(cw)/rad; const toD=J=>new Date((J-2440587.5)*864e5); return {rise:toD(Jt-w/360),set:toD(Jt+w/360)}; }
+function hm(d){return d.toLocaleTimeString("fr-FR",{hour:"2-digit",minute:"2-digit",timeZone:"Europe/Paris"});}
+function mins(s){if(!s)return null;const [h,m]=s.split(":").map(Number);return h*60+m;}
+
+/* =========================================================
+   CARTE
+   ========================================================= */
+const map=L.map("map",{zoomControl:true,doubleClickZoom:false,minZoom:4,maxZoom:19,attributionControl:true}).setView([46.6,2.4],6);
+L.control.scale({imperial:false}).addTo(map);
+/* ---- Couches officielles IGN / DGAC (Géoplateforme) ---- */
+const GPF=(layer,fmt,maxN)=>L.tileLayer(`https://data.geopf.fr/wmts?SERVICE=WMTS&REQUEST=GetTile&VERSION=1.0.0&LAYER=${layer}&STYLE=normal&TILEMATRIXSET=PM&TILEMATRIX={z}&TILEROW={y}&TILECOL={x}&FORMAT=${fmt}`,{maxZoom:19,maxNativeZoom:maxN,attribution:'© IGN / DGAC – <a href="https://cartes.gouv.fr" target="_blank">cartes.gouv.fr</a>',crossOrigin:true});
+const BASES={plan:GPF("GEOGRAPHICALGRIDSYSTEMS.PLANIGNV2","image/png",19),ortho:GPF("ORTHOIMAGERY.ORTHOPHOTOS","image/jpeg",19),
+  osm:L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png",{maxZoom:19,attribution:'© <a href="https://www.openstreetmap.org/copyright" target="_blank">OpenStreetMap</a>'})};
+const UAS=GPF("TRANSPORTS.DRONES.RESTRICTIONS","image/png",15); UAS.setOpacity(.75); UAS.setZIndex(5);
+let curBase=BASES.plan; curBase.addTo(map); UAS.addTo(map);
+let tileErr=0, tileOk=0;
+Object.values(BASES).concat([UAS]).forEach(l=>{ l.on("tileerror",()=>{tileErr++; if(tileErr===4&&!tileOk) offline(true);}); l.on("tileload",()=>{tileOk++; offline(false);}); });
+function offline(on){ document.getElementById("offmap").style.display=on?"block":"none"; document.getElementById("tileWarn").style.display=on?"block":"none"; document.getElementById("layerState").textContent=on?"⚠ fonds officiels non chargés ici":"✓ données IGN / DGAC en ligne"; }
+// Fond vectoriel hors-ligne
+L.polygon(FR,{color:"#2f5d93",weight:1.2,fillColor:"#13294a",fillOpacity:.35,interactive:false}).addTo(map);
+L.polygon(CORSE,{color:"#2f5d93",weight:1.2,fillColor:"#13294a",fillOpacity:.35,interactive:false}).addTo(map);
+const grat=L.layerGroup().addTo(map);
+for(let la=41;la<=52;la++) L.polyline([[la,-6],[la,10]],{color:"#1b3355",weight:.6,interactive:false}).addTo(grat);
+for(let lo=-5;lo<=10;lo++) L.polyline([[41,lo],[52,lo]],{color:"#1b3355",weight:.6,interactive:false}).addTo(grat);
+const cities=L.layerGroup().addTo(map);
+DEPTS.forEach(d=>{ if(d[3]==null) return; L.circleMarker([d[3],d[4]],{radius:2.5,color:"#6f86a8",weight:1,fillOpacity:1,interactive:false}).addTo(cities);
+  L.marker([d[3],d[4]],{icon:L.divIcon({className:"lbl-city",html:d[1].replace(" (Préfecture de police)",""),iconSize:null,iconAnchor:[-5,6]}),interactive:false}).addTo(cities); });
+function upCities(){ if(map.getZoom()>=7) map.addLayer(cities); else map.removeLayer(cities); }
+map.on("zoomend",()=>{upCities();upAdRings();}); upCities();
+const adLayer=L.layerGroup().addTo(map), adRings=L.layerGroup();
+AD.forEach(a=>{ const col=a[4]==="M"?"#c084fc":"#f5a524";
+  L.circleMarker([a[2],a[3]],{radius:5,color:col,weight:2,fillColor:"#0a1322",fillOpacity:1}).bindPopup(`<b>${a[0]}</b> – ${a[1]}<br><span style="color:#8aa0c0">${a[4]==="M"?"Aérodrome militaire":a[4]==="C"?"Aérodrome civil contrôlé":"Aérodrome civil"}</span>`).bindTooltip(a[0],{direction:"right",offset:[6,0]}).addTo(adLayer);
+  L.circle([a[2],a[3]],{radius:a[4]==="A"?5000:10000,color:col,weight:1,dashArray:"4 5",fill:false,interactive:false}).addTo(adRings); });
+function upAdRings(){ if(map.getZoom()>=8) map.addLayer(adRings); else map.removeLayer(adRings); }
+upAdRings();
+SENS.forEach(s=>L.circle([s[1],s[2]],{radius:s[3]*1000,color:"#f2545b",weight:1.2,fillColor:"#f2545b",fillOpacity:.08}).bindPopup(`<b>${s[0]}</b><br><span style="color:#8aa0c0">Rayon indicatif ${s[3]} km – vérifier la zone P/R réelle</span>`).addTo(map));
+const czLayer=L.layerGroup().addTo(map), notamLayer=L.layerGroup().addTo(map);
+const zoneLayer=L.layerGroup().addTo(map), vtxLayer=L.layerGroup().addTo(map), tmpLayer=L.layerGroup().addTo(map);
+
+let mode=null, tmpCenter=null;
+const hint=document.getElementById("hint");
+function setMode(m){ mode=m; tmpCenter=null; tmpLayer.clearLayers();
+  document.getElementById("tPoly").classList.toggle("on",m==="polygon");
+  document.getElementById("tCircle").classList.toggle("on",m==="circle"); document.getElementById("tWp").classList.toggle("on",m==="wp");
+  if(m==="polygon"){ if(S.zone.type!=="polygon"){S.zone={type:"polygon",pts:[],center:null,radius:0};} hint.innerHTML="Clique pour ajouter des sommets. <b>Double-clic</b> ou <b>Terminer</b> pour fermer la zone."; }
+  else if(m==="wp"){ hint.innerHTML="Choisis le <b>type de point</b> à côté du bouton, puis clique sur la carte. Les points sont déplaçables."; }
+  else if(m==="circle"){ hint.innerHTML="Clique pour placer le <b>centre</b>, puis un second clic pour fixer le <b>rayon</b>."; }
+  else hint.innerHTML= zonePoly()? "Zone enregistrée. Fais glisser les sommets pour l'ajuster." : "Choisis <b>Polygone</b> ou <b>Cercle</b>, puis clique sur la carte pour découper ta zone de vol.";
+  drawZone(); }
+map.on("click",e=>{ const p=[+e.latlng.lat.toFixed(6),+e.latlng.lng.toFixed(6)];
+  if(mode==="polygon"){ S.zone.pts.push(p); drawZone(); refresh(); }
+  else if(mode==="circle"){ if(!tmpCenter){ tmpCenter=p; tmpLayer.clearLayers(); L.circleMarker(p,{radius:4,color:"#3d8bfd"}).addTo(tmpLayer); }
+    else { S.zone={type:"circle",pts:[],center:tmpCenter,radius:Math.max(5,Math.round(hav(tmpCenter,p)))}; setMode(null); refresh(); } } });
+map.on("mousemove",e=>{ if(mode==="circle"&&tmpCenter){ tmpLayer.clearLayers(); L.circle(tmpCenter,{radius:hav(tmpCenter,[e.latlng.lat,e.latlng.lng]),color:"#3d8bfd",weight:2,dashArray:"5 5",fillOpacity:.1}).addTo(tmpLayer); } });
+map.on("dblclick",()=>{ if(mode==="polygon"){ setMode(null); refresh(); } });
+function drawZone(){ zoneLayer.clearLayers(); vtxLayer.clearLayers(); const z=S.zone;
+  const poly=zonePoly();
+  if(poly){ const b=bufferPoly(poly,+S.buffer||0); if(b) L.polygon(b,{color:"#f5a524",weight:1.5,dashArray:"6 5",fillOpacity:.05,interactive:false}).addTo(zoneLayer); }
+  if(z.type==="circle"&&z.center){ L.circle(z.center,{radius:z.radius,color:"#3d8bfd",weight:2.5,fillColor:"#3d8bfd",fillOpacity:.22}).addTo(zoneLayer);
+    const mk=L.marker(z.center,{draggable:true,icon:L.divIcon({className:"",html:'<div class="vtx"></div>',iconSize:[12,12],iconAnchor:[6,6]})}).addTo(vtxLayer);
+    mk.on("drag",ev=>{z.center=[+ev.latlng.lat.toFixed(6),+ev.latlng.lng.toFixed(6)];drawZoneLight();}); mk.on("dragend",()=>{drawZone();refresh();}); }
+  if(z.type==="polygon"&&z.pts.length){ if(z.pts.length>=3) L.polygon(z.pts,{color:"#3d8bfd",weight:2.5,fillColor:"#3d8bfd",fillOpacity:.22}).addTo(zoneLayer);
+    else L.polyline(z.pts,{color:"#3d8bfd",weight:2.5,dashArray:"5 5"}).addTo(zoneLayer);
+    z.pts.forEach((p,i)=>{ const mk=L.marker(p,{draggable:true,icon:L.divIcon({className:"",html:'<div class="vtx"></div>',iconSize:[12,12],iconAnchor:[6,6]})}).addTo(vtxLayer);
+      mk.bindTooltip(String.fromCharCode(65+(i%26))+(i>=26?Math.floor(i/26):""),{permanent:false});
+      mk.on("drag",ev=>{z.pts[i]=[+ev.latlng.lat.toFixed(6),+ev.latlng.lng.toFixed(6)];drawZoneLight();}); mk.on("dragend",()=>{drawZone();refresh();}); }); } }
+let lightTimer; function drawZoneLight(){ clearTimeout(lightTimer); lightTimer=setTimeout(()=>{ const keep=vtxLayer.getLayers(); zoneLayer.clearLayers(); const z=S.zone; const poly=zonePoly(); if(!poly) return;
+  if(z.type==="circle") L.circle(z.center,{radius:z.radius,color:"#3d8bfd",weight:2.5,fillOpacity:.22}).addTo(zoneLayer); else L.polygon(z.pts,{color:"#3d8bfd",weight:2.5,fillOpacity:.22}).addTo(zoneLayer); },16); }
+
+document.getElementById("tPoly").onclick=()=>{ setMode(mode==="polygon"?null:"polygon"); };
+document.getElementById("tCircle").onclick=()=>setMode(mode==="circle"?null:"circle");
+document.getElementById("tUndo").onclick=()=>{ if(S.zone.type==="polygon"&&S.zone.pts.length){S.zone.pts.pop();drawZone();refresh();} };
+document.getElementById("tDone").onclick=()=>{ setMode(null); refresh(); const p=zonePoly(); if(p) map.fitBounds(L.latLngBounds(p).pad(.4)); };
+document.getElementById("tClear").onclick=()=>{ S.zone={type:null,pts:[],center:null,radius:0}; setMode(null); refresh(); };
+
+
+
+/* =========================================================
+   COUCHES : contrôles + analyse WFS des restrictions UAS (DGAC)
+   ========================================================= */
+document.querySelectorAll('input[name="base"]').forEach(r=>r.onchange=()=>{ map.removeLayer(curBase); curBase=BASES[r.value]; curBase.addTo(map); curBase.bringToBack(); });
+document.getElementById("lyUas").onchange=e=>{ e.target.checked?UAS.addTo(map):map.removeLayer(UAS); };
+document.getElementById("lyUasOp").oninput=e=>UAS.setOpacity(+e.target.value);
+document.getElementById("lyAd").onchange=e=>{ e.target.checked?(map.addLayer(adLayer),upAdRings()):(map.removeLayer(adLayer),map.removeLayer(adRings)); };
+const WFS_TYPE="TRANSPORTS.DRONES.RESTRICTIONS:carte_restriction_drones_lf";
+let UASD={status:"idle",hits:[],count:0,err:""}; const uasHitLayer=L.layerGroup().addTo(map);
+const toM=(la,lo)=>[lo*20037508.34/180, Math.log(Math.tan((90+la)*Math.PI/360))*6378137];
+const fromM=(x,y)=>[ (2*Math.atan(Math.exp(y/6378137))-Math.PI/2)*180/Math.PI, x*180/20037508.34 ];
+function ringsOf(g){ if(!g) return []; const conv=r=>{ const big=Math.abs(r[0][0])>180||Math.abs(r[0][1])>90; return r.map(c=>big?fromM(c[0],c[1]):[c[1],c[0]]); };
+  if(g.type==="Polygon") return [conv(g.coordinates[0])]; if(g.type==="MultiPolygon") return g.coordinates.map(p=>conv(p[0])); return []; }
+function segX(a,b,c,d){ const o=(p,q,r)=>Math.sign((q[1]-p[1])*(r[0]-q[0])-(q[0]-p[0])*(r[1]-q[1])); return o(a,b,c)!==o(a,b,d)&&o(c,d,a)!==o(c,d,b); }
+function polysTouch(A,B){ if(A.some(p=>inPoly(p,B))||B.some(p=>inPoly(p,A))) return true;
+  for(let i=0;i<A.length;i++)for(let j=0;j<B.length;j++) if(segX(A[i],A[(i+1)%A.length],B[j],B[(j+1)%B.length])) return true; return false; }
+function zoneClass(forb,hh){ if(forb||hh===0) return {c:"#e0262b",n:"Zone rouge – vol interdit"}; if(hh==null) return {c:"#8aa0c0",n:"Zone restreinte"}; if(hh<=30) return {c:"#f39bb0",n:"Zone rose – 30 m max"}; if(hh<=50) return {c:"#f5d000",n:"Zone jaune – 50 m max"}; if(hh<=100) return {c:"#fbf3a6",n:"Zone jaune pâle – "+hh+" m max"}; return {c:"#8aa0c0",n:hh+" m max"}; }
+function propsLabel(pr){ const kv=Object.entries(pr||{}).filter(([k,v])=>v!==null&&v!==""&&typeof v!=="object"&&!/^(id|gid|fid|objectid|shape)/i.test(k));
+  const txt=kv.map(([k,v])=>`${k} : ${v}`).join(" · "); const all=kv.map(x=>String(x[1])).join(" ");
+  const forb=/interdit/i.test(all); const hm=all.match(/(\d{2,3})\s*m\b/i); const hh=hm?+hm[1]:null; const zc=zoneClass(forb,hh); return {txt,forb,h:hh,zc}; }
+let wfsT, wfsKey="", wfsSeq=0;
+function queryUAS(){ clearTimeout(wfsT); wfsT=setTimeout(async()=>{ const poly=zonePoly(); uasHitLayer.clearLayers(); if(!poly){UASD={status:"idle",hits:[],count:0};return;}
+  const b=bufferPoly(poly,Math.max(+S.buffer||0,1))||poly; const lats=b.map(p=>p[0]),lons=b.map(p=>p[1]);
+  const mn=toM(Math.min(...lats),Math.min(...lons)), mx=toM(Math.max(...lats),Math.max(...lons));
+  const key=[mn,mx].join(); if(key===wfsKey&&(UASD.status==="ok"||UASD.status==="error"||UASD.status==="loading")){ if(UASD.status==="ok") drawUasHits(); return; } wfsKey=key;
+  const url=`https://data.geopf.fr/wfs/ows?SERVICE=WFS&VERSION=2.0.0&REQUEST=GetFeature&TYPENAMES=${WFS_TYPE}&OUTPUTFORMAT=application/json&SRSNAME=EPSG:3857&COUNT=300&BBOX=${mn[0]},${mn[1]},${mx[0]},${mx[1]},EPSG:3857`;
+  const seq=++wfsSeq; UASD={status:"loading",hits:[],count:0}; refreshLight();
+  try{ const ctl=new AbortController(); const to=setTimeout(()=>ctl.abort(),15000); const r=await fetch(url,{signal:ctl.signal}); clearTimeout(to); if(!r.ok) throw new Error("HTTP "+r.status);
+    const gj=await r.json(); const hits=[]; (gj.features||[]).forEach(f=>{ const rings=ringsOf(f.geometry); const touch=rings.some(rg=>polysTouch(b,rg)); if(touch){ const lb=propsLabel(f.properties); hits.push({rings,props:f.properties,...lb,inZone:rings.some(rg=>polysTouch(poly,rg))}); } });
+    if(seq!==wfsSeq) return; UASD={status:"ok",hits,count:(gj.features||[]).length,url}; }
+  catch(e){ if(seq!==wfsSeq) return; UASD={status:"error",hits:[],count:0,err:String(e.message||e),url}; }
+  drawUasHits(); refreshLight(); },500); }
+function drawUasHits(){ uasHitLayer.clearLayers(); UASD.hits.forEach(h=>h.rings.forEach(rg=>L.polygon(rg,{color:h.zc.c,weight:2.5,fill:false,dashArray:"2 4"}).bindPopup(`<b style="color:${h.zc.c}">${h.zc.n}</b><br><span style="color:#8aa0c0">${esc(h.txt)}</span>`).addTo(uasHitLayer))); }
+map.on("click",async e=>{ if(mode) return; if(!map.hasLayer(UAS)) return; const p=toM(e.latlng.lat,e.latlng.lng), d=30;
+  const url=`https://data.geopf.fr/wfs/ows?SERVICE=WFS&VERSION=2.0.0&REQUEST=GetFeature&TYPENAMES=${WFS_TYPE}&OUTPUTFORMAT=application/json&SRSNAME=EPSG:3857&COUNT=10&BBOX=${p[0]-d},${p[1]-d},${p[0]+d},${p[1]+d},EPSG:3857`;
+  try{ const r=await fetch(url); const gj=await r.json(); const ll=[e.latlng.lat,e.latlng.lng];
+    const f=(gj.features||[]).filter(f=>ringsOf(f.geometry).some(rg=>inPoly(ll,rg)));
+    L.popup().setLatLng(e.latlng).setContent(f.length?f.map(x=>{const lb=propsLabel(x.properties);return `<b style="color:${lb.zc.c}">${lb.zc.n}</b><br><span style='color:#8aa0c0'>${esc(lb.txt)}</span>`;}).join("<hr>"):"<b>Zone sans couleur – 120 m max</b><br><span style='color:#8aa0c0'>Aucune restriction publiée sur la carte DGAC ici (vérifier NOTAM, ZICAD, agglomération)</span>").openOn(map); }catch(err){} });
+
+/* =========================================================
+   ALPHATANGO : exploitant, télépilotes, flotte
+   ========================================================= */
+let F={op:{name:"",fra:"",siret:"",valid:"",mail:""},pilots:[],uas:[]};
+try{ const sv=localStorage.getItem("zonevol_fleet"); if(sv) F=Object.assign(F,JSON.parse(sv)); }catch(e){}
+function saveF(){ try{ localStorage.setItem("zonevol_fleet",JSON.stringify(F)); }catch(e){} }
+function massKg(s){ if(s==null) return null; s=String(s).replace(",","."); const nums=[...s.matchAll(/(\d+(?:\.\d+)?)\s*(kg|g)?/gi)]; if(!nums.length) return null; const last=nums[nums.length-1]; let v=+last[1]; const u=(last[2]||(/kg/i.test(s)?"kg":(v>=100?"g":"kg"))).toLowerCase(); return u==="g"?v/1000:v; }
+function parseCSV(t){ const first=t.split(/\r?\n/)[0]; const d=(first.match(/;/g)||[]).length>=(first.match(/,/g)||[]).length?";":(first.includes("\t")?"\t":",");
+  const rows=[]; let row=[],cur="",q=false; for(let i=0;i<t.length;i++){ const c=t[i]; if(q){ if(c==='"'&&t[i+1]==='"'){cur+='"';i++;} else if(c==='"') q=false; else cur+=c; }
+    else if(c==='"') q=true; else if(c===d){row.push(cur);cur="";} else if(c==="\n"||c==="\r"){ if(c==="\r"&&t[i+1]==="\n") i++; row.push(cur); if(row.some(x=>x.trim())) rows.push(row); row=[];cur=""; } else cur+=c; }
+  row.push(cur); if(row.some(x=>x.trim())) rows.push(row); return rows; }
+function importFleetCSV(t){ const rows=parseCSV(t.replace(/^﻿/,"")); if(rows.length<2) return 0; const H=rows[0].map(x=>x.trim().toLowerCase());
+  const col=re=>H.findIndex(h=>re.test(h)); const ix={reg:col(/enregistrement|immatric|uas-fr|registration/),maker:col(/constructeur|fabricant|marque|manufact/),model:col(/mod[eè]le|model/),serial:col(/s[ée]rie|serial/),mass:col(/masse|poids|mass/),type:col(/^type|type d/),rid:col(/signalement|remote|identif/),cls:col(/classe|class/),status:col(/statut|status|validit/)};
+  let n=0; rows.slice(1).forEach(r=>{ const g=k=>ix[k]>=0?(r[ix[k]]||"").trim():""; let reg=g("reg"); if(!/UAS-FR/i.test(reg)){ const f=r.find(v=>/UAS-FR-\d+/i.test(v)); if(f) reg=f.match(/UAS-FR-\d+/i)[0]; }
+    const u={reg,maker:g("maker"),model:g("model"),serial:g("serial"),massRange:g("mass"),mass:massKg(g("mass")),type:g("type"),rid:/oui|yes|true|1/i.test(g("rid")),cls:(g("cls").match(/C[0-6]/i)||[""])[0].toUpperCase(),status:g("status")};
+    if(!u.reg&&!u.model&&!u.serial) return; const ex=F.uas.findIndex(x=>(x.reg&&x.reg===u.reg)||(x.serial&&x.serial===u.serial)); if(ex>=0) F.uas[ex]=Object.assign(F.uas[ex],u); else F.uas.push(u); n++; });
+  saveF(); return n; }
+function importExtract(t){ let n=0; const op=t.match(/(FRA[a-z0-9]{8,16})/i); if(op){ F.op.fra=op[1].toUpperCase(); n++; }
+  const val=t.match(/FIN DE VALIDIT[ÉE]\s*:?\s*(?:\n.*?)?(\d{2}\/\d{2}\/\d{4})/i); if(val&&op) F.op.valid=val[1];
+  const nm=t.match(/EXPLOITANT\s*:?[\s\S]{0,40}?Nom\s*:\s*([^\n]+)/i); if(nm&&op&&nm[1].trim().length>1&&!/^name$/i.test(nm[1].trim())) F.op.name=nm[1].trim();
+  const si=t.match(/SIRET\)?\s*:?\s*(\d{9,14})/i)||t.match(/\b(\d{14})\b/); if(si&&op) F.op.siret=si[1];
+  const blocks=t.split(/(?=N°\s*D.ENREGISTREMENT\s*:?\s*UAS-FR)/i).filter(b=>/UAS-FR-\d+/i.test(b));
+  blocks.forEach(b=>{ const g=re=>{const m=b.match(re);return m?m[1].trim():"";};
+    const u={reg:g(/(UAS-FR-\d+)/i),type:g(/Type d.a[ée]ronef\s*:\s*([^\n]+)/i),maker:g(/Constructeur\s*:\s*([^\n]+)/i),model:g(/Mod[eè]le\s*:\s*([^\n]+)/i),serial:g(/Num[ée]ro de s[ée]rie\s*:\s*([^\n\s]+)/i),massRange:g(/Plage de masse\s*:\s*([^\n]+)/i),rid:/signalement [ée]lectronique\s*:\s*Oui/i.test(b),status:g(/Statut\s*:\s*([^\n]+)/i),cls:""};
+    u.mass=massKg(u.massRange); const ex=F.uas.findIndex(x=>x.reg===u.reg); if(ex>=0) F.uas[ex]=Object.assign(F.uas[ex],u); else F.uas.push(u); n++; });
+  saveF(); return n; }
+function uasLabel(u){ return `${u.reg||"(sans n°)"} – ${[u.maker,u.model].filter(Boolean).join(" ")||"modèle ?"}`; }
+function renderFleet(){ const el=document.getElementById("fleetBox"); if(!el) return; const o=F.op;
+  el.innerHTML=`
+  <div class="card"><b>Accès AlphaTango</b><p class="small">AlphaTango (DGAC) ne propose pas d'interface publique de connexion automatique : la liaison se fait par <b>export CSV</b> de « Mes aéronefs » et par l'<b>extrait du registre</b> (PDF) que tu copies-colles ici. Les données restent sur ton appareil.</p>
+   <a class="lnk" href="https://alphatango.aviation-civile.gouv.fr/login.jsp" target="_blank" rel="noopener">Ouvrir AlphaTango <span>DGAC ↗</span></a>
+   <a class="lnk" href="https://www.ecologie.gouv.fr/politiques-publiques/alphatango" target="_blank" rel="noopener">Aide en ligne AlphaTango <span>↗</span></a></div>
+  <h3>Exploitant</h3><div class="card">
+   <div class="grid2"><div class="fld"><label>Nom / raison sociale</label><input data-op="name" value="${esc(o.name)}"></div><div class="fld"><label>N° exploitant UAS</label><input data-op="fra" value="${esc(o.fra)}" placeholder="FRAxxxxxxxxxxxx"></div>
+   <div class="fld"><label>SIRET</label><input data-op="siret" value="${esc(o.siret)}"></div><div class="fld"><label>Fin de validité</label><input data-op="valid" value="${esc(o.valid)}" placeholder="jj/mm/aaaa"></div></div>
+   <div class="grid2"><div class="fld"><label>Responsable</label><input data-op="resp" value="${esc(o.resp||"")}"></div><div class="fld"><label>Téléphone</label><input data-op="phone" value="${esc(o.phone||"")}"></div></div>
+   <div class="fld"><label>Adresse</label><input data-op="addr" value="${esc(o.addr||"")}"></div>
+   <div class="fld"><label>E-mail de contact</label><input data-op="mail" value="${esc(o.mail)}"></div></div>
+  <h3>Télépilotes</h3><div class="card">${F.pilots.map((p,i)=>`<div class="row" style="justify-content:space-between;margin-bottom:6px"><span>${esc(p.name)} · ${esc(p.phone)} · <span class="small">${esc(p.cert)}</span></span><button class="btn sm" data-delp="${i}">✕</button></div>`).join("")||'<span class="small">Aucun télépilote enregistré.</span>'}
+   <div class="grid2" style="margin-top:8px"><div class="fld"><label>Nom</label><input id="npName"></div><div class="fld"><label>Téléphone</label><input id="npPhone"></div></div>
+   <div class="fld"><label>Compétences</label><input id="npCert" placeholder="ex. A1/A3, A2, CATS STS-01"></div><button class="btn sm" id="npAdd">+ Ajouter</button></div>
+  <h3>Flotte (${F.uas.length} aéronef${F.uas.length>1?"s":""})</h3>
+  <div class="card">${F.uas.length?`<table class="t">${F.uas.map((u,i)=>`<tr><td><b class="mono">${esc(u.reg||"—")}</b><br>${esc([u.maker,u.model].filter(Boolean).join(" "))}<br><span class="small">S/N ${esc(u.serial||"—")} · ${esc(u.massRange||(u.mass!=null?u.mass+" kg":"masse ?"))}${u.cls?" · "+u.cls:""} · RID ${u.rid?"oui":"non"}${u.status?" · "+esc(u.status):""}</span></td><td style="text-align:right"><button class="btn sm" data-useu="${i}">Utiliser</button> <button class="btn sm" data-delu="${i}">✕</button></td></tr>`).join("")}</table>`:'<span class="small">Aucun aéronef. Importe ta liste AlphaTango ci-dessous.</span>'}</div>
+  <h3>Importer depuis AlphaTango</h3><div class="card">
+   <ul class="steps"><li>AlphaTango → <b>Mes aéronefs</b> → bouton d'export <b>.csv</b>, puis choisis le fichier ou colle son contenu.</li><li>Ou ouvre l'<b>extrait du registre</b> (exploitant ou aéronef, PDF), sélectionne tout le texte et colle-le.</li></ul>
+   <div class="fld"><label>Fichier CSV</label><input type="file" id="fleetFile" accept=".csv,.txt"></div>
+   <div class="fld"><label>…ou coller le CSV / le texte de l'extrait</label><textarea id="fleetPaste" rows="5" class="mono"></textarea></div>
+   <button class="btn pri sm" id="fleetImp">Importer</button></div>`;
+  el.querySelectorAll("[data-op]").forEach(i=>i.oninput=()=>{ F.op[i.dataset.op]=i.value; saveF(); refreshLight(); });
+  document.getElementById("npAdd").onclick=()=>{ const n=npName.value.trim(); if(!n) return; F.pilots.push({name:n,phone:npPhone.value.trim(),cert:npCert.value.trim()}); saveF(); renderFleet(); buildForm(); };
+  document.getElementById("fleetFile").onchange=e=>{ const f=e.target.files[0]; if(!f) return; const rd=new FileReader(); rd.onload=()=>{ const n=importFleetCSV(rd.result); toast(n+" aéronef(s) importé(s)",!n); renderFleet(); buildForm(); }; rd.readAsText(f,"utf-8"); };
+  document.getElementById("fleetImp").onclick=()=>{ const t=fleetPaste.value; if(!t.trim()) return; const n=/UAS-FR-\d+|FRA[a-z0-9]{8}/i.test(t)&&/Constructeur|EXPLOITANT/i.test(t)?importExtract(t):importFleetCSV(t); toast(n?n+" élément(s) importé(s)":"Rien de reconnu",!n); renderFleet(); buildForm(); refreshLight(); };
+}
+function applyUas(i){ const u=F.uas[i]; if(!u) return; Object.assign(S.m,{m_uas:String(i),d_model:[u.maker,u.model].filter(Boolean).join(" "),d_serial:u.serial||"",d_reg:u.reg||"",d_rid:!!u.rid});
+  if(u.mass!=null) S.m.d_mass=String(u.mass); if(u.cls) S.m.d_class=u.cls; buildForm(); refresh(); toast("Aéronef appliqué à la mission"); }
+document.addEventListener("click",e=>{ const t=e.target;
+  if(t.dataset.delu!=null){ F.uas.splice(+t.dataset.delu,1); saveF(); renderFleet(); buildForm(); }
+  if(t.dataset.delp!=null){ F.pilots.splice(+t.dataset.delp,1); saveF(); renderFleet(); buildForm(); }
+  if(t.dataset.useu!=null) applyUas(+t.dataset.useu); });
+function refreshLight(){ if(window._refreshing) return; refresh(true); }
+
+/* ---- modales ---- */
+const modal=document.getElementById("modal"), mbox=document.getElementById("modalBox");
+function openModal(html){ mbox.innerHTML=html; modal.classList.add("show"); }
+function closeModal(){ modal.classList.remove("show"); }
+modal.addEventListener("click",e=>{ if(e.target===modal) closeModal(); });
+document.getElementById("tGoto").onclick=()=>{
+  const opts=DEPTS.filter(d=>d[3]!=null).map(d=>`<option value="${d[3]},${d[4]}">${d[0]} – ${d[1]}</option>`).join("");
+  openModal(`<h2>Aller à</h2><div class="fld"><label>Coordonnées GPS (décimal ou DMS)</label><input id="gIn" placeholder="48.8566, 2.3522  ou  48°51'24&quot;N 2°21'07&quot;E"></div>
+  <div class="fld"><label>…ou un chef-lieu de département</label><select id="gSel"><option value="">—</option>${opts}</select></div>
+  <div class="fld"><label>…ou un aérodrome (code OACI)</label><input id="gAd" placeholder="LFBO"></div>
+  <div class="row"><button class="btn pri" id="gGo">Centrer</button><button class="btn" onclick="closeModal()">Annuler</button></div>
+  <p class="small">Astuce : récupère les coordonnées d'une adresse sur cartes.gouv.fr ou Google Maps (clic droit → coordonnées) puis colle-les ici.</p>`);
+  document.getElementById("gGo").onclick=()=>{ let p=parseLL(document.getElementById("gIn").value||""); const sv=document.getElementById("gSel").value; const ad=(document.getElementById("gAd").value||"").trim().toUpperCase();
+    let z=16; if(!p&&sv){p=sv.split(",").map(Number);z=13;} if(!p&&ad){const a=AD.find(x=>x[0]===ad); if(a){p=[a[2],a[3]];z=12;}}
+    if(!p){toast("Coordonnées non reconnues",true);return;} map.setView(p,z); closeModal(); };
+};
+document.getElementById("tCoords").onclick=()=>{
+  const cur=(S.zone.type==="polygon"?S.zone.pts:[]).map(p=>p[0].toFixed(6)+", "+p[1].toFixed(6)).join("\n");
+  openModal(`<h2>Saisir la zone par coordonnées</h2>
+  <div class="fld"><label>Polygone : un sommet par ligne (lat, lon)</label><textarea id="cIn" rows="7" class="mono" placeholder="48.8590, 2.2930&#10;48.8600, 2.2960&#10;48.8575, 2.2975">${cur}</textarea></div>
+  <div class="grid2"><div class="fld"><label>…ou cercle : centre (lat, lon)</label><input id="cC" placeholder="48.858, 2.294"></div><div class="fld"><label>Rayon (m)</label><input id="cR" type="number" value="200"></div></div>
+  <div class="row"><button class="btn pri" id="cGo">Appliquer</button><button class="btn" onclick="closeModal()">Annuler</button></div>`);
+  document.getElementById("cGo").onclick=()=>{ const c=parseLL(document.getElementById("cC").value||"");
+    if(c){ S.zone={type:"circle",pts:[],center:c,radius:Math.max(5,+document.getElementById("cR").value||100)}; }
+    else { const pts=document.getElementById("cIn").value.split("\n").map(parseLL).filter(Boolean); if(pts.length<3){toast("Il faut au moins 3 sommets",true);return;} S.zone={type:"polygon",pts,center:null,radius:0}; }
+    closeModal(); setMode(null); refresh(); map.fitBounds(L.latLngBounds(zonePoly()).pad(.4)); };
+};
+
+/* =========================================================
+   FORMULAIRE MISSION
+   ========================================================= */
+function buildForm(){ const box=document.getElementById("missionForm"); let html="", open=false;
+  const deptOpts=['<option value="">— auto (centre de zone) —</option>'].concat(DEPTS.map(d=>`<option value="${d[0]}">${d[0]} – ${d[1]}</option>`)).join("");
+  let halfBuf=[];
+  const flush=()=>{ if(halfBuf.length){ html+=`<div class="grid2">${halfBuf.join("")}</div>`; halfBuf=[]; } };
+  FIELDS.forEach(f=>{
+    if(f.s){ flush(); if(open) html+="</div>"; html+=`<h3>${f.s}</h3><div class="card">`; open=true; return; }
+    let inp="";
+    if(f.t==="select") inp=`<select id="${f.id}">${f.o.map(o=>`<option>${o}</option>`).join("")}</select>`;
+    else if(f.t==="dept") inp=`<select id="${f.id}">${deptOpts}</select>`;
+    else if(f.t==="fleetUas") inp=`<select id="${f.id}"><option value="">${F.uas.length?"— choisir dans la flotte —":"— flotte vide : importe-la dans l'onglet AlphaTango —"}</option>${F.uas.map((u,i)=>`<option value="${i}">${esc(uasLabel(u))}</option>`).join("")}</select>`;
+    else if(f.t==="fleetPilot") inp=`<select id="${f.id}"><option value="">${F.pilots.length?"— choisir —":"— aucun télépilote enregistré —"}</option>${F.pilots.map((p,i)=>`<option value="${i}">${esc(p.name)}</option>`).join("")}</select>`;
+    else if(f.t==="area") inp=`<textarea id="${f.id}" placeholder="${f.ph||""}"></textarea>`;
+    else if(f.t==="check"){ flush(); html+=`<label class="chk"><input type="checkbox" id="${f.id}"> ${f.l}</label>`; return; }
+    else if(f.t==="multi"||f.t==="fleetMulti"){ flush(); const opts=f.t==="multi"?f.o.map(o=>[o,o]):F.uas.map((u,i)=>[String(i),uasLabel(u)]);
+      html+=`<div class="fld"><label>${f.l}</label><div class="mchk">${opts.length?opts.map(([v,l])=>`<label class="chk"><input type="checkbox" data-multi="${f.id}" value="${esc(v)}" ${(S.m[f.id]||[]).includes(v)?"checked":""}> ${esc(l)}</label>`).join(""):'<span class="small">Flotte vide : importe-la dans l\'onglet AlphaTango.</span>'}</div></div>`; return; }
+    else inp=`<input type="${f.t}" id="${f.id}" placeholder="${f.ph||""}" ${f.t==="number"?'step="any"':""}>`;
+    const el=`<div class="fld"><label for="${f.id}">${f.l}</label>${inp}</div>`;
+    if(f.half){ halfBuf.push(el); if(halfBuf.length===2) flush(); } else { flush(); html+=el; }
+  }); flush(); if(open) html+="</div>"; box.innerHTML=html;
+  ["resp","addr","phone"].forEach(k=>{ if(!S.m["op_"+k]&&F.op[k]) S.m["op_"+k]=F.op[k]; });
+  if(!S.m.op_name&&F.op.name) S.m.op_name=F.op.name; if(!S.m.op_uas&&F.op.fra) S.m.op_uas=F.op.fra; if(!S.m.op_mail&&F.op.mail) S.m.op_mail=F.op.mail;
+  box.querySelectorAll("[data-multi]").forEach(c=>c.onchange=()=>{ const k=c.dataset.multi; S.m[k]=[...box.querySelectorAll(`[data-multi="${k}"]:checked`)].map(x=>x.value); refresh(true); });
+  FIELDS.forEach(f=>{ if(!f.id||f.t==="multi"||f.t==="fleetMulti") return; const el=document.getElementById(f.id);
+    if(f.t==="check") el.checked=!!S.m[f.id]; else el.value=S.m[f.id]??"";
+    if(f.t==="fleetUas"){ el.onchange=()=>{ if(el.value==="") {S.m.m_uas="";refresh();} else applyUas(+el.value); }; return; }
+    if(f.t==="fleetPilot"){ el.onchange=()=>{ const p=F.pilots[+el.value]; S.m.m_pilot=el.value; if(p){ S.m.pilot_name=p.name; S.m.pilot_phone=p.phone; const pc=(p.cert||"").toUpperCase(); const opts=FIELDS.find(x=>x.id==="pilot_cert").o; const found=opts.filter(o=>{ const k=o.toUpperCase(); return (pc.includes("A1")&&k.startsWith("FORMATION A1"))||(pc.includes("A2")&&k.includes("A2"))||(pc.includes("STS-01")&&k==="CATS STS-01")||(pc.includes("STS-02")&&k==="CATS STS-02")||(pc.includes("CATT")&&k.startsWith("CATT")); }); if(found.length) S.m.pilot_cert=found; buildForm(); } refresh(); }; return; }
+    el.addEventListener(f.t==="check"||f.t==="select"||f.t==="dept"?"change":"input",()=>{ S.m[f.id]= f.t==="check"? el.checked : el.value; refresh(); }); });
+}
+document.getElementById("bufferIn").oninput=e=>{S.buffer=+e.target.value||0;drawZone();refresh();};
+document.getElementById("heightIn").oninput=e=>{S.height=+e.target.value||0;refresh();};
+
+/* =========================================================
+   ANALYSE
+   ========================================================= */
+function deptOf(c){ if(S.m.m_dept) return DEPTS.find(d=>d[0]===S.m.m_dept); if(!c) return null; let best=null,bd=Infinity; DEPTS.forEach(d=>{ if(d[3]==null) return; const x=hav(c,[d[3],d[4]]); if(x<bd){bd=x;best=d;} }); return best; }
+function analyze(){
+  const poly=zonePoly(), c=poly?centroid(poly):null, m=S.m, H=+S.height||0;
+  const r={poly,c,dept:deptOf(c),deptAuto:!S.m.m_dept,ads:[],sens:[],notamHits:[],czHits:[],list:[],sun:null,night:false};
+  if(poly){
+    r.ads=AD.map(a=>({a,d:distToPoly([a[2],a[3]],poly),b:bearing([a[2],a[3]],c)})).sort((x,y)=>x.d-y.d).slice(0,5);
+    r.sens=SENS.map(s=>({s,d:distToPoly([s[1],s[2]],poly)})).filter(x=>x.d<=x.s[3]*1000+2000);
+    r.notamHits=S.notams.filter(n=>n.c).map(n=>({n,d:distToPoly(n.c,poly)})).map(x=>({...x,hit:x.d<=x.n.r}));
+    r.czHits=S.cz.map(z=>({z,d:distToPoly(z.c,poly)})).filter(x=>x.d<=x.z.r+1000);
+  }
+  if(c&&m.m_date){ r.sun=sun(m.m_date,c[0],c[1]); if(r.sun){ const sr=mins(hm(new Date(r.sun.rise.getTime()-30*6e4))), ss=mins(hm(new Date(r.sun.set.getTime()+30*6e4))); const a=mins(m.m_start),b=mins(m.m_end); if(a!=null&&b!=null&&(a<sr||b>ss)) r.night=true; r.nightWin={sr,ss}; } }
+  const L=r.list, add=(lv,ic,t,p)=>L.push({lv,ic,t,p});
+  if(!poly) add("blue","🗺️","Aucune zone tracée","Dessine un polygone ou un cercle sur la carte pour lancer l'analyse des contraintes.");
+  // Hauteur
+  if(H>120) add("red","📏",`Hauteur demandée ${H} m > 120 m`,"La hauteur maximale réglementaire est de 120 m au-dessus de la surface. Au-delà : dérogation préfectorale (formulaire R5-UAS-DEROG, 30 jours avant) ou autorisation d'exploitation DSAC (SORA).");
+  else add("green","📏",`Hauteur ${H} m ≤ 120 m`,"Compatible avec la limite générale de 120 m, sous réserve des plafonds locaux autour des aérodromes (30 / 50 / 60 / 100 m selon secteur – carte cartes.gouv.fr).");
+  // Aérodromes
+  r.ads.forEach((x,i)=>{ const a=x.a, km=x.d/1000, typ=a[4]==="M"?"militaire":a[4]==="C"?"civil contrôlé":"civil";
+    if(km<3) add("red","🛫",`${a[0]} ${a[1]} à ${fmtD(x.d)} (${typ})`,"Zone très proche de l'aérodrome : vol en principe interdit sans accord de l'organisme de la circulation aérienne (tour / AFIS / exploitant). Hauteurs fortement plafonnées, parfois 0 m.");
+    else if(km<10&&a[4]!=="A") add("orange","🛫",`${a[0]} ${a[1]} à ${fmtD(x.d)} (${typ})`,"Zone probablement incluse dans la CTR ou les secteurs de restriction de l'aérodrome : accord préalable de l'organisme ATS + protocole. Vérifier la hauteur autorisée sur la carte des restrictions UAS.");
+    else if(km<5) add("orange","🛫",`${a[0]} ${a[1]} à ${fmtD(x.d)} (${typ})`,"Proximité d'un aérodrome non contrôlé : hauteurs plafonnées et accord du prestataire AFIS ou de l'exploitant d'aérodrome à obtenir.");
+    else if(i===0) add("green","🛫",`Aérodrome le plus proche : ${a[0]} à ${fmtD(x.d)}`,"Pas d'aérodrome de la base embarquée à moins de 10 km. Les petits aérodromes, ULM, hélistations et plateformes privées ne sont pas tous listés : vérifier la carte VAC / Géoportail."); });
+  if(m.e_ctr) add("orange","🛂","Espace aérien contrôlé déclaré","Évolution dans un espace contrôlé : accord préalable de l'organisme de contrôle, formalisé par un protocole fixant les conditions d'évolution.");
+  // Sites sensibles
+  r.sens.forEach(x=>add(x.d<=x.s[3]*1000?"red":"orange","☢️",`${x.s[0]} – ${x.d===0?"zone à l'intérieur":"à "+fmtD(x.d)}`,"Zone interdite ou réglementée probable (rayon indicatif). Survol interdit sauf autorisation spécifique : contrôler la délimitation exacte (P/R) sur la carte officielle."));
+  r.czHits.forEach(x=>add(x.d<=x.z.r?"red":"orange","⛔",`${x.z.t} ${x.z.n} – ${x.d<=x.z.r?"interceptée":"à "+fmtD(x.d-x.z.r)}`,"Zone saisie manuellement. Vérifier conditions d'activation et organisme gestionnaire."));
+  r.notamHits.forEach(x=>add(x.hit?"red":"blue","📡",`NOTAM ${x.n.id||""} ${x.hit?"touche la zone":"à "+fmtD(x.d-x.n.r)+" de la zone"}`,(x.n.fl?`Niveaux ${x.n.fl}. `:"")+(x.n.e||"").slice(0,180)));
+  // Environnement
+  if(m.e_pop.startsWith("Zone peuplée")) add("orange","🏘️","Vol en zone peuplée","Déclaration préalable au préfet territorialement compétent : vol au plus tôt 10 jours ouvrables et au plus tard 30 jours ouvrables après l'envoi (dimanches et fériés exclus). Le préfet peut interdire ou restreindre le vol.");
+  if(m.e_pop.startsWith("Rassemblement")) add("red","👥","Rassemblement de personnes à moins de 150 m","Vol considéré en zone peuplée : déclaration préfectorale obligatoire. Survol de rassemblement interdit en catégorie Ouverte ; en général autorisation d'exploitation DSAC nécessaire.");
+  if(m.e_over) add("orange","🚶","Survol de personnes non impliquées","Possible uniquement en A1 (C0/C1, jamais au-dessus d'un rassemblement). Interdit en A2/A3 et en STS (zone contrôlée au sol).");
+  if(r.night) add("red","🌙","Vol de nuit aéronautique",`La plage horaire sort de la période de jour (lever −30 min ${hmM(r.nightWin.sr)} / coucher +30 min ${hmM(r.nightWin.ss)}). Vol de nuit interdit sauf dérogation préfectorale (30 jours avant).`);
+  else if(r.sun) add("green","☀️","Vol de jour",`Lever ${hm(r.sun.rise)} · Coucher ${hm(r.sun.set)} (heure de Paris). Fenêtre de jour aéronautique : ${hmM(r.nightWin.sr)} – ${hmM(r.nightWin.ss)}.`);
+  if(m.e_park) add("orange","🌲","Espace naturel protégé","Cœur de parc national / réserve : survol souvent réglementé (hauteur minimale ou interdiction, périodes de nidification). Contacter le gestionnaire de l'espace.");
+  if(m.e_sens) add("orange","🛡️","Site sensible / ZICAD","Les ZICAD et emprises militaires sont interdites de survol. La Préfecture de police demande la mention des ZICAD dans le dossier (Paris).");
+  if(m.e_priv) add("blue","🔑","Propriété privée","Obtenir l'accord écrit du propriétaire et respecter le droit à l'image et la vie privée des personnes.");
+  if(m.e_infra) add("orange","🚆","Infrastructures linéaires","Voies ferrées, autoroutes, lignes HT : distance de sécurité, accord du gestionnaire (SNCF Réseau, concessionnaire, RTE) recommandé ou exigé.");
+  // Carte officielle Restrictions UAS (DGAC / IGN)
+  if(poly){ if(UASD.status==="loading") add("blue","🗺️","Carte DGAC des restrictions UAS : interrogation en cours…","");
+    else if(UASD.status==="error") add("orange","🗺️","Carte DGAC des restrictions UAS non interrogée","Le service de la Géoplateforme n'a pas répondu ("+UASD.err+"). Dans l'aperçu Claude les requêtes externes sont bloquées : vérifier la zone sur cartes.gouv.fr ou héberger l'outil.");
+    else if(UASD.status==="ok"){ const inZ=UASD.hits.filter(x=>x.inZone), buf=UASD.hits.filter(x=>!x.inZone);
+      if(!UASD.hits.length) add("green","🗺️","Zone sans couleur sur la carte DGAC : 120 m max","Carte « Restrictions UAS catégorie Ouverte et aéromodélisme » (hors interdictions temporaires, NOTAM, ZICAD et agglomérations).");
+      inZ.slice(0,8).forEach(x=>{ if(x.forb) add("red","⛔","Zone rouge DGAC : vol interdit dans la zone",x.txt);
+        else if(x.h!=null) add(H>x.h?"red":"orange","📐",`${x.zc.n.split(" – ")[0]} DGAC : hauteur max ${x.h} m${H>x.h?` (tu prévois ${H} m)`:""}`,x.txt+(H>x.h?" — au-delà : accord de l'organisme indiqué / du gestionnaire.":""));
+        else add("orange","🗺️","Restriction UAS DGAC sur la zone",x.txt); });
+      if(buf.length) add("orange","🗺️",`${buf.length} zone(s) de restriction DGAC dans la zone tampon`,buf.slice(0,3).map(x=>x.txt).join(" | ")); } }
+  // Points de passage
+  const T=(S.wps||[]).find(w=>w.t==="Télépilote");
+  if(poly&&T){ const dmax=Math.max(...poly.map(p=>hav([T.lat,T.lon],p))); const lim=+m.v_dist||500; add(dmax>lim?"orange":"green","🧍",`Distance max télépilote ↔ zone : ${fmtD(dmax)}`,dmax>lim?`Supérieure à la distance maximale prévue (${fmtD(lim)}) : vérifier la vue directe ou ajouter des observateurs.`:"Compatible avec la distance maximale prévue."); }
+  if(poly&&!(S.wps||[]).some(w=>w.t==="Décollage")) add("blue","📌","Point de décollage non placé","Place le décollage, le télépilote et un atterrissage d'urgence (bouton 📌 Point) : ils figurent dans le dossier de vol.");
+  // AlphaTango / exploitant
+  if(!m.op_uas) add("blue","🪪","N° d'exploitant UAS non renseigné","Renseigne l'exploitant dans l'onglet AlphaTango (extrait du registre) pour l'ajouter aux déclarations.");
+  if(F.op.valid&&m.m_date){ const [dd,mm,yy]=F.op.valid.split("/").map(Number); if(yy&&new Date(yy,mm-1,dd)<parseDate(m.m_date)) add("red","🪪","Enregistrement exploitant expiré à la date du vol",`Fin de validité ${F.op.valid} – renouveler dans AlphaTango.`); }
+  if((+m.d_mass||0)>=0.8&&!/UAS-FR-\d+/i.test(m.d_reg||"")) add("orange","🏷️","Aéronef ≥ 800 g : n° d'enregistrement UAS-FR à renseigner","L'enregistrement de l'aéronef dans AlphaTango est requis ; sélectionne-le dans la flotte importée.");
+  if(m.m_uas!==""&&F.uas[+m.m_uas]&&F.uas[+m.m_uas].status&&!/valide/i.test(F.uas[+m.m_uas].status)) add("red","🏷️","Statut de l'aéronef dans AlphaTango : "+F.uas[+m.m_uas].status,"Un aéronef suspendu, perdu ou volé ne peut pas être utilisé.");
+  if(!m.d_rid && !/^C0$/.test(m.d_class)) add("orange","📶","Signalement électronique","Les drones en catégorie Spécifique doivent être équipés d'un signalement électronique européen ; en Ouverte, obligatoire selon la classe et la masse (≥ 250 g).");
+  if(S.m.m_date){ const d=parseDate(S.m.m_date); const today=new Date(); today.setHours(0,0,0,0); if(d<today) add("orange","📅","Date de mission passée","Mets à jour la date pour recalculer délais et ensoleillement."); }
+  return r;
+}
+function hmM(x){ return String(Math.floor(x/60)).padStart(2,"0")+":"+String(x%60).padStart(2,"0"); }
+
+/* =========================================================
+   SCÉNARIOS
+   ========================================================= */
+const ENG_BASE=["Le transport de marchandises dangereuses est interdit","L'aéronef ne laisse tomber aucune matière","Le télépilote a pris connaissance du manuel d'utilisation de l'aéronef fourni par le fabricant"];
+function scenarios(r){
+  const m=S.m, H=+S.height||0, cls=m.d_class, mass=+m.d_mass||0, vl=m.v_vlos, pop=m.e_pop, legacy=cls.startsWith("Sans")||cls.startsWith("Construction");
+  const isVLOS=!vl.startsWith("BVLOS"), populated=!pop.startsWith("Hors"), gath=pop.startsWith("Rassemblement"), dist=+m.v_dist||0, obs=+m.v_obs||0;
+  const pc=m.pilot_cert||[], has=k=>pc.some(x=>x.includes(k));
+  const out=[];
+  const S_=(name,code,sub,conds,reqs,eng)=>{ const ko=conds.filter(c=>!c[0]); out.push({name,code,sub,ok:ko.length===0,conds,reqs,eng:ENG_BASE.concat(eng||[])}); };
+  S_("Ouverte A1","OUVERTE-A1","Survol de personnes isolées possible",[
+     [["C0","C1"].includes(cls)||(legacy&&mass<0.25),"Aéronef de classe C0 ou C1, ou sans classe de masse < 250 g","Règl. (UE) 2019/947, annexe partie A, UAS.OPEN.020 (4)-(5) ; art. 20"],
+     [true,"Mission hors agglomération ou, en agglomération, à des fins professionnelles (déclaration préfectorale)","Arrêté du 3 déc. 2020 modifié"],
+     [cls==="C0"||m.d_rid||mass<0.25,"Signalement électronique conforme à la masse / classe","Arrêté du 27 déc. 2019 (signalement électronique)"],
+     [cls==="C0"||has("A1/A3")||has("A2")||has("CATS"),"Télépilote titulaire de la formation en ligne A1/A3 (sauf C0)","Règl. (UE) 2019/947, UAS.OPEN.020 (4)(b)"],
+     [!!m.op_uas,"Exploitant enregistré sur AlphaTango","Règl. (UE) 2019/947, art. 14"],
+     [H<=120,"Hauteur maximale 120 m au-dessus de la surface","Règl. (UE) 2019/947, UAS.OPEN.010 (2)"],
+     [!gath,"Aucun survol de rassemblement ; estimer raisonnablement qu'aucun tiers n'est survolé","UAS.OPEN.020 (1)"],
+     [isVLOS,"Exploitation en vue directe","Règl. (UE) 2019/947, art. 4 (1)(d)"],[!r.night,"Vol de jour (ou dérogation de nuit)","Arrêté du 3 déc. 2020, art. 3"]],
+     ["Enregistrement exploitant AlphaTango","Formation en ligne A1/A3 (sauf C0)","En agglomération : déclaration préalable au préfet"],["Le télépilote estime qu'aucune personne ne participant pas à l'exploitation ne sera survolée","Si survol imprévu de tiers : réduction au minimum de la durée de survol"]);
+  S_("Ouverte A2","OUVERTE-A2","Proche des personnes",[
+     [cls==="C2","Aéronef de classe C2","UAS.OPEN.030 (2)"],[has("A2"),"Télépilote titulaire du certificat A2","UAS.OPEN.030 (2)(c)"],[isVLOS,"Exploitation en vue directe","art. 4 (1)(d)"],[H<=120,"Hauteur maximale 120 m","UAS.OPEN.010 (2)"],
+     [!m.e_over&&!gath,"Aucun survol de tiers ; 30 m horizontaux des personnes (5 m en mode basse vitesse)","UAS.OPEN.030 (1)"],[!r.night,"Vol de jour (ou dérogation)","Arrêté du 3 déc. 2020"]],
+     ["Certificat d'aptitude A2","Signalement électronique","En agglomération : déclaration préfectorale"],["Distance horizontale de sécurité de 30 m avec les tiers (5 m en mode basse vitesse)"]);
+  S_("Ouverte A3","OUVERTE-A3","Loin des personnes",[
+     [["C2","C3","C4"].includes(cls)||(legacy&&mass<25),"Aéronef C2/C3/C4 ou sans classe < 25 kg","UAS.OPEN.040 (3)"],[isVLOS,"Exploitation en vue directe","art. 4 (1)(d)"],[H<=120,"Hauteur maximale 120 m","UAS.OPEN.010 (2)"],
+     [!populated,"À plus de 150 m des zones résidentielles, commerciales, industrielles ou récréatives","UAS.OPEN.040 (2)"],[!m.e_over,"Aucune personne non impliquée dans la zone d'évolution","UAS.OPEN.040 (1)"],[!r.night,"Vol de jour (ou dérogation)","Arrêté du 3 déc. 2020"]],
+     ["Formation en ligne A1/A3","Enregistrement exploitant"],["Aucune personne non impliquée dans la zone d'évolution"]);
+  S_("Spécifique STS-01","SPECIFIQUE-STS-01","VLOS au-dessus d'une zone contrôlée au sol, environnement peuplé possible",[
+     [cls==="C5"||(m.d_equip||[]).includes("Kit de classe C5"),"Aéronef de classe C5 (ou C3 avec kit C5)","Règl. (UE) 2019/947, appendice 1, UAS.STS-01.020"],[has("STS-01"),"Télépilote titulaire du CATS STS-01","UAS.STS-01.020 (4)"],[isVLOS,"Exploitation en vue directe","UAS.STS-01.010"],[H<=120,"Hauteur maximale 120 m","UAS.STS-01.010"],
+     [m.e_ground,"Zone contrôlée au sol (zone de vol + zone tampon fermées aux tiers)","UAS.STS-01.020 (1)"],[!m.e_over&&!gath,"Aucun survol de tiers","UAS.STS-01.020"],[(+m.m_speed||0)<=18||!m.m_speed,"Vitesse sol ≤ 5 m/s (18 km/h) en mode basse vitesse si requis","UAS.STS-01.020"],[!r.night,"Vol de jour (sinon dérogation)","Arrêté du 3 déc. 2020"]],
+     ["Déclaration d'exploitation STS-01 dans AlphaTango + accusé de réception","CATS STS-01","MANEX à jour","Zone peuplée : déclaration préfectorale via AlphaTango","Espace contrôlé : accord ATS + protocole"],["Zone contrôlée au sol balisée et surveillée pendant toute l'exploitation","Zone tampon de "+S.buffer+" m respectée","Procédures d'urgence du MANEX appliquées"]);
+  S_("Spécifique STS-02","SPECIFIQUE-STS-02","BVLOS au-dessus d'une zone contrôlée au sol, faible densité",[
+     [cls==="C6","Aéronef de classe C6","appendice 1, UAS.STS-02.020"],[has("STS-02"),"Télépilote titulaire du CATS STS-02","UAS.STS-02.020"],[H<=120,"Hauteur maximale 120 m","UAS.STS-02.010"],[!populated,"Environnement à faible densité de population","UAS.STS-02.010"],[m.e_ground,"Zone contrôlée au sol","UAS.STS-02.020"],
+     [!vl.startsWith("BVLOS")||dist<=(obs>0?2000:1000),`Distance ≤ 1 km du télépilote (≤ 2 km avec observateurs) — saisi : ${fmtD(dist)}`,"UAS.STS-02.020"],[!r.night,"Vol de jour (sinon dérogation)","Arrêté du 3 déc. 2020"]],
+     ["Déclaration d'exploitation STS-02 dans AlphaTango","CATS STS-02","Observateurs formés si > 1 km","Notification au ministère des Armées selon le cas"],["Observateurs positionnés et en liaison permanente","Zone contrôlée au sol surveillée"]);
+  const needAuth=out.every(s=>!s.ok);
+  out.push({name:"Spécifique – PDRA / SORA",code:"SPECIFIQUE-AUTORISATION",sub:"Autorisation d'exploitation délivrée par la DSAC",ok:true,auth:true,conds:[[true,"Couvre tout ce qui sort des scénarios ci-dessus : hors vue en zone peuplée, > 25 kg, > 120 m, survol de rassemblements, nuit…","Règl. (UE) 2019/947, art. 11-12 ; UAS.SPEC.030"]],
+    reqs:["Analyse de risques (SORA ou PDRA)","Dossier à la DSAC : instruction de plusieurs semaines à mois","MANEX, formation adaptée, assurance"],eng:ENG_BASE.concat(["Respect strict des conditions et limitations de l'autorisation d'exploitation"]),recommended:needAuth});
+  return out;
+}
+function retained(r){ const l=scenarios(r); return l.find(s=>s.name===S.scn)||l.find(s=>s.ok&&!s.auth)||l[l.length-1]; }
+/* =========================================================
+   RENDU
+   ========================================================= */
+function esc(s){return String(s??"").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));}
+function refresh(noQ){ window._refreshing=true; try{ refreshInner(noQ); } finally { window._refreshing=false; } }
+function refreshInner(noQ){
+  const r=analyze(); window._r=r;
+  document.getElementById("hdrName").textContent=S.m.m_name||"Nouvelle mission";
+  // Zone
+  const poly=r.poly;
+  if(poly){ const ap=S.zone.type==="circle"?{a:Math.PI*S.zone.radius**2,per:2*Math.PI*S.zone.radius}:areaPer(poly);
+    sArea.textContent=fmtA(ap.a); sPer.textContent=fmtD(ap.per); sPts.textContent=S.zone.type==="circle"?"⭕ R "+fmtD(S.zone.radius):S.zone.pts.length;
+    zCenter.innerHTML=`${r.c[0].toFixed(6)}, ${r.c[1].toFixed(6)}<br>${dms(r.c[0],1)} ${dms(r.c[1],0)}<br><span style="color:#8aa0c0">Département : ${r.dept?esc(r.dept[0]+" – "+r.dept[1]):"–"}${r.deptAuto?" (estimé – confirmer dans Mission)":""}</span>`;
+    zVerts.innerHTML=S.zone.type==="circle"?`<div class="mono">Centre ${S.zone.center.map(v=>v.toFixed(6)).join(", ")} · rayon ${S.zone.radius} m</div>`:
+      `<table class="t mono">${S.zone.pts.map((p,i)=>`<tr><td>${String.fromCharCode(65+(i%26))}</td><td>${p[0].toFixed(6)}</td><td>${p[1].toFixed(6)}</td></tr>`).join("")}</table>`;
+    const [la,lo]=r.c;
+    zLinks.innerHTML=`<a class="lnk" target="_blank" rel="noopener" href="https://cartes.gouv.fr/explorer-les-cartes/">cartes.gouv.fr – restrictions UAS (ex-Géoportail) <span>↗</span></a>
+      <a class="lnk" target="_blank" rel="noopener" href="https://www.openstreetmap.org/?mlat=${la}&mlon=${lo}#map=16/${la}/${lo}">OpenStreetMap <span>↗</span></a>
+      <a class="lnk" target="_blank" rel="noopener" href="https://www.google.com/maps/@${la},${lo},17z/data=!3m1!1e3">Google Maps satellite <span>↗</span></a>`;
+  } else { sArea.textContent="–"; sPer.textContent="–"; sPts.textContent=S.zone.pts.length; zCenter.textContent="Aucune zone tracée"; }
+  document.getElementById("bufferIn").value=S.buffer; document.getElementById("heightIn").value=S.height;
+  // Contraintes
+  const order={red:0,orange:1,blue:2,green:3};
+  document.getElementById("cstList").innerHTML=r.list.slice().sort((a,b)=>order[a.lv]-order[b.lv]).map(x=>`<div class="cst ${x.lv}"><div class="ic">${x.ic}</div><div><b>${esc(x.t)}</b><p>${esc(x.p)}</p></div></div>`).join("");
+  document.querySelectorAll('.tab[data-v="cst"] .n')[0].style.background=r.list.some(x=>x.lv==="red")?"var(--red)":r.list.some(x=>x.lv==="orange")?"var(--ora)":"";
+  renderAuth(r); renderNotams(r); renderScn(r); renderDossier(r); drawWps(); save(true); if(!noQ) queryUAS(); if(document.getElementById("v-meteo").classList.contains("act")) loadMeteo();
+}
+
+function copyBtn(id,label="Copier"){ return `<button class="btn sm" data-copy="${id}">${label}</button>`; }
+function mailtoBtn(to,subj,body){ return `<a class="btn sm" style="text-decoration:none" href="mailto:${encodeURIComponent(to)}?subject=${encodeURIComponent(subj)}&body=${encodeURIComponent(body.slice(0,1800))}">Ouvrir dans la messagerie</a>`; }
+function zoneText(r){ if(!r.poly) return "(zone non définie)"; if(S.zone.type==="circle") return `Cercle – centre ${r.c[0].toFixed(5)}, ${r.c[1].toFixed(5)} (${dms(r.c[0],1)} ${dms(r.c[1],0)}) – rayon ${S.zone.radius} m`;
+  return `Polygone ${S.zone.pts.length} sommets – centre ${r.c[0].toFixed(5)}, ${r.c[1].toFixed(5)} (${dms(r.c[0],1)} ${dms(r.c[1],0)})\n`+S.zone.pts.map((p,i)=>`  ${String.fromCharCode(65+(i%26))} : ${p[0].toFixed(6)}, ${p[1].toFixed(6)}`).join("\n"); }
+function datesTxt(){ const m=S.m; return `${m.m_date?fdate(parseDate(m.m_date)):"(date à préciser)"}${m.m_date2&&m.m_date2!==m.m_date?" au "+fdate(parseDate(m.m_date2)):""}, de ${m.m_start||"--:--"} à ${m.m_end||"--:--"} (heure locale)`; }
+
+function renderAuth(r){
+  const m=S.m, d=r.dept, populated=!m.e_pop.startsWith("Hors"), box=document.getElementById("authList"); let h="";
+  // --- 1. Préfecture
+  const need=populated||r.night||(+S.height>120);
+  h+=`<div class="card"><div class="row" style="justify-content:space-between"><b>1 · Préfecture</b><span class="pill ${need?"orange":"green"}">${need?"Déclaration requise":"Non requise a priori"}</span></div>`;
+  if(d){ h+=`<p class="small" style="margin:8px 0 4px">${esc(d[0]+" – "+d[1])}${r.deptAuto?" · estimé d'après le centre de zone, à confirmer dans l'onglet Mission":""}</p>
+    <div class="row"><span class="mono" style="font-size:13px;color:#cfe3ff">${esc(d[2])}</span>${copyBtn("pmail","Copier l'adresse")}</div><span id="pmail" hidden>${esc(d[2])}</span>`;
+    if(DEPT_NOTES[d[0]]) h+=`<div class="warnbox" style="margin-top:8px">${esc(DEPT_NOTES[d[0]])}</div>`; }
+  else h+=`<p class="small">Trace la zone ou choisis le département dans l'onglet Mission.</p>`;
+  h+=`<p class="small" style="margin-top:8px">Source : tableau DGAC « Contacts drones préfectures » (avril 2025, en cours de constitution) – vérifie l'adresse sur le site de la préfecture avant envoi.</p>`;
+  if(m.m_date){ const md=parseDate(m.m_date), w=sendWindow(md);
+    h+=`<h3 style="margin-top:12px">Délais (zone peuplée / agglomération)</h3><table class="t"><tr><th>Envoyer au plus tôt</th><td>${fdate(w.first)}</td></tr><tr><th>Envoyer au plus tard</th><td><b>${fdate(w.last)}</b></td></tr><tr><th>Dérogation nuit / hauteur</th><td>avant le ${fdate(addD(md,-30))} (30 jours)</td></tr></table>
+    <p class="small">Calcul : vol au plus tôt 10 jours ouvrables et au plus tard 30 jours ouvrables après le jour d'envoi, dimanches et jours fériés exclus. Une déclaration par jour si les vols s'étalent sur plusieurs jours.</p>`; }
+  h+=`<h3>Comment déclarer</h3><ul class="steps">
+    <li><b>Catégorie spécifique</b> : notification en ligne via <a href="https://alphatango.aviation-civile.gouv.fr" target="_blank" rel="noopener">AlphaTango</a> (voie privilégiée).</li>
+    <li><b>Catégorie ouverte en agglomération</b> : CERFA 15476*04 + annexe obligatoire, par mail à l'adresse ci-dessus (<a href="https://entreprendre.service-public.gouv.fr/vosdroits/R42699" target="_blank" rel="noopener">formulaire</a>).</li>
+    <li>Joindre : KML/KMZ de la zone, attestation d'assurance, accord du propriétaire, accord ATS si requis, plan de sécurisation.</li>
+    <li>Nuit ou > 120 m : formulaire de dérogation R5-UAS-DEROG au préfet, 30 jours avant.</li></ul>`;
+  const pSubj=`Déclaration préalable vol UAS – ${m.m_commune||"[commune]"} – ${m.m_date||"[date]"}`;
+  const pBody=`Madame, Monsieur,
+
+Conformément à l'arrêté du 3 décembre 2020 modifié relatif à l'utilisation de l'espace aérien par les aéronefs sans équipage à bord, je vous adresse la déclaration préalable d'un vol d'aéronef sans équipage à bord en zone peuplée.
+
+EXPLOITANT : ${m.op_name||"[société]"} – n° exploitant UAS ${m.op_uas||"[FRA…]"}
+TÉLÉPILOTE : ${m.pilot_name||"[nom]"} – ${certs()} – tél. ${m.pilot_phone||"[téléphone]"}
+AÉRONEF : ${m.d_model||"[modèle]"} – ${m.d_reg||"[UAS-FR-…]"} – classe ${m.d_class} – ${m.d_mass} kg – n° série ${m.d_serial||"[n°]"}
+CATÉGORIE / SCÉNARIO : ${bestScn(r)}
+
+MISSION : ${m.m_type}${m.m_client?" pour "+m.m_client:""}
+DATE(S) : ${datesTxt()}
+LIEU : ${m.m_address||"[adresse]"}, ${m.m_commune||"[commune]"} (${d?d[0]:"[dépt]"})
+ZONE : ${zoneText(r)}
+HAUTEUR MAXIMALE : ${S.height} m / sol – zone tampon ${S.buffer} m
+MODE DE VOL : ${m.v_vlos} – distance max ${m.v_dist} m
+
+MESURES DE SÉCURISATION : ${m.e_secu||"[balisage, signaleurs, périmètre…]"}
+
+Pièces jointes : CERFA 15476*04 et annexe (ou notification AlphaTango), fichier KML de la zone, attestation d'assurance RC, ${m.e_priv?"accord du propriétaire, ":""}${r.ads.some(x=>x.d<10000&&x.a[4]!=="A")||m.e_ctr?"accord de l'organisme de la circulation aérienne, ":""}plan de sécurisation.
+
+Je reste à votre disposition pour toute information complémentaire.
+
+Cordialement,
+${m.pilot_name||"[nom]"} – ${m.op_name||""}
+${m.pilot_phone||""} ${m.op_mail||""}`;
+  h+=`<h3>Mail type à la préfecture</h3><pre class="tpl" id="pTpl">Objet : ${esc(pSubj)}\n\n${esc(pBody)}</pre><div class="row">${copyBtn("pTpl","Copier le mail")}${d?mailtoBtn(d[2],pSubj,pBody):""}</div></div>`;
+
+  // --- 2. Aéroport
+  const near=r.ads.filter(x=>x.d<10000||(x.a[4]==="A"&&x.d<5000));
+  const needAD=near.length>0||m.e_ctr;
+  h+=`<div class="card"><div class="row" style="justify-content:space-between"><b>2 · Aérodrome / contrôle aérien</b><span class="pill ${needAD?"orange":"green"}">${needAD?"Accord ATS probable":"Pas d'aérodrome proche (base)"}</span></div>`;
+  if(r.ads.length){ h+=`<table class="t" style="margin-top:8px"><tr><th>Aérodrome</th><th>Distance</th><th>Position zone</th></tr>${r.ads.slice(0,4).map(x=>`<tr><td><b>${x.a[0]}</b> ${esc(x.a[1])}<br><span class="small">${x.a[4]==="M"?"Militaire":x.a[4]==="C"?"Civil contrôlé":"Civil"}</span></td><td>${fmtD(x.d)}</td><td>${Math.round(x.b)}° ${card16(x.b)}</td></tr>`).join("")}</table>`; }
+  const tgt=near[0]||r.ads[0];
+  h+=`<h3>Protocole de demande d'accord</h3><ul class="steps">
+    <li><b>Identifier l'organisme compétent</b> : service du contrôle de la circulation aérienne de l'aérodrome (SNA / tour, ou organisme militaire pour une base de la Défense) ; à défaut le prestataire AFIS ; à défaut l'exploitant de l'aérodrome. Coordonnées sur la carte VAC (SIA).</li>
+    <li><b>Contrôler la hauteur autorisée</b> sur la carte des restrictions UAS (cartes.gouv.fr) : 0, 30, 50, 60 ou 100 m selon le secteur autour des pistes.</li>
+    <li><b>Envoyer la demande</b> le plus tôt possible (souvent 10 à 15 jours minimum, davantage pour un protocole permanent) avec : zone (KML + coordonnées), relèvement/distance par rapport au terrain, hauteur max, dates et créneaux, drone, télépilote et téléphone joignable.</li>
+    <li><b>Signer le protocole / recevoir l'accord</b> : il fixe les conditions d'évolution (hauteur, horaires, préavis d'appel, consignes de dégagement).</li>
+    <li><b>Jour J</b> : appel téléphonique à l'organisme avant le premier décollage, maintien de la veille téléphonique, interruption immédiate sur demande, appel de fin d'activité.</li>
+    <li><b>Archiver</b> l'accord avec le dossier de mission et le joindre à la déclaration préfectorale.</li></ul>`;
+  if(tgt){ const a=tgt.a; const aSubj=`Demande d'accord – vol UAS à ${fmtD(tgt.d)} de ${a[0]} – ${m.m_date||"[date]"}`;
+    const aBody=`Madame, Monsieur,
+
+Nous sollicitons l'accord de votre organisme (et, le cas échéant, l'établissement d'un protocole) pour une activité d'aéronef sans équipage à bord à proximité de l'aérodrome ${a[0]} – ${a[1]}.
+
+POSITION : ${fmtD(tgt.d)} au ${Math.round(tgt.b)}° (${card16(tgt.b)}) de l'aérodrome
+ZONE : ${zoneText(r)}
+HAUTEUR MAXIMALE : ${S.height} m / sol – zone tampon ${S.buffer} m
+DATE(S) ET CRÉNEAUX : ${datesTxt()}
+AÉRONEF : ${m.d_model||"[modèle]"} – classe ${m.d_class} – ${m.d_mass} kg – signalement électronique ${m.d_rid?"actif":"non"}
+MODE : ${m.v_vlos}
+EXPLOITANT : ${m.op_name||"[société]"} – ${m.op_uas||"[FRA…]"}
+TÉLÉPILOTE : ${m.pilot_name||"[nom]"} – joignable pendant toute l'activité au ${m.pilot_phone||"[téléphone]"}
+
+Nous nous engageons à : appeler votre service avant la mise en œuvre et en fin d'activité, rester joignables en permanence, interrompre immédiatement le vol et poser l'aéronef sur simple demande, respecter la hauteur et la zone accordées.
+
+Le fichier KML de la zone est joint.
+
+Cordialement,
+${m.pilot_name||""} – ${m.op_name||""} ${m.op_mail||""}`;
+    h+=`<h3>Mail type à l'organisme ATS</h3><pre class="tpl" id="aTpl">Objet : ${esc(aSubj)}\n\n${esc(aBody)}</pre><div class="row">${copyBtn("aTpl","Copier le mail")}</div>`; }
+  h+=`</div>`;
+
+  // --- 3. Autres
+  h+=`<div class="card"><b>3 · Autres démarches possibles</b><ul class="steps" style="margin-top:8px">
+   <li><b>DSAC</b> – déclaration STS ou autorisation d'exploitation (SORA/PDRA) via AlphaTango ; dérogations cas B/D : <span class="mono">dsac-autorisations-drones-bf@aviation-civile.gouv.fr</span></li>
+   <li><b>Ministère des Armées</b> – notification préalable via AlphaTango lorsque le type de vol l'exige (notamment certains vols hors vue).</li>
+   ${m.e_park?"<li><b>Gestionnaire de l'espace protégé</b> (parc, réserve) – accord / réglementation de survol.</li>":""}
+   ${m.e_priv?"<li><b>Propriétaire</b> du terrain survolé – accord écrit.</li>":""}
+   ${m.e_infra?"<li><b>Gestionnaire d'infrastructure</b> (SNCF Réseau, concessionnaire autoroutier, RTE).</li>":""}
+   <li><b>Mairie</b> – recommandé en agglomération (arrêté de stationnement / circulation pour sécuriser le périmètre).</li></ul></div>`;
+  box.innerHTML=h;
+}
+function bestScn(r){ return retained(r).code; }
+
+function renderScn(r){
+  const list=scenarios(r), ret=retained(r);
+  document.getElementById("scnList").innerHTML=`<div class="card" style="border-color:var(--acc)"><span class="small">Scénario retenu pour le dossier</span><br><b style="font-size:16px">${esc(ret.code)}</b> ${S.scn?"":'<span class="small">(choisi automatiquement)</span>'}</div>`+list.map(s=>{
+    const st=s.auth?(s.recommended?["orange","Seule option"]:["blue","Toujours possible"]):s.ok?["green","Compatible"]:["red","Incompatible"];
+    return `<div class="sc" style="${ret===s?"border-color:var(--acc);box-shadow:0 0 0 1px var(--acc)":""}"><div class="hd"><div><b>${s.name}</b><div class="small">${s.sub}</div></div><span class="pill ${st[0]}">${st[1]}</span></div>
+     <ul>${s.conds.map(c=>`<li class="${c[0]?"ok":"ko"}">${c[0]?"✓":"✗"} ${esc(c[1])}<br><span class="small mono" style="font-size:10.5px">${esc(c[2]||"")}</span></li>`).join("")}</ul>
+     <div class="small" style="margin-top:8px"><b style="color:#cbd8ee">À prévoir :</b> ${s.reqs.map(esc).join(" · ")}</div>
+     <div class="row" style="margin-top:8px"><button class="btn sm ${ret===s?"on":""}" data-scn="${esc(s.name)}">${ret===s?"✓ Retenu":"Retenir ce scénario"}</button></div></div>`; }).join("")+
+    `<p class="small">Évaluation simplifiée : le choix final du scénario relève de l'exploitant, au regard des guides DSAC catégories Ouverte et Spécifique et du MANEX.</p>`;
+}
+document.addEventListener("click",e=>{ const b=e.target.closest("[data-scn]"); if(b){ S.scn=b.dataset.scn; refresh(true); } });
+/* ---- NOTAM ---- */
+function parseNotams(txt){ return txt.split(/\n\s*\n/).map(b=>b.trim()).filter(Boolean).map(b=>{
+  const id=(b.match(/^\(?\s*([A-Z]{1,4}-?[A-Z]?\d{3,4}\/\d{2})/m)||b.match(/([A-Z]\d{4}\/\d{2})/)||[])[1]||"";
+  const q=b.match(/(\d{2})(\d{2})([NS])\s?(\d{3})(\d{2})([EW])(\d{3})/); let c=null,r=0,fl="";
+  if(q){ let la=+q[1]+q[2]/60, lo=+q[4]+q[5]/60; if(q[3]==="S")la=-la; if(q[6]==="W")lo=-lo; c=[la,lo]; r=+q[7]*1852; }
+  const ql=b.match(/Q\)\s*[^/]+\/[^/]+\/[^/]*\/[^/]*\/[^/]*\/(\d{3})\/(\d{3})/); if(ql) fl=`FL${ql[1]} – FL${ql[2]}`;
+  const e=(b.match(/E\)\s*([\s\S]*?)(?:\n[FG]\)|$)/)||[])[1]||b; const bb=(b.match(/B\)\s*(\d{10})/)||[])[1], cc=(b.match(/C\)\s*(\d{10}|PERM)/)||[])[1];
+  return {id,c,r,fl,e:e.replace(/\s+/g," ").trim(),b:bb,cc,raw:b}; }); }
+function nDate(s){ if(!s||s==="PERM") return s||""; return `${s.slice(4,6)}/${s.slice(2,4)}/20${s.slice(0,2)} ${s.slice(6,8)}:${s.slice(8,10)} UTC`; }
+document.getElementById("notamParse").onclick=()=>{ const n=parseNotams(document.getElementById("notamIn").value); if(!n.length){toast("Aucun NOTAM détecté",true);return;} S.notams=S.notams.concat(n); document.getElementById("notamIn").value=""; refresh(); toast(n.length+" NOTAM ajouté(s)"); };
+document.getElementById("notamClear").onclick=()=>{ S.notams=[]; refresh(); };
+document.getElementById("supAdd").onclick=()=>{ const n=supNum.value.trim(); if(!n){toast("Indique le n° du SUP AIP",true);return;} S.sup.push({n,v:supVal.value.trim(),o:supObj.value.trim()}); supNum.value=supVal.value=supObj.value=""; refresh(); };
+document.getElementById("czAdd").onclick=()=>{ const c=parseLL(czCenter.value||""); if(!c){toast("Centre invalide",true);return;} S.cz.push({n:czName.value.trim()||"Zone",t:czType.value,c,r:(+czRad.value||1)*1000}); czName.value=czCenter.value=""; refresh(); };
+const AERO_CHECKS=["NOTAM consultés la veille et le jour J (SOFIA)","SUP AIP en vigueur vérifiés (SIA)","Carte des restrictions UAS consultée (cartes.gouv.fr)","Carte VAC de l'aérodrome le plus proche consultée","Activation réseau très basse altitude défense (RTBA/AZBA) vérifiée si hauteur importante","Météo : vent, rafales, visibilité, précipitations","Hélistations / plateformes ULM / hôpitaux à proximité vérifiés"];
+function renderNotams(r){
+  notamLayer.clearLayers(); czLayer.clearLayers();
+  S.notams.forEach(n=>{ if(n.c) L.circle(n.c,{radius:Math.max(n.r,300),color:"#22d3ee",weight:1.5,dashArray:"3 4",fillOpacity:.06}).bindPopup(`<b>${esc(n.id||"NOTAM")}</b><br>${esc(n.fl)}<br><span style="color:#8aa0c0">${esc(n.e.slice(0,200))}</span>`).addTo(notamLayer); });
+  S.cz.forEach(z=>L.circle(z.c,{radius:z.r,color:"#f2545b",weight:1.5,fillColor:"#f2545b",fillOpacity:.1}).bindPopup(`<b>${esc(z.t+" "+z.n)}</b>`).addTo(czLayer));
+  const hitMap=new Map((r.notamHits||[]).map(x=>[x.n,x]));
+  document.getElementById("notamList").innerHTML=S.notams.map((n,i)=>{ const x=hitMap.get(n); const st=!n.c?["blue","Q) non lue"]:x&&x.hit?["red","Touche la zone"]:r.poly?["green","Hors zone"]:["blue","—"];
+    return `<div class="cst ${st[0]==="red"?"red":st[0]==="green"?"green":""}"><div style="flex:1"><div class="row" style="justify-content:space-between"><b class="mono">${esc(n.id||"NOTAM "+(i+1))}</b><span class="pill ${st[0]}">${st[1]}</span></div>
+    <p>${n.c?`${n.c[0].toFixed(3)}, ${n.c[1].toFixed(3)} · R ${fmtD(n.r)} · ${esc(n.fl)}<br>`:""}${n.b?`Du ${nDate(n.b)} au ${nDate(n.cc)}<br>`:""}${esc(n.e.slice(0,260))}</p>
+    <button class="btn sm" data-deln="${i}" style="margin-top:6px">Retirer</button></div></div>`; }).join("");
+  document.getElementById("supList").innerHTML=S.sup.map((s,i)=>`<div class="cst orange"><div style="flex:1"><b>SUP AIP ${esc(s.n)}</b><p>${esc(s.v)}${s.v&&s.o?" · ":""}${esc(s.o)}</p><button class="btn sm" data-dels="${i}" style="margin-top:6px">Retirer</button></div></div>`).join("");
+  document.getElementById("czList").innerHTML=S.cz.map((z,i)=>`<div class="cst red"><div style="flex:1"><b>${esc(z.t+" "+z.n)}</b><p>${z.c[0].toFixed(4)}, ${z.c[1].toFixed(4)} · R ${fmtD(z.r)}</p><button class="btn sm" data-delz="${i}" style="margin-top:6px">Retirer</button></div></div>`).join("");
+  document.getElementById("aeroChecks").innerHTML=AERO_CHECKS.map((c,i)=>`<label class="chk"><input type="checkbox" data-chk="${i}" ${S.checks[i]?"checked":""}> ${c}</label>`).join("");
+}
+document.addEventListener("click",e=>{ const t=e.target;
+  if(t.dataset.deln!=null){S.notams.splice(+t.dataset.deln,1);refresh();}
+  if(t.dataset.dels!=null){S.sup.splice(+t.dataset.dels,1);refresh();}
+  if(t.dataset.delz!=null){S.cz.splice(+t.dataset.delz,1);refresh();}
+  if(t.dataset.copy){ copyText(document.getElementById(t.dataset.copy).textContent); }
+});
+document.addEventListener("change",e=>{ if(e.target.dataset.chk!=null){ S.checks[e.target.dataset.chk]=e.target.checked; save(true); renderDossier(window._r); } });
+
+/* ---- Dossier ---- */
+function kml(){ const p=zonePoly(); if(!p) return ""; const ring=p.concat([p[0]]).map(q=>`${q[1].toFixed(7)},${q[0].toFixed(7)},0`).join(" ");
+  const b=bufferPoly(p,+S.buffer||0); const bring=b?b.concat([b[0]]).map(q=>`${q[1].toFixed(7)},${q[0].toFixed(7)},0`).join(" "):"";
+  const nm=esc(S.m.m_name||"Zone de vol UAS");
+  return `<?xml version="1.0" encoding="UTF-8"?>
+<kml xmlns="http://www.opengis.net/kml/2.2"><Document><name>${nm}</name>
+<Style id="z"><LineStyle><color>fffd8b3d</color><width>3</width></LineStyle><PolyStyle><color>553d8bfd</color></PolyStyle></Style>
+<Style id="b"><LineStyle><color>ff24a5f5</color><width>2</width></LineStyle><PolyStyle><color>2224a5f5</color></PolyStyle></Style>
+<Placemark><name>Zone de vol – ${nm}</name><description>Hauteur max ${S.height} m sol – ${esc(datesTxt())}</description><styleUrl>#z</styleUrl><Polygon><outerBoundaryIs><LinearRing><coordinates>${ring}</coordinates></LinearRing></outerBoundaryIs></Polygon></Placemark>
+${b?`<Placemark><name>Zone tampon ${S.buffer} m</name><styleUrl>#b</styleUrl><Polygon><outerBoundaryIs><LinearRing><coordinates>${bring}</coordinates></LinearRing></outerBoundaryIs></Polygon></Placemark>`:""}
+</Document></kml>`; }
+function renderDossier(r){ const m=S.m, scn=scenarios(r);
+  const lines=[
+  `DOSSIER DE MISSION UAS – ${m.m_name||"(sans nom)"}`,`Généré le ${new Date().toLocaleString("fr-FR")}`,"",
+  "▌MISSION",`Type : ${m.m_type}${m.m_client?" – client : "+m.m_client:""}`,`Date(s) : ${datesTxt()}`,`Lieu : ${m.m_address||"-"}, ${m.m_commune||"-"} – dépt ${r.dept?r.dept[0]+" "+r.dept[1]:"-"}`,m.m_desc?`Description : ${m.m_desc}`:"","",
+  "▌EXPLOITANT / TÉLÉPILOTE",`${m.op_name||"-"} – ${m.op_uas||"-"} – ${m.op_mail||""}`,`Télépilote : ${m.pilot_name||"-"} (${certs()}) – ${m.pilot_phone||"-"}`,`Assurance : ${m.insurance||"-"}`,"",
+  "▌AÉRONEF",`${m.d_model||"-"} – ${m.d_reg||"UAS-FR ?"} – classe ${m.d_class} – ${m.d_mass} kg – S/N ${m.d_serial||"-"} – Remote ID ${m.d_rid?"oui":"non"}`,"",
+  "▌VOLUME",zoneText(r),`Hauteur max : ${S.height} m sol – zone tampon : ${S.buffer} m – ${m.v_vlos} – distance max ${m.v_dist} m – observateurs : ${m.v_obs}`,
+  r.sun?`Soleil : lever ${hm(r.sun.rise)} / coucher ${hm(r.sun.set)}${r.night?" – ⚠ VOL DE NUIT":""}`:"","",
+  "▌ENVIRONNEMENT",`${m.e_pop}${m.e_over?" – survol de tiers":""}${m.e_ground?" – zone contrôlée au sol":""}${m.e_ctr?" – espace contrôlé":""}`,m.e_secu?`Sécurisation : ${m.e_secu}`:"","",
+  "▌CONTRAINTES",...r.list.map(x=>`[${{red:"BLOQUANT",orange:"ATTENTION",blue:"INFO",green:"OK"}[x.lv]}] ${x.t}`),"",
+  "▌SCÉNARIOS",...scn.map(s=>`${s.auth?"•":s.ok?"✓":"✗"} ${s.name}`),"",
+  "▌AUTORISATIONS",`Préfecture : ${r.dept?r.dept[2]:"-"}${!m.e_pop.startsWith("Hors")&&m.m_date?` – envoi entre le ${fdate(sendWindow(parseDate(m.m_date)).first)} et le ${fdate(sendWindow(parseDate(m.m_date)).last)}`:""}`,
+  ...r.ads.filter(x=>x.d<10000).map(x=>`ATS : ${x.a[0]} ${x.a[1]} à ${fmtD(x.d)} – accord / protocole`),"",
+  "▌INFORMATION AÉRONAUTIQUE",...S.notams.map(n=>`NOTAM ${n.id} ${n.fl} – ${n.e.slice(0,100)}`),...S.sup.map(s=>`SUP AIP ${s.n} ${s.v} – ${s.o}`),...S.cz.map(z=>`Zone ${z.t} ${z.n} R ${fmtD(z.r)}`),
+  ...AERO_CHECKS.map((c,i)=>`${S.checks[i]?"[x]":"[ ]"} ${c}`)
+  ].filter(x=>x!==undefined&&x!==null&&x!==false);
+  document.getElementById("sumOut").textContent=lines.join("\n").replace(/\n{3,}/g,"\n\n"); }
+document.getElementById("copySum").onclick=()=>copyText(document.getElementById("sumOut").textContent);
+document.getElementById("copyKml").onclick=()=>{ const k=kml(); if(!k){toast("Trace d'abord une zone",true);return;} copyText(k); };
+let DL=null; try{ window.claude&&window.claude.use&&window.claude.use("downloads").then(d=>{DL=d;}).catch(()=>{}); }catch(e){}
+document.getElementById("dlKml").onclick=async()=>{ const k=kml(); if(!k){toast("Trace d'abord une zone",true);return;} const fn=(S.m.m_name||"zone-vol").replace(/[^\w-]+/g,"_")+".kml";
+  if(DL){ try{ await DL.save({filename:fn,data:k}); toast("KML enregistré"); }catch(e){ if(e&&e.code==="rejected_extension"){ toast("Format KML non téléchargeable ici : copie le texte",true); } copyText(k); } return; }
+  try{ const a=document.createElement("a"); a.href=URL.createObjectURL(new Blob([k],{type:"application/vnd.google-earth.kml+xml"})); a.download=fn; document.body.appendChild(a); a.click(); a.remove(); toast("Téléchargement lancé (si bloqué : Copier le KML)"); }catch(e){ copyText(k); } };
+document.getElementById("copyJson").onclick=()=>copyText(JSON.stringify(Object.assign({},S,{fleet:F})));
+document.getElementById("impJson").onclick=()=>{ openModal(`<h2>Importer une mission</h2><div class="fld"><label>Colle le JSON exporté</label><textarea id="jIn" rows="8" class="mono"></textarea></div><div class="row"><button class="btn pri" id="jGo">Importer</button><button class="btn" onclick="closeModal()">Annuler</button></div>`);
+  document.getElementById("jGo").onclick=()=>{ try{ const o=JSON.parse(document.getElementById("jIn").value); if(o.fleet){ F=Object.assign(F,o.fleet); saveF(); renderFleet(); delete o.fleet; } S=Object.assign(blank(),o); S.m=Object.assign(blank().m,o.m||{}); closeModal(); buildForm(); setMode(null); refresh(); const p=zonePoly(); if(p) map.fitBounds(L.latLngBounds(p).pad(.4)); toast("Mission importée"); }catch(e){ toast("JSON invalide",true); } }; };
+
+/* =========================================================
+   MISSIONS (liste type « Prévols »)
+   ========================================================= */
+const missionsLayer=L.layerGroup().addTo(map);
+function mCenter(s){ const z=s.zone; if(z.type==="circle"&&z.center) return z.center; if(z.type==="polygon"&&z.pts.length) return centroid(z.pts); return null; }
+const STATUS=["Brouillon","Prête","Réalisée","Archivée"], STCOL={"Brouillon":"blue","Prête":"green","Réalisée":"orange","Archivée":"red"};
+let openCard=null;
+function renderMissions(){ const box=document.getElementById("mList"); if(!box) return; const q=(document.getElementById("mSearch").value||"").toLowerCase();
+  const list=MISSIONS.slice().sort((a,b)=>(b.m.m_date||"").localeCompare(a.m.m_date||"")||b.created-a.created).filter(s=>!q||(s.m.m_name+" "+s.m.m_commune+" "+s.id).toLowerCase().includes(q));
+  box.innerHTML=list.length?list.map(s=>{ const cur=s.id===S.id, op=openCard===s.id;
+    return `<div class="sc" style="cursor:pointer;${cur?"border-color:var(--acc)":""}" data-mcard="${s.id}"><div class="hd"><div><span class="small mono">#${s.id}</span> <b>${esc(s.m.m_name||"Nouvelle mission")}</b><div class="small">${s.m.m_date?fdate(parseDate(s.m.m_date))+", "+(s.m.m_start||"")+" – "+(s.m.m_end||""):"Date à définir"}${s.m.m_commune?" · "+esc(s.m.m_commune):""}</div></div><span class="pill ${STCOL[s.status]||"blue"}">${esc(s.status)}</span></div>
+      ${op?`<div class="small" style="margin:6px 0">Pilote référent : ${esc(s.m.pilot_name||"—")} · Machine principale : ${esc(s.m.d_model||"—")}${cur?' · <b style="color:var(--acc)">mission ouverte</b>':""}</div>
+      <div class="row"><button class="btn pri sm" data-mact="open" data-id="${s.id}">✏️ Éditer</button><button class="btn sm" data-mact="pdf" data-id="${s.id}">📄 Dossier de vol</button><button class="btn sm" data-mact="dup" data-id="${s.id}">Dupliquer</button>
+      <select class="btn sm" data-mstat="${s.id}">${STATUS.map(x=>`<option ${x===s.status?"selected":""}>${x}</option>`).join("")}</select><button class="btn sm" data-mact="del" data-id="${s.id}">Supprimer</button></div>`:""}</div>`; }).join(""):'<p class="small">Aucune mission.</p>';
+  missionsLayer.clearLayers(); MISSIONS.forEach(s=>{ const c=mCenter(s); if(!c||s.id===S.id) return; L.circleMarker(c,{radius:6,color:"#fff",weight:2,fillColor:"#8aa0c0",fillOpacity:.9}).bindTooltip(`#${s.id} ${esc(s.m.m_name||"")}`).on("click",()=>openMission(s.id)).addTo(missionsLayer); });
+}
+document.getElementById("mSearch").oninput=renderMissions;
+document.addEventListener("click",e=>{ const a=e.target.closest("[data-mact]"); if(a){ e.stopPropagation(); const id=a.dataset.id, s=MISSIONS.find(x=>x.id===id); if(!s) return;
+    if(a.dataset.mact==="open"){ openMission(id); showTab("zone"); }
+    if(a.dataset.mact==="pdf"){ openMission(id); showTab("dos"); setTimeout(()=>makePDF(),300); }
+    if(a.dataset.mact==="dup"){ const c=norm(JSON.parse(JSON.stringify(s))); c.id=newId(); c.created=Date.now(); c.status="Brouillon"; c.m.m_name=(s.m.m_name||"Mission")+" (copie)"; MISSIONS.unshift(c); openMission(c.id); toast("Mission dupliquée"); }
+    if(a.dataset.mact==="del"){ openModal(`<h2>Supprimer la mission #${id} ?</h2><p class="small">« ${esc(s.m.m_name||"Nouvelle mission")} » sera supprimée de cet appareil. Cette action est définitive.</p><div class="row"><button class="btn pri" id="dGo" style="background:var(--red);border-color:var(--red)">Supprimer</button><button class="btn" onclick="closeModal()">Annuler</button></div>`);
+      document.getElementById("dGo").onclick=()=>{ MISSIONS=MISSIONS.filter(x=>x.id!==id); if(S.id===id){ S=MISSIONS[0]||blank(); if(!MISSIONS.length) MISSIONS.push(S); loadCurrent(); } closeModal(); save(true); renderMissions(); }; }
+    return; }
+  const c=e.target.closest("[data-mcard]"); if(c&&!e.target.closest("select")){ openCard=openCard===c.dataset.mcard?null:c.dataset.mcard; renderMissions(); } });
+document.addEventListener("change",e=>{ const s=e.target.dataset&&e.target.dataset.mstat; if(s){ const m=MISSIONS.find(x=>x.id===s); if(m){ m.status=e.target.value; if(m.id===S.id) S.status=m.status; save(true); renderMissions(); } } });
+function loadCurrent(){ buildForm(); setMode(null); drawZone(); wfsKey=""; METEO=null; refresh(); const p=zonePoly(); if(p) map.fitBounds(L.latLngBounds(p).pad(.4)); }
+function openMission(id){ const s=MISSIONS.find(x=>x.id===id); if(!s) return; save(true); S=s; openCard=id; loadCurrent(); renderMissions(); }
+function newMission(){ save(true); S=blank(); MISSIONS.unshift(S); openCard=S.id; loadCurrent(); map.setView([46.6,2.4],6); showTab("zone"); toast("Nouvelle mission #"+S.id+" créée"); }
+document.getElementById("btnCreate").onclick=newMission;
+function showTab(v){ document.querySelectorAll(".tab").forEach(x=>x.classList.toggle("act",x.dataset.v===v)); document.querySelectorAll(".view").forEach(x=>x.classList.toggle("act",x.id==="v-"+v)); if(v==="meteo") loadMeteo(); }
+
+/* =========================================================
+   POINTS DE PASSAGE / CONTEXTE
+   ========================================================= */
+const WPC={"Décollage":["#2fbf71","D"],"Atterrissage":["#3d8bfd","A"],"Télépilote":["#f5a524","T"],"Atterrissage d'urgence":["#f2545b","U"],"Observateur":["#c084fc","O"],"Point d'intérêt":["#22d3ee","P"]};
+const wpLayer=L.layerGroup().addTo(map);
+function wpIcon(t){ const c=WPC[t]||["#888","?"]; return L.divIcon({className:"",html:`<div style="width:22px;height:22px;border-radius:50% 50% 50% 0;transform:rotate(-45deg);background:${c[0]};border:2px solid #fff;box-shadow:0 1px 4px rgba(0,0,0,.5);display:grid;place-items:center"><b style="transform:rotate(45deg);color:#fff;font-size:11px">${c[1]}</b></div>`,iconSize:[22,22],iconAnchor:[11,22]}); }
+function drawWps(){ wpLayer.clearLayers(); (S.wps||[]).forEach((w,i)=>{ const mk=L.marker([w.lat,w.lon],{draggable:true,icon:wpIcon(w.t)}).bindTooltip(`${i+1}. ${w.t}${w.n?" – "+esc(w.n):""}`).addTo(wpLayer);
+  mk.on("dragend",ev=>{ const ll=ev.target.getLatLng(); w.lat=+ll.lat.toFixed(6); w.lon=+ll.lng.toFixed(6); refresh(true); }); });
+  const box=document.getElementById("wpBox"); if(!box) return;
+  box.innerHTML=(S.wps||[]).length?`<table class="t"><tr><th>#</th><th>Type</th><th>Intitulé</th><th>Position</th><th></th></tr>${S.wps.map((w,i)=>`<tr><td>${i+1}</td><td><span style="color:${(WPC[w.t]||["#888"])[0]}">●</span> ${esc(w.t)}</td><td><input data-wpn="${i}" value="${esc(w.n||"")}" style="width:100%;background:#0b1626;border:1px solid var(--line);border-radius:5px;padding:3px 5px"></td><td class="mono" style="font-size:11px">${w.lat.toFixed(5)}<br>${w.lon.toFixed(5)}</td><td><button class="btn sm" data-wpdel="${i}">✕</button></td></tr>`).join("")}</table>`:
+    `<span class="small">Bouton <b>📌 Point</b> : choisis le type (décollage, télépilote, atterrissage d'urgence…) puis clique sur la carte.</span>`;
+  box.querySelectorAll("[data-wpn]").forEach(x=>x.oninput=()=>{ S.wps[+x.dataset.wpn].n=x.value; save(true); });
+}
+document.getElementById("tWp").onclick=()=>setMode(mode==="wp"?null:"wp");
+map.on("click",e=>{ if(mode!=="wp") return; S.wps.push({t:document.getElementById("wpType").value,lat:+e.latlng.lat.toFixed(6),lon:+e.latlng.lng.toFixed(6),n:""}); refresh(true); });
+document.addEventListener("click",e=>{ const d=e.target.dataset&&e.target.dataset.wpdel; if(d!=null){ S.wps.splice(+d,1); refresh(true); } });
+
+/* =========================================================
+   MÉTÉO (Open-Meteo, prévisions horaires 16 j) + indice Kp (NOAA)
+   ========================================================= */
+let METEO=null, meteoBusy=false;
+const WMO=c=>c==null?["","—"]:c===0?["☀️","Ciel clair"]:c<=2?["🌤️","Peu nuageux"]:c===3?["☁️","Couvert"]:c<=48?["🌫️","Brouillard"]:c<=57?["🌦️","Bruine"]:c<=67?["🌧️","Pluie"]:c<=77?["🌨️","Neige"]:c<=82?["🌧️","Averses"]:c<=86?["🌨️","Averses de neige"]:["⛈️","Orage"];
+async function loadMeteo(force){ const p=zonePoly(), box=document.getElementById("meteoBox"); if(!p){ box.innerHTML='<p class="small">Trace une zone pour obtenir les prévisions.</p>'; return null; }
+  const c=centroid(p), key=c.map(v=>v.toFixed(2)).join(); if(METEO&&METEO.key===key&&!force){ renderMeteo(); return METEO; } if(meteoBusy) return METEO; meteoBusy=true;
+  box.innerHTML='<p class="small">Chargement des prévisions…</p>';
+  try{ const u=`https://api.open-meteo.com/v1/forecast?latitude=${c[0].toFixed(4)}&longitude=${c[1].toFixed(4)}&hourly=temperature_2m,precipitation,cloud_cover,wind_speed_10m,wind_gusts_10m,wind_direction_10m,weather_code&timezone=Europe%2FParis&forecast_days=16`;
+    const r=await fetch(u); if(!r.ok) throw new Error("HTTP "+r.status); const j=await r.json(); const H=j.hourly;
+    const rows=H.time.map((t,i)=>({t,T:H.temperature_2m[i],P:H.precipitation[i],C:H.cloud_cover[i],W:H.wind_speed_10m[i],G:H.wind_gusts_10m[i],D:H.wind_direction_10m[i],code:H.weather_code[i],kp:null}));
+    try{ const k=await (await fetch("https://services.swpc.noaa.gov/products/noaa-planetary-k-index-forecast.json")).json();
+      const kl=(Array.isArray(k[0])?k.slice(1).map(a=>({t:a[0],kp:+a[1]})):k.map(o=>({t:o.time_tag,kp:+o.kp}))).map(o=>({d:new Date(o.t.replace(" ","T")+(o.t.endsWith("Z")?"":"Z")),kp:o.kp}));
+      rows.forEach(rw=>{ const d=new Date(rw.t+":00"); const b=kl.filter(o=>o.d<=d&&d-o.d<3*3600e3).pop(); if(b) rw.kp=b.kp; }); }catch(e){}
+    METEO={key,rows,err:null}; }
+  catch(e){ METEO={key,rows:[],err:String(e.message||e)}; }
+  meteoBusy=false; renderMeteo(); return METEO; }
+function meteoMission(){ if(!METEO||!METEO.rows.length||!S.m.m_date) return []; const d1=S.m.m_date, d2=S.m.m_date2||S.m.m_date, a=S.m.m_start||"00:00", b=S.m.m_end||"23:59";
+  return METEO.rows.filter(r=>{ const d=r.t.slice(0,10), hh=r.t.slice(11,16); return d>=d1&&d<=d2&&hh>=a.slice(0,2)+":00"&&hh<=b; }); }
+function wcol(v,lim){ return v>=lim?"var(--red)":v>=lim*.7?"var(--ora)":"var(--grn)"; }
+function renderMeteo(){ const box=document.getElementById("meteoBox"); if(!METEO) return; const lim=+document.getElementById("windLim").value||38;
+  if(METEO.err){ box.innerHTML=`<div class="warnbox">Prévisions indisponibles ici (${esc(METEO.err)}). Dans l'aperçu Claude, les requêtes externes sont bloquées : la météo fonctionne sur la version hébergée.</div><a class="lnk" href="https://aviation.meteo.fr" target="_blank" rel="noopener">Météo aéronautique <span>Météo-France ↗</span></a>`; return; }
+  const mm=meteoMission(); let h="";
+  if(S.m.m_date&&!mm.length) h+=`<div class="warnbox">Pas de prévision météo à la date du vol (au-delà de 16 jours ou date passée). Prévisions des prochains jours ci-dessous.</div>`;
+  if(mm.length){ const maxG=Math.max(...mm.map(r=>r.G)), maxW=Math.max(...mm.map(r=>r.W)), rain=mm.reduce((s,r)=>s+r.P,0);
+    h+=`<div class="stat" style="margin-bottom:10px"><div><b style="color:${wcol(maxW,lim)}">${Math.round(maxW)} km/h</b><span>Vent max (mission)</span></div><div><b style="color:${wcol(maxG,lim)}">${Math.round(maxG)} km/h</b><span>Rafales max</span></div><div><b>${rain.toFixed(1)} mm</b><span>Pluie cumulée</span></div></div>`; }
+  const rows=(mm.length?mm:METEO.rows.filter(r=>+r.t.slice(11,13)%3===1).slice(0,40));
+  let day=""; h+=`<table class="t" style="font-size:12px"><tr><th>Heure</th><th></th><th>T°C</th><th>Pluie</th><th>Vent</th><th>Rafales</th><th>Dir.</th><th>Kp</th></tr>`;
+  rows.forEach(r=>{ const d=r.t.slice(0,10); if(d!==day){ day=d; h+=`<tr><td colspan="8" style="background:#0b1626;font-weight:600">${fdate(parseDate(d))}</td></tr>`; }
+    h+=`<tr><td>${r.t.slice(11,16)}</td><td title="${WMO(r.code)[1]}">${WMO(r.code)[0]}</td><td>${Math.round(r.T)}</td><td>${r.P.toFixed(1)}</td><td style="color:${wcol(r.W,lim)}">${Math.round(r.W)}</td><td style="color:${wcol(r.G,lim)}">${Math.round(r.G)}</td><td><span style="display:inline-block;transform:rotate(${r.D+180}deg)">↑</span> ${card16(r.D)}</td><td style="color:${r.kp>=5?"var(--red)":r.kp>=4?"var(--ora)":"inherit"}">${r.kp!=null?r.kp.toFixed(0):"–"}</td></tr>`; });
+  h+=`</table><p class="small">Vent et rafales à 10 m (km/h), colorés selon la limite du drone. Kp : activité géomagnétique (≥ 5 : GNSS perturbé). Sources : Open-Meteo, NOAA SWPC.</p>`;
+  box.innerHTML=h; }
+document.getElementById("meteoGo").onclick=()=>loadMeteo(true);
+document.getElementById("windLim").oninput=renderMeteo;
+
+/* =========================================================
+   DOSSIER DE VOL PDF (jsPDF)
+   ========================================================= */
+function lonX(lon,z){ return (lon+180)/360*256*2**z; }
+function latY(lat,z){ const s=Math.sin(lat*rad); return (0.5-Math.log((1+s)/(1-s))/(4*Math.PI))*256*2**z; }
+function loadImg(src,ms=6000){ return new Promise((res,rej)=>{ const im=new Image(); im.crossOrigin="anonymous"; const t=setTimeout(()=>rej("timeout"),ms); im.onload=()=>{clearTimeout(t);res(im);}; im.onerror=()=>{clearTimeout(t);rej("err");}; im.src=src; }); }
+async function mapImage(o){ // o: {w,h,pts:[[lat,lon]...] pour cadrage, poly, buffer, wps, hits, ads, pad}
+  const W=o.w||1200, Hh=o.h||760, all=o.pts.filter(Boolean); if(!all.length) return null;
+  const la=all.map(p=>p[0]), lo=all.map(p=>p[1]); let z=18;
+  for(;z>3;z--){ const dx=lonX(Math.max(...lo),z)-lonX(Math.min(...lo),z), dy=latY(Math.min(...la),z)-latY(Math.max(...la),z); if(dx*(1+(o.pad||.5))<W&&dy*(1+(o.pad||.5))<Hh) break; }
+  const cx=(lonX(Math.max(...lo),z)+lonX(Math.min(...lo),z))/2, cy=(latY(Math.min(...la),z)+latY(Math.max(...la),z))/2, x0=cx-W/2, y0=cy-Hh/2;
+  const P=p=>[lonX(p[1],z)-x0, latY(p[0],z)-y0];
+  const draw=async(tiles)=>{ const cv=document.createElement("canvas"); cv.width=W; cv.height=Hh; const g=cv.getContext("2d");
+    g.fillStyle="#e8edf3"; g.fillRect(0,0,W,Hh); g.strokeStyle="#d3dbe6"; g.lineWidth=1; for(let x=0;x<W;x+=40){g.beginPath();g.moveTo(x,0);g.lineTo(x,Hh);g.stroke();} for(let y=0;y<Hh;y+=40){g.beginPath();g.moveTo(0,y);g.lineTo(W,y);g.stroke();}
+    if(tiles){ const tx0=Math.floor(x0/256), ty0=Math.floor(y0/256), tx1=Math.floor((x0+W)/256), ty1=Math.floor((y0+Hh)/256); const jobs=[];
+      const lay=[["ORTHOIMAGERY.ORTHOPHOTOS","image/jpeg",1,19],["TRANSPORTS.DRONES.RESTRICTIONS","image/png",.55,15]];
+      for(const [L_,fmt,alpha,maxz] of lay){ const zz=Math.min(z,maxz), f=2**(z-zz);
+        for(let tx=Math.floor(tx0/f);tx<=Math.floor(tx1/f);tx++) for(let ty=Math.floor(ty0/f);ty<=Math.floor(ty1/f);ty++){
+          const url=`https://data.geopf.fr/wmts?SERVICE=WMTS&REQUEST=GetTile&VERSION=1.0.0&LAYER=${L_}&STYLE=normal&TILEMATRIXSET=PM&TILEMATRIX=${zz}&TILEROW=${ty}&TILECOL=${tx}&FORMAT=${fmt}`;
+          jobs.push(loadImg(url).then(im=>({im,x:tx*256*f-x0,y:ty*256*f-y0,s:256*f,alpha,L_})).catch(()=>null)); } }
+      const res=await Promise.all(jobs); const base=res.filter(r=>r&&r.L_.startsWith("ORTHO")); if(!base.length) throw new Error("no tiles");
+      res.filter(Boolean).sort((a,b)=>a.L_.startsWith("ORTHO")?-1:1).forEach(r=>{ g.globalAlpha=r.alpha; g.drawImage(r.im,r.x,r.y,r.s,r.s); }); g.globalAlpha=1; }
+    const path=(pts,close=true)=>{ g.beginPath(); pts.forEach((p,i)=>{ const q=P(p); i?g.lineTo(q[0],q[1]):g.moveTo(q[0],q[1]); }); if(close) g.closePath(); };
+    (o.hits||[]).forEach(hh=>hh.rings.forEach(rg=>{ path(rg); g.fillStyle=hh.zc.c+"44"; g.fill(); g.strokeStyle=hh.zc.c; g.lineWidth=2; g.stroke(); }));
+    (o.circles||[]).forEach(c=>{ const q=P(c.c), r=c.r/ (156543.03*Math.cos(c.c[0]*rad)/2**z); g.beginPath(); g.arc(q[0],q[1],r,0,2*Math.PI); g.fillStyle=c.col+"22"; g.fill(); g.strokeStyle=c.col; g.lineWidth=2; g.setLineDash([8,6]); g.stroke(); g.setLineDash([]); });
+    if(o.buffer){ path(o.buffer); g.strokeStyle="#f5a524"; g.lineWidth=3; g.setLineDash([10,7]); g.stroke(); g.setLineDash([]); }
+    if(o.poly){ path(o.poly); g.fillStyle="rgba(61,139,253,.35)"; g.fill(); g.strokeStyle="#1f6fe5"; g.lineWidth=4; g.stroke(); }
+    (o.ads||[]).forEach(a=>{ const q=P([a[2],a[3]]); g.beginPath(); g.arc(q[0],q[1],9,0,2*Math.PI); g.fillStyle="#fff"; g.fill(); g.strokeStyle=a[4]==="M"?"#9333ea":"#e08a00"; g.lineWidth=4; g.stroke(); g.fillStyle="#111"; g.font="bold 20px Helvetica,Arial"; g.fillText(a[0],q[0]+14,q[1]+7); });
+    (o.wps||[]).forEach((w,i)=>{ const q=P([w.lat,w.lon]), c=(WPC[w.t]||["#888"])[0]; g.beginPath(); g.arc(q[0],q[1],15,0,2*Math.PI); g.fillStyle=c; g.fill(); g.strokeStyle="#fff"; g.lineWidth=3; g.stroke(); g.fillStyle="#fff"; g.font="bold 16px Helvetica,Arial"; g.textAlign="center"; g.fillText(String(i+1),q[0],q[1]+6); g.textAlign="left"; });
+    // échelle + nord
+    const mpp=156543.03*Math.cos(cy? (o.pts[0][0]*rad):0)/2**z; const nice=[5,10,20,50,100,200,500,1000,2000,5000,10000,20000,50000]; const L0=nice.find(n=>n/mpp>W*.12)||1000, lp=L0/mpp;
+    g.fillStyle="rgba(255,255,255,.85)"; g.fillRect(16,Hh-48,lp+80,34); g.fillStyle="#111"; g.fillRect(26,Hh-26,lp,6); g.font="16px Helvetica,Arial"; g.fillText(L0>=1000?(L0/1000)+" km":L0+" m",32+lp,Hh-20);
+    g.fillStyle="rgba(255,255,255,.85)"; g.beginPath(); g.arc(W-40,40,24,0,2*Math.PI); g.fill(); g.fillStyle="#111"; g.beginPath(); g.moveTo(W-40,22); g.lineTo(W-48,48); g.lineTo(W-40,42); g.lineTo(W-32,48); g.closePath(); g.fill(); g.font="bold 12px Helvetica"; g.fillText("N",W-44,62);
+    if(!tiles){ g.fillStyle="rgba(15,27,46,.75)"; g.fillRect(W-330,Hh-34,320,24); g.fillStyle="#fff"; g.font="13px Helvetica,Arial"; g.fillText("Fond cartographique indisponible – vue schématique",W-322,Hh-17); }
+    return cv.toDataURL("image/jpeg",.85); };
+  try{ return await draw(true); }catch(e){ return await draw(false); } }
+
+const PDFT=s=>String(s??"").replace(/≤/g,"<=").replace(/≥/g,">=").replace(/✓/g,"OK").replace(/✗/g,"X").replace(/→|↗/g,"->").replace(/[“”]/g,'"').replace(/[‘’]/g,"'").replace(/[\u{1F000}-\u{1FFFF}☀-➿️]/gu,"").replace(/ | /g," ");
+async function makePDF(){
+  const st=document.getElementById("pdfState"); const J=window.jspdf&&window.jspdf.jsPDF; if(!J){ toast("Module PDF non chargé (connexion requise)",true); return; }
+  st.textContent="Préparation des cartes…"; const r=analyze(); const m=S.m, poly=r.poly, buf=poly?bufferPoly(poly,+S.buffer||0):null, ret=retained(r);
+  if(poly) await loadMeteo(); const mm=meteoMission();
+  const imgZone=poly?await mapImage({w:1200,h:800,pts:(buf||poly).concat(S.wps.map(w=>[w.lat,w.lon])),poly,buffer:buf,wps:[],pad:1.2}):null;
+  const nearAd=r.ads.filter(x=>x.d<12000).slice(0,3);
+  const imgCst=poly?await mapImage({w:1200,h:800,pts:poly.concat(nearAd.map(x=>[x.a[2],x.a[3]])),poly,buffer:buf,hits:UASD.hits||[],ads:nearAd.map(x=>x.a),circles:r.sens.map(x=>({c:[x.s[1],x.s[2]],r:x.s[3]*1000,col:"#e0262b"})),pad:.6}):null;
+  const imgCtx=poly&&S.wps.length?await mapImage({w:1200,h:800,pts:(buf||poly).concat(S.wps.map(w=>[w.lat,w.lon])),poly,buffer:buf,wps:S.wps,pad:.5}):null;
+  st.textContent="Mise en page…";
+  const doc=new J({unit:"mm",format:"a4"}); const PW=210,PH=297,M=18; let y=M; const toc=[]; const NAVY=[15,27,46], BLUE=[31,111,229], GREY=[90,104,125];
+  const np=()=>{ doc.addPage(); y=M+6; };
+  const need=hh=>{ if(y+hh>PH-18) np(); };
+  const H1=(n,t)=>{ np(); doc.setFont("helvetica","bold"); doc.setFontSize(17); doc.setTextColor(...NAVY); doc.text(PDFT(`${n} - ${t}`),M,y); toc.push({l:0,t:`${n} - ${t}`,p:doc.getNumberOfPages()}); y+=4; doc.setDrawColor(...BLUE); doc.setLineWidth(.8); doc.line(M,y,M+30,y); y+=8; };
+  const H2=(n,t,lvl=1)=>{ need(14); doc.setFont("helvetica","bold"); doc.setFontSize(lvl===1?12.5:11); doc.setTextColor(...(lvl===1?BLUE:NAVY)); doc.text(PDFT(`${n} - ${t}`),M+(lvl-1)*4,y); toc.push({l:lvl,t:`${n} - ${t}`,p:doc.getNumberOfPages()}); y+=7; };
+  const P_=(t,o={})=>{ doc.setFont("helvetica",o.b?"bold":"normal"); doc.setFontSize(o.s||10); doc.setTextColor(...(o.c||[30,30,30])); const ls=doc.splitTextToSize(PDFT(t),PW-2*M-(o.ind||0)); ls.forEach(l=>{ need(5.2); doc.text(l,M+(o.ind||0),y); y+=(o.s||10)*.48; }); y+=o.after??2; };
+  const BL=(arr,o={})=>arr.forEach(t=>{ doc.setFont("helvetica","normal"); doc.setFontSize(10); doc.setTextColor(30,30,30); const ls=doc.splitTextToSize(PDFT(t),PW-2*M-8); need(ls.length*4.8+1); doc.setFillColor(...(o.col||BLUE)); doc.circle(M+2,y-1.3,.9,"F"); ls.forEach(l=>{ doc.text(l,M+6,y); y+=4.8; }); y+=.8; });
+  const KV=(rows)=>{ doc.autoTable({startY:y,margin:{left:M,right:M},theme:"plain",styles:{font:"helvetica",fontSize:10,cellPadding:{top:1.6,bottom:1.6,left:2,right:2},textColor:[30,30,30]},columnStyles:{0:{fontStyle:"bold",cellWidth:58,textColor:NAVY}},body:rows.map(([a,b])=>[PDFT(a),PDFT(b??"—")]),didParseCell:d=>{ if(d.row.index%2===0) d.cell.styles.fillColor=[244,247,251]; }}); y=doc.lastAutoTable.finalY+5; };
+  const TB=(head,body,o={})=>{ doc.autoTable({startY:y,margin:{left:M,right:M},head:[head.map(PDFT)],body:body.map(r=>r.map(PDFT)),theme:"grid",styles:{font:"helvetica",fontSize:o.fs||9,cellPadding:1.6,lineColor:[210,218,230],lineWidth:.2},headStyles:{fillColor:NAVY,textColor:255},columnStyles:o.cs||{},didParseCell:o.cell}); y=doc.lastAutoTable.finalY+5; };
+  const IMG=(d,hmm=112)=>{ if(!d) { P_("(carte indisponible : aucune zone tracée)",{c:GREY}); return; } need(hmm+4); const w=hmm*1.5; doc.addImage(d,"JPEG",M+(PW-2*M-w)/2,y,w,hmm); doc.setDrawColor(200); doc.rect(M+(PW-2*M-w)/2,y,w,hmm); y+=hmm+5; };
+  const dt=`${m.m_date?parseDate(m.m_date).toLocaleDateString("fr-FR"):"—"} ${m.m_start||""} au ${(m.m_date2||m.m_date)?parseDate(m.m_date2||m.m_date).toLocaleDateString("fr-FR"):"—"} ${m.m_end||""}`;
+  // --- Couverture
+  doc.setFillColor(...NAVY); doc.rect(0,0,PW,PH,"F");
+  if(imgZone){ doc.addImage(imgZone,"JPEG",0,62,PW,PW/1.5); doc.setFillColor(15,27,46); doc.setGState(new doc.GState({opacity:.55})); doc.rect(0,62,PW,PW/1.5,"F"); doc.setGState(new doc.GState({opacity:1})); }
+  doc.setFillColor(255,255,255); doc.rect(0,118,PW,46,"F");
+  doc.setTextColor(...BLUE); doc.setFont("helvetica","bold"); doc.setFontSize(24); doc.text(doc.splitTextToSize(PDFT(m.m_name||"Mission sans titre"),PW-30),PW/2,136,{align:"center"});
+  doc.setFontSize(12); doc.setTextColor(...NAVY); doc.text(PDFT(`${m.m_date?parseDate(m.m_date).toLocaleDateString("fr-FR"):""} ${m.m_start||""}  ->  ${(m.m_date2||m.m_date)?parseDate(m.m_date2||m.m_date).toLocaleDateString("fr-FR"):""} ${m.m_end||""}`),PW/2,153,{align:"center"});
+  doc.setTextColor(255); doc.setFontSize(26); doc.text("DOSSIER DE VOL",M,40); doc.setFontSize(11); doc.setFont("helvetica","normal"); doc.text(PDFT(`Mission #${S.id} · ${ret.code}`),M,49);
+  doc.setFontSize(10); doc.text(PDFT(`Exploitant : ${m.op_name||"—"}  ·  ${m.op_uas||""}`),M,PH-30); doc.text(PDFT(`Télépilote : ${m.pilot_name||"—"}`),M,PH-24);
+  doc.setFont("helvetica","bold"); doc.setFontSize(12); doc.text("ZoneVol UAS",PW-M,PH-24,{align:"right"}); doc.setFont("helvetica","normal"); doc.setFontSize(8); doc.text(`Généré le ${new Date().toLocaleString("fr-FR")}`,PW-M,PH-19,{align:"right"});
+  // --- 1
+  H1(1,"Vue d'ensemble");
+  KV([["Titre",m.m_name],["Activité",m.m_type],["Client",m.m_client||"—"]]);
+  P_("Zone de vol",{b:true,c:NAVY}); IMG(imgZone,105);
+  const ap=poly?(S.zone.type==="circle"?{a:Math.PI*S.zone.radius**2}:areaPer(poly)):null;
+  KV([["Localisation",[m.m_address,m.m_commune,r.dept?r.dept[1]:"","France"].filter(Boolean).join(", ")],["Coordonnées (centre)",r.c?`${dms(r.c[0],1)} ${dms(r.c[1],0)} (${r.c[0].toFixed(5)}, ${r.c[1].toFixed(5)})`:"—"],["Surface / zone tampon",ap?`${fmtA(ap.a)} – tampon ${S.buffer} m`:"—"],["Date",dt],["Hauteur maximum (mètres)",String(S.height)],["Vitesse maximale (km/h)",m.m_speed||"—"],["Durée de vol prévue",m.m_dur?m.m_dur+" min":"—"],["Mode de vol",m.v_vlos]]);
+  if(m.m_desc){ P_("Informations complémentaires",{b:true,c:NAVY}); P_(m.m_desc); }
+  // --- 2
+  H1(2,"Informations générales");
+  H2("2.1","Déclarant"); KV([["Société",m.op_name],["Responsable",m.op_resp],["N° d'exploitant UAS",m.op_uas],["Adresse",m.op_addr],["Téléphone",m.op_phone],["Email",m.op_mail]]);
+  if((m.op_docs||[]).length){ P_("Le déclarant atteste être en possession des documents ci-dessous :"); BL(m.op_docs); y+=2; }
+  H2("2.2","Pilote référent"); KV([["Nom",m.pilot_name],["Téléphone",m.pilot_phone],["Email",m.pilot_mail||"—"]]);
+  P_("Le pilote a déclaré être en possession des documents ci-dessous :"); BL(m.pilot_cert||[]); y+=2;
+  H2("2.3","Machine principale"); KV([["Modèle",m.d_model],["Classe",m.d_class],["Masse",m.d_mass?m.d_mass+" kg":"—"],["Vitesse maximale (km/h)",m.d_vmax||"—"],["Numéro de série",m.d_serial],["N° d'identification à distance",m.d_ridnum||"—"],["N° d'enregistrement",m.d_reg||"—"],["Signalement électronique",m.d_rid?"Oui":"Non"]]);
+  if((m.d_equip||[]).length){ P_("Outre ses équipements de série, la machine est dotée des équipements additionnels suivants :"); BL(m.d_equip); y+=2; }
+  (m.m_uas2||[]).forEach((ix,k)=>{ const u=F.uas[+ix]; if(!u) return; H2(`2.${4+k}`,`Machine complémentaire #${k+1}`); KV([["Modèle",[u.maker,u.model].filter(Boolean).join(" ")],["Classe",u.cls||"—"],["Masse",u.massRange||(u.mass!=null?u.mass+" kg":"—")],["Numéro de série",u.serial],["N° d'enregistrement",u.reg],["Signalement électronique",u.rid?"Oui":"Non"]]); });
+  if(m.insurance){ KV([["Assurance RC",m.insurance]]); }
+  // --- 3
+  H1(3,"Classification"); P_("La classification de vol sélectionnée pour cette mission est la suivante :");
+  need(14); doc.setFillColor(232,240,253); doc.roundedRect(M,y-2,PW-2*M,12,2,2,"F"); doc.setFont("helvetica","bold"); doc.setFontSize(14); doc.setTextColor(...BLUE); doc.text(PDFT(ret.code),PW/2,y+6,{align:"center"}); y+=16;
+  H2("3.1","Critères"); P_("Le déclarant a expressément mentionné les éléments suivants :");
+  BL([m.v_vlos.replace(/ – /," : "),m.e_pop,m.e_ground?"Zone d'exclusion des tiers (zone contrôlée au sol)":null,m.e_over?"Survol de personnes non impliquées":"Mission sans survol de tiers",m.e_ctr?"Évolution en espace aérien contrôlé":null,r.night?"Vol de nuit":"Vol de jour"].filter(Boolean)); y+=2;
+  H2("3.2","Réglementation"); P_("Le vol est confronté aux exigences réglementaires qui définissent la classification retenue :");
+  ret.conds.forEach(c=>{ need(12); doc.setFont("helvetica","bold"); doc.setFontSize(9); doc.setTextColor(...(c[0]?[22,128,72]:[200,40,50])); doc.text(c[0]?"CONFORME":"A VERIFIER",M,y); doc.setTextColor(...NAVY); doc.text(PDFT(c[2]||""),M+24,y); y+=4.4; P_(c[1],{ind:24,s:9.5,after:1.5}); });
+  H2("3.3","Restrictions"); P_("Conformément au scénario de vol, le déclarant s'engage à respecter les dispositions suivantes :"); BL(ret.eng);
+  // --- 4
+  H1(4,"Contraintes"); const cl=r.list.filter(x=>x.t!=="Aucune zone tracée"); const lvl={red:"Bloquant",orange:"Attention",blue:"Information",green:"Conforme"};
+  H2("4.1","Liste"); P_("Les contraintes suivantes ont été détectées :");
+  TB(["#","Nom","Niveau"],cl.map((x,i)=>[`#${i+1}`,x.t,lvl[x.lv]]),{cs:{0:{cellWidth:12},2:{cellWidth:28}},cell:d=>{ if(d.section==="body"&&d.column.index===2){ const v=d.cell.raw; d.cell.styles.textColor=v==="Bloquant"?[200,40,50]:v==="Attention"?[200,120,0]:v==="Conforme"?[22,128,72]:[40,90,170]; d.cell.styles.fontStyle="bold"; } }});
+  P_("Carte des contraintes (zone, restrictions UAS DGAC, aérodromes et sites sensibles proches)",{b:true,c:NAVY}); IMG(imgCst,100);
+  H2("4.2","Détails"); cl.forEach((x,i)=>{ H2(`4.2.${i+1}`,`Contrainte #${i+1} (${lvl[x.lv]})`,2); P_(x.t,{b:true}); if(x.p) P_(x.p,{s:9.5,c:[60,60,60]}); });
+  // --- 5
+  H1(5,"Autorisations et délais"); const populated=!m.e_pop.startsWith("Hors");
+  H2("5.1","Préfecture"); const w=m.m_date?sendWindow(parseDate(m.m_date)):null;
+  KV([["Département",r.dept?r.dept[0]+" – "+r.dept[1]:"—"],["Contact drones",r.dept?r.dept[2]:"—"],["Déclaration requise",populated||r.night||S.height>120?"Oui (zone peuplée / nuit / hauteur)":"Non a priori"],["Envoi au plus tôt",w?fdate(w.first):"—"],["Envoi au plus tard",w?fdate(w.last):"—"],["Dérogation nuit / hauteur",m.m_date?"avant le "+fdate(addD(parseDate(m.m_date),-30)):"—"]]);
+  H2("5.2","Aérodromes et contrôle aérien"); TB(["Aérodrome","Type","Distance","Relèvement"],r.ads.slice(0,4).map(x=>[`${x.a[0]} ${x.a[1]}`,x.a[4]==="M"?"Militaire":x.a[4]==="C"?"Civil contrôlé":"Civil",fmtD(x.d),`${Math.round(x.b)}° ${card16(x.b)}`]));
+  if(r.ads.some(x=>x.d<10000)||m.e_ctr) BL(["Accord préalable de l'organisme de la circulation aérienne (protocole) avant le vol","Appel de l'organisme avant décollage, joignable en permanence, appel de fin d'activité"]);
+  // --- 6
+  H1(6,"Information aéronautique");
+  H2("6.1","NOTAM"); if(S.notams.length) TB(["NOTAM","Validité","Niveaux","Texte"],S.notams.map(n=>[n.id||"—",n.b?`${nDate(n.b)} -> ${nDate(n.cc)}`:"—",n.fl||"—",n.e.slice(0,220)]),{fs:8,cs:{3:{cellWidth:85}}}); else P_("Aucun NOTAM saisi dans le dossier.",{c:GREY});
+  H2("6.2","SUP AIP et zones réglementées"); const sz=S.sup.map(s=>["SUP AIP "+s.n,s.v,s.o]).concat(S.cz.map(z=>[`${z.t} ${z.n}`,"",`Rayon ${fmtD(z.r)}`])); if(sz.length) TB(["Référence","Validité","Objet"],sz); else P_("Aucun SUP AIP ni zone manuelle saisi.",{c:GREY});
+  H2("6.3","Vérifications"); TB(["","Vérification"],AERO_CHECKS.map((c,i)=>[S.checks[i]?"OK":"—",c]),{cs:{0:{cellWidth:12,halign:"center"}}});
+  // --- 7
+  H1(7,"Météo");
+  if(mm.length) TB(["Heure","Ciel","T°C","Pluie (mm)","Vent (km/h)","Rafales (km/h)","Cap","Kp"],mm.map(x=>[`${x.t.slice(8,10)}/${x.t.slice(5,7)} ${x.t.slice(11,16)}`,WMO(x.code)[1],Math.round(x.T),x.P.toFixed(1),Math.round(x.W),Math.round(x.G),`${Math.round(x.D)}° ${card16(x.D)}`,x.kp!=null?x.kp.toFixed(0):"—"]));
+  else P_(METEO&&METEO.err?"Prévisions non disponibles lors de la génération (service météo inaccessible).":"Pas de prévision météo disponible à la date du vol (au-delà de 16 jours). À compléter la veille du vol.",{c:GREY});
+  // --- 8
+  H1(8,"Contexte"); H2("8.1","Carte"); IMG(imgCtx||imgZone,105);
+  H2("8.2","Liste"); if(S.wps.length) TB(["#","Type","Intitulé","Latitude","Longitude"],S.wps.map((w,i)=>[i+1,w.t,w.n||"",w.lat.toFixed(6),w.lon.toFixed(6)])); else P_("Aucun point de contexte placé.",{c:GREY});
+  if(m.e_secu){ H2("8.3","Mesures de sécurisation"); P_(m.e_secu); }
+  // --- 9
+  H1(9,"Engagement");
+  P_(`Je soussigné(e) ${m.op_resp||m.pilot_name||"……………………"}, représentant l'exploitant ${m.op_name||"……………………"}, atteste l'exactitude des informations contenues dans le présent dossier et m'engage à respecter la réglementation applicable ainsi que les conditions des accords obtenus.`);
+  y+=6; KV([["Fait à",""],["Le",""],["Signature",""]]); doc.setDrawColor(180); doc.rect(M+58,y-12,80,28); y+=20;
+  P_("Document généré avec ZoneVol UAS. Analyse indicative : elle ne remplace ni la consultation des sources officielles (SIA, cartes.gouv.fr, NOTAM) ni la responsabilité de l'exploitant.",{s:8,c:GREY});
+  // --- Sommaire (page 2)
+  doc.insertPage(2); y=M+6; doc.setFont("helvetica","bold"); doc.setFontSize(17); doc.setTextColor(...NAVY); doc.text("Sommaire",M,y); y+=10;
+  toc.forEach(t=>{ if(y>PH-20) return; doc.setFont("helvetica",t.l===0?"bold":"normal"); doc.setFontSize(t.l===0?10.5:9.5); doc.setTextColor(...(t.l===0?NAVY:[60,60,60])); const x=M+t.l*5, tt=PDFT(t.t), pg=String(t.p+1);
+    doc.text(tt,x,y); const tw=doc.getTextWidth(tt), pw=doc.getTextWidth(pg); let dots=""; while(doc.getTextWidth(dots+".")<PW-M-x-tw-pw-4) dots+="."; doc.setTextColor(170); doc.text(dots,x+tw+2,y); doc.setTextColor(...NAVY); doc.text(pg,PW-M,y,{align:"right"}); y+=t.l===0?6.2:5.2; });
+  // --- en-têtes / pieds
+  const N=doc.getNumberOfPages(); for(let i=2;i<=N;i++){ doc.setPage(i); doc.setFont("helvetica","normal"); doc.setFontSize(8); doc.setTextColor(...GREY); doc.text(PDFT(`${m.m_name||"Mission"} – #${S.id}`),M,10); doc.text("Dossier de vol",PW-M,10,{align:"right"}); doc.setDrawColor(220); doc.line(M,12,PW-M,12); doc.line(M,PH-12,PW-M,PH-12); doc.text(`${i} / ${N}`,PW-M,PH-7,{align:"right"}); doc.text("ZoneVol UAS",M,PH-7); }
+  const fn=`Dossier_de_vol_${S.id}_${(m.m_name||"mission").replace(/[^\w-]+/g,"_").slice(0,40)}.pdf`; const blob=doc.output("blob"); st.textContent="";
+  if(DL){ try{ await DL.save({filename:fn,data:blob}); toast("Dossier de vol enregistré"); }catch(e){ if(e&&e.code!=="declined") toast("Téléchargement refusé : "+(e.code||e),true); } }
+  else { doc.save(fn); toast("Dossier de vol généré"); }
+}
+document.getElementById("pdfGo").onclick=()=>makePDF().catch(e=>{ document.getElementById("pdfState").textContent=""; toast("Erreur PDF : "+e.message,true); console.error(e); });
+
+/* ---- utilitaires UI ---- */
+function toast(t,err){ const el=document.getElementById("toast"); el.textContent=t; el.style.background=err?"var(--red)":"var(--grn)"; el.style.color=err?"#fff":"#04240f"; el.classList.add("show"); clearTimeout(el._t); el._t=setTimeout(()=>el.classList.remove("show"),2200); }
+function copyText(t){ const ok=()=>toast("Copié dans le presse-papiers"); try{ navigator.clipboard.writeText(t).then(ok).catch(()=>fallbackCopy(t)); }catch(e){ fallbackCopy(t); } }
+function fallbackCopy(t){ openModal(`<h2>Copier</h2><p class="small">La copie automatique est bloquée : sélectionne le texte ci-dessous puis copie-le.</p><textarea class="mono" style="width:100%;height:260px;background:#0b1626;border:1px solid var(--line);border-radius:8px;padding:8px">${esc(t)}</textarea><div class="row" style="margin-top:8px"><button class="btn" onclick="closeModal()">Fermer</button></div>`); const ta=mbox.querySelector("textarea"); ta.focus(); ta.select(); }
+let saveT; function save(silent){ clearTimeout(saveT); saveT=setTimeout(()=>{ S.updated=Date.now(); const i=MISSIONS.findIndex(x=>x.id===S.id); if(i>=0) MISSIONS[i]=S; else MISSIONS.unshift(S); renderMissions(); try{ localStorage.setItem("zonevol_missions",JSON.stringify({cur:S.id,list:MISSIONS})); if(!silent) toast("Mission enregistrée sur cet appareil"); }catch(e){ if(!silent) toast("Stockage local indisponible – utilise Exporter",true); } }, silent?400:0); }
+document.getElementById("btnSave").onclick=()=>save(false);
+document.getElementById("btnNew").onclick=()=>newMission();
+document.getElementById("tabs").addEventListener("click",e=>{ const b=e.target.closest(".tab"); if(!b) return; showTab(b.dataset.v); });
+
+/* ---- init ---- */
+renderFleet(); buildForm(); setMode(null); refresh(); renderMissions();
+const p0=zonePoly(); if(p0) map.fitBounds(L.latLngBounds(p0).pad(.4));
+setTimeout(()=>map.invalidateSize(),200);
+</script>
+</body>
+</html>

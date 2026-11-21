@@ -132,6 +132,15 @@ h3{font-size:13px;text-transform:uppercase;letter-spacing:.6px;color:var(--mut);
 .cst .ic{font-size:16px;line-height:1.2}
 .cst b{display:block;margin-bottom:2px}
 .cst p{margin:0;color:var(--mut);font-size:12.5px;line-height:1.45}
+.ctc{margin-top:8px;padding:8px 10px;background:#0b1626;border:1px solid var(--line);border-radius:8px}
+.ctn{display:flex;gap:8px;align-items:flex-start;font-size:12.5px}
+.ctn b{display:block;margin:0;color:var(--txt)}
+.ctn span{color:var(--mut);font-size:11.5px}
+.ctn .cti{font-size:14px;line-height:1.2}
+.ctb{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin-top:7px}
+.ctv{font-size:11.5px;color:#cfe3ff;word-break:break-all}
+.ctgo{margin-left:auto}
+.flash{box-shadow:0 0 0 2px var(--acc)!important;transition:box-shadow .3s}
 .pill{display:inline-block;padding:2px 8px;border-radius:20px;font-size:11px;font-weight:600}
 .pill.red{background:rgba(242,84,91,.15);color:var(--red)}.pill.orange{background:rgba(245,165,36,.15);color:var(--ora)}.pill.green{background:rgba(47,191,113,.15);color:var(--grn)}.pill.blue{background:rgba(90,169,255,.15);color:var(--blu)}
 .mono{font-family:"JetBrains Mono",monospace;font-size:12px}
@@ -938,63 +947,78 @@ function analyze(){
     r.czHits=S.cz.map(z=>({z,d:distToPoly(z.c,poly)})).filter(x=>x.d<=x.z.r+1000);
   }
   if(c&&m.m_date){ r.sun=sun(m.m_date,c[0],c[1]); if(r.sun){ const sr=mins(hm(new Date(r.sun.rise.getTime()-30*6e4))), ss=mins(hm(new Date(r.sun.set.getTime()+30*6e4))); const a=mins(m.m_start),b=mins(m.m_end); if(a!=null&&b!=null&&(a<sr||b>ss)) r.night=true; r.nightWin={sr,ss}; } }
-  const L=r.list, add=(lv,ic,t,p)=>L.push({lv,ic,t,p});
+  const L=r.list, add=(lv,ic,t,p,ct)=>L.push({lv,ic,t,p,ct:ct?[].concat(ct).filter(Boolean):null});
+  const dp=r.dept||(S.m.m_dept?DEPTS.find(x=>x[0]===S.m.m_dept):null);
+  const CT={
+    pref:(why)=>dp?{n:"Préfecture – "+dp[1]+" ("+dp[0]+")",s:why||"Déclaration / dérogation",mail:dp[2],tpl:"pref",go:"ctPref"}:{n:"Préfecture du département",s:"Choisis le département dans l'onglet Mission pour obtenir l'adresse",go:"ctPref"},
+    ats:(a)=>({n:(a[4]==="M"?"Organisme militaire – ":"Contrôle aérien / AFIS – ")+a[0]+" "+a[1],s:"Accord préalable et protocole · coordonnées sur la carte VAC",links:[["Cartes VAC (SIA)","https://www.sia.aviation-civile.gouv.fr"]],tpl:"ats",go:"ctAts"}),
+    atsGen:{n:"Organisme de la circulation aérienne",s:"Tour, SNA ou AFIS de l'aérodrome concerné",links:[["Cartes VAC (SIA)","https://www.sia.aviation-civile.gouv.fr"]],tpl:"ats",go:"ctAts"},
+    dsac:{n:"DSAC – autorisations drones",s:"Autorisation d'exploitation (SORA / PDRA)",mail:"dsac-autorisations-drones-bf@aviation-civile.gouv.fr",links:[["AlphaTango","https://alphatango.aviation-civile.gouv.fr"]],go:"ctOther"},
+    at:{n:"AlphaTango (DGAC)",s:"Registre exploitant, aéronefs, déclarations",links:[["Ouvrir AlphaTango","https://alphatango.aviation-civile.gouv.fr"]]},
+    sofia:{n:"SOFIA Briefing (DSNA)",s:"Consulter le NOTAM et son organisme émetteur",links:[["Ouvrir SOFIA","https://sofia-briefing.aviation-civile.gouv.fr"]]},
+    mairie:{n:"Mairie"+(S.m.m_commune?" de "+S.m.m_commune:""),s:"Arrêté de circulation / occupation de l'espace public",go:"ctOther"},
+    proprio:{n:"Propriétaire du terrain",s:"Accord écrit",go:"ctOther"},
+    rail:{n:"SNCF Réseau (gestionnaire de la voie)",s:"Accord si la zone contrôlée au sol touche la voie",go:"ctOther"},
+    power:{n:"Gestionnaire du réseau électrique (RTE / Enedis)",s:"Information conseillée à proximité immédiate",go:"ctOther"},
+    park:{n:"Gestionnaire de l'espace protégé",s:"Parc, réserve, Natura 2000",go:"ctOther"},
+    zicad:{n:"Dérogation ZICAD",s:"Démarche en ligne, au moins 2 mois avant",links:[["Demande de dérogation","https://demarche.numerique.gouv.fr/commencer/derogation-zicad"]],go:"ctSteps"}};
+  const adNear=r.ads.find(x=>x.d<10000)||null;
   if(!poly) add("blue","🗺️","Aucune zone tracée","Dessine un polygone ou un cercle sur la carte pour lancer l'analyse des contraintes.");
   // Hauteur
-  if(H>120) add("red","📏",`Hauteur demandée ${H} m > 120 m`,"La hauteur maximale réglementaire est de 120 m au-dessus de la surface. Au-delà : dérogation préfectorale (formulaire R5-UAS-DEROG, 30 jours avant) ou autorisation d'exploitation DSAC (SORA).");
+  if(H>120) add("red","📏",`Hauteur demandée ${H} m > 120 m`,"La hauteur maximale réglementaire est de 120 m au-dessus de la surface. Au-delà : dérogation préfectorale (formulaire R5-UAS-DEROG, 30 jours avant) ou autorisation d'exploitation DSAC (SORA).",[CT.pref("Dérogation hauteur, 30 jours avant"),CT.dsac]);
   else add("green","📏",`Hauteur ${H} m ≤ 120 m`,"Compatible avec la limite générale de 120 m, sous réserve des plafonds locaux autour des aérodromes (30 / 50 / 60 / 100 m selon secteur – carte cartes.gouv.fr).");
   // Aérodromes
   r.ads.forEach((x,i)=>{ const a=x.a, km=x.d/1000, typ=a[4]==="M"?"militaire":a[4]==="C"?"civil contrôlé":"civil";
-    if(km<3) add("red","🛫",`${a[0]} ${a[1]} à ${fmtD(x.d)} (${typ})`,"Zone très proche de l'aérodrome : vol en principe interdit sans accord de l'organisme de la circulation aérienne (tour / AFIS / exploitant). Hauteurs fortement plafonnées, parfois 0 m.");
-    else if(km<10&&a[4]!=="A") add("orange","🛫",`${a[0]} ${a[1]} à ${fmtD(x.d)} (${typ})`,"Zone probablement incluse dans la CTR ou les secteurs de restriction de l'aérodrome : accord préalable de l'organisme ATS + protocole. Vérifier la hauteur autorisée sur la carte des restrictions UAS.");
-    else if(km<5) add("orange","🛫",`${a[0]} ${a[1]} à ${fmtD(x.d)} (${typ})`,"Proximité d'un aérodrome non contrôlé : hauteurs plafonnées et accord du prestataire AFIS ou de l'exploitant d'aérodrome à obtenir.");
+    if(km<3) add("red","🛫",`${a[0]} ${a[1]} à ${fmtD(x.d)} (${typ})`,"Zone très proche de l'aérodrome : vol en principe interdit sans accord de l'organisme de la circulation aérienne (tour / AFIS / exploitant). Hauteurs fortement plafonnées, parfois 0 m.",CT.ats(a));
+    else if(km<10&&a[4]!=="A") add("orange","🛫",`${a[0]} ${a[1]} à ${fmtD(x.d)} (${typ})`,"Zone probablement incluse dans la CTR ou les secteurs de restriction de l'aérodrome : accord préalable de l'organisme ATS + protocole. Vérifier la hauteur autorisée sur la carte des restrictions UAS.",CT.ats(a));
+    else if(km<5) add("orange","🛫",`${a[0]} ${a[1]} à ${fmtD(x.d)} (${typ})`,"Proximité d'un aérodrome non contrôlé : hauteurs plafonnées et accord du prestataire AFIS ou de l'exploitant d'aérodrome à obtenir.",CT.ats(a));
     else if(i===0) add("green","🛫",`Aérodrome le plus proche : ${a[0]} à ${fmtD(x.d)}`,"Pas d'aérodrome de la base embarquée à moins de 10 km. Les petits aérodromes, ULM, hélistations et plateformes privées ne sont pas tous listés : vérifier la carte VAC / Géoportail."); });
-  if(m.e_ctr) add("orange","🛂","Espace aérien contrôlé déclaré","Évolution dans un espace contrôlé : accord préalable de l'organisme de contrôle, formalisé par un protocole fixant les conditions d'évolution.");
+  if(m.e_ctr) add("orange","🛂","Espace aérien contrôlé déclaré","Évolution dans un espace contrôlé : accord préalable de l'organisme de contrôle, formalisé par un protocole fixant les conditions d'évolution.",adNear?CT.ats(adNear.a):CT.atsGen);
   // Sites sensibles
-  r.sens.forEach(x=>add(x.d<=x.s[3]*1000?"red":"orange","☢️",`${x.s[0]} – ${x.d===0?"zone à l'intérieur":"à "+fmtD(x.d)}`,"Zone interdite ou réglementée probable (rayon indicatif). Survol interdit sauf autorisation spécifique : contrôler la délimitation exacte (P/R) sur la carte officielle."));
-  r.czHits.forEach(x=>add(x.d<=x.z.r?"red":"orange","⛔",`${x.z.t} ${x.z.n} – ${x.d<=x.z.r?"interceptée":"à "+fmtD(x.d-x.z.r)}`,"Zone saisie manuellement. Vérifier conditions d'activation et organisme gestionnaire."));
-  r.notamHits.forEach(x=>add(x.hit?"red":"blue","📡",`NOTAM ${x.n.id||""} ${x.hit?"touche la zone":"à "+fmtD(x.d-x.n.r)+" de la zone"}`,(x.n.fl?`Niveaux ${x.n.fl}. `:"")+(x.n.e||"").slice(0,180)));
+  r.sens.forEach(x=>add(x.d<=x.s[3]*1000?"red":"orange","☢️",`${x.s[0]} – ${x.d===0?"zone à l'intérieur":"à "+fmtD(x.d)}`,"Zone interdite ou réglementée probable (rayon indicatif). Survol interdit sauf autorisation spécifique : contrôler la délimitation exacte (P/R) sur la carte officielle.",[CT.pref("Autorité à interroger pour la zone P/R"),CT.dsac]));
+  r.czHits.forEach(x=>add(x.d<=x.z.r?"red":"orange","⛔",`${x.z.t} ${x.z.n} – ${x.d<=x.z.r?"interceptée":"à "+fmtD(x.d-x.z.r)}`,"Zone saisie manuellement. Vérifier conditions d'activation et organisme gestionnaire.",CT.sofia));
+  r.notamHits.forEach(x=>add(x.hit?"red":"blue","📡",`NOTAM ${x.n.id||""} ${x.hit?"touche la zone":"à "+fmtD(x.d-x.n.r)+" de la zone"}`,(x.n.fl?`Niveaux ${x.n.fl}. `:"")+(x.n.e||"").slice(0,180),CT.sofia));
   // Environnement
-  if(m.e_pop.startsWith("Zone peuplée")) add("orange","🏘️","Vol en zone peuplée","Déclaration préalable au préfet territorialement compétent : vol au plus tôt 10 jours ouvrables et au plus tard 30 jours ouvrables après l'envoi (dimanches et fériés exclus). Le préfet peut interdire ou restreindre le vol.");
-  if(m.e_pop.startsWith("Rassemblement")) add("red","👥","Rassemblement de personnes à moins de 150 m","Vol considéré en zone peuplée : déclaration préfectorale obligatoire. Survol de rassemblement interdit en catégorie Ouverte ; en général autorisation d'exploitation DSAC nécessaire.");
+  if(m.e_pop.startsWith("Zone peuplée")) add("orange","🏘️","Vol en zone peuplée","Déclaration préalable au préfet territorialement compétent : vol au plus tôt 10 jours ouvrables et au plus tard 30 jours ouvrables après l'envoi (dimanches et fériés exclus). Le préfet peut interdire ou restreindre le vol.",[CT.pref("Déclaration préalable, 10 à 30 jours ouvrables avant"),CT.mairie]);
+  if(m.e_pop.startsWith("Rassemblement")) add("red","👥","Rassemblement de personnes à moins de 150 m","Vol considéré en zone peuplée : déclaration préfectorale obligatoire. Survol de rassemblement interdit en catégorie Ouverte ; en général autorisation d'exploitation DSAC nécessaire.",[CT.pref("Déclaration préalable"),CT.dsac]);
   if(m.e_over) add("orange","🚶","Survol de personnes non impliquées","Possible uniquement en A1 (C0/C1, jamais au-dessus d'un rassemblement). Interdit en A2/A3 et en STS (zone contrôlée au sol).");
   if(r.night&&!(m.e_gear||[]).some(g=>/anticollision/.test(g))) add("orange","🚨","Feu anticollision","Obligatoire de nuit : à cocher dans le matériel prévu.");
-  if(r.night) add("red","🌙","Vol de nuit aéronautique",`La plage horaire sort de la période de jour (lever −30 min ${hmM(r.nightWin.sr)} / coucher +30 min ${hmM(r.nightWin.ss)}). Vol de nuit interdit sauf dérogation préfectorale, à demander au moins 30 jours avant (formulaire R5-UAS-DEROG). En catégorie spécifique, une exemption existe sous conditions (notamment hauteur < 50 m) : voir l'encadré du formulaire.`);
+  if(r.night) add("red","🌙","Vol de nuit aéronautique",`La plage horaire sort de la période de jour (lever −30 min ${hmM(r.nightWin.sr)} / coucher +30 min ${hmM(r.nightWin.ss)}). Vol de nuit interdit sauf dérogation préfectorale, à demander au moins 30 jours avant (formulaire R5-UAS-DEROG). En catégorie spécifique, une exemption existe sous conditions (notamment hauteur < 50 m) : voir l'encadré du formulaire.`,[CT.pref("Dérogation de nuit, 30 jours avant"),CT.dsac]);
   else if(r.sun) add("green","☀️","Vol de jour",`Lever ${hm(r.sun.rise)} · Coucher ${hm(r.sun.set)} (heure de Paris). Fenêtre de jour aéronautique : ${hmM(r.nightWin.sr)} – ${hmM(r.nightWin.ss)}.`);
-  if(m.e_park) add("orange","🌲","Espace naturel protégé","Cœur de parc national / réserve : survol souvent réglementé (hauteur minimale ou interdiction, périodes de nidification). Contacter le gestionnaire de l'espace.");
-  if(m.e_sens) add("orange","🛡️","Site sensible / ZICAD","Les ZICAD et emprises militaires sont interdites de survol. La Préfecture de police demande la mention des ZICAD dans le dossier (Paris).");
-  if(m.e_priv) add("blue","🔑","Propriété privée","Obtenir l'accord écrit du propriétaire et respecter le droit à l'image et la vie privée des personnes.");
-  if(m.e_infra) add("orange","🚆","Infrastructures linéaires","Voies ferrées, autoroutes, lignes HT : distance de sécurité, accord du gestionnaire (SNCF Réseau, concessionnaire, RTE) recommandé ou exigé.");
+  if(m.e_park) add("orange","🌲","Espace naturel protégé","Cœur de parc national / réserve : survol souvent réglementé (hauteur minimale ou interdiction, périodes de nidification). Contacter le gestionnaire de l'espace.",CT.park);
+  if(m.e_sens) add("orange","🛡️","Site sensible / ZICAD","Les ZICAD et emprises militaires sont interdites de survol. La Préfecture de police demande la mention des ZICAD dans le dossier (Paris).",[CT.zicad,CT.pref("À mentionner dans la déclaration")]);
+  if(m.e_priv) add("blue","🔑","Propriété privée","Obtenir l'accord écrit du propriétaire et respecter le droit à l'image et la vie privée des personnes.",CT.proprio);
+  if(m.e_infra) add("orange","🚆","Infrastructures linéaires","Voies ferrées, autoroutes, lignes HT : distance de sécurité, accord du gestionnaire (SNCF Réseau, concessionnaire, RTE) recommandé ou exigé.",[CT.rail,CT.power]);
   // Carte officielle Restrictions UAS (DGAC / IGN)
   if(poly){ if(UASD.status==="loading") add("blue","🗺️","Carte DGAC des restrictions UAS : interrogation en cours…","");
     else if(UASD.status==="error") add("orange","🗺️","Carte DGAC des restrictions UAS non interrogée","Le service de la Géoplateforme n'a pas répondu ("+UASD.err+"). Dans l'aperçu Claude les requêtes externes sont bloquées : vérifier la zone sur cartes.gouv.fr ou héberger l'outil.");
     else if(UASD.status==="ok"){ const inZ=UASD.hits.filter(x=>x.inZone), buf=UASD.hits.filter(x=>!x.inZone);
       if(!UASD.hits.length) add("green","🗺️","Zone sans couleur sur la carte DGAC : 120 m max","Carte « Restrictions UAS catégorie Ouverte et aéromodélisme » (hors interdictions temporaires, NOTAM, ZICAD et agglomérations).");
-      inZ.slice(0,8).forEach(x=>{ if(x.forb) add("red","⛔","Zone rouge DGAC : vol interdit dans la zone",x.txt);
-        else if(x.h!=null) add(H>x.h?"red":"orange","📐",`${x.zc.n.split(" – ")[0]} DGAC : hauteur max ${x.h} m${H>x.h?` (tu prévois ${H} m)`:""}`,x.txt+(H>x.h?" — au-delà : accord de l'organisme indiqué / du gestionnaire.":""));
-        else add("orange","🗺️","Restriction UAS DGAC sur la zone",x.txt); });
+      inZ.slice(0,8).forEach(x=>{ if(x.forb) add("red","⛔","Zone rouge DGAC : vol interdit dans la zone",x.txt,adNear?[CT.ats(adNear.a),CT.pref("Si la zone est liée à un site sensible")]:[CT.pref(),CT.dsac]);
+        else if(x.h!=null) add(H>x.h?"red":"orange","📐",`${x.zc.n.split(" – ")[0]} DGAC : hauteur max ${x.h} m${H>x.h?` (tu prévois ${H} m)`:""}`,x.txt+(H>x.h?" — au-delà : accord de l'organisme indiqué / du gestionnaire.":""),H>x.h?(adNear?CT.ats(adNear.a):CT.atsGen):null);
+        else add("orange","🗺️","Restriction UAS DGAC sur la zone",x.txt,adNear?CT.ats(adNear.a):null); });
       if(buf.length) add("orange","🗺️",`${buf.length} zone(s) de restriction DGAC dans la zone tampon`,buf.slice(0,3).map(x=>x.txt).join(" | ")); } }
   // Zones UAS du SIA / ZICAD / environnement
   r.sia=siaHits(); r.zic=zicHits(); r.geo=S.geo;
   if(poly&&SIA.st!=="ok") add("blue","🗂️","Zones géographiques UAS du SIA non chargées","Charge le ZIP du SIA (onglet NOTAM / SUP AIP) pour connaître les zones exactes, leurs gestionnaires et leurs contacts.");
   r.sia.forEach(z=>{ const lv=z.restr==="PROHIBITED"?"red":z.restr==="REQ_AUTHORISATION"?"orange":z.restr==="CONDITIONAL"?"orange":"blue"; const a=z.auth[0]||{};
-    add(lv,"🛩️",`Zone UAS SIA : ${z.name}${z.inZone?"":" (zone tampon)"}`,`${(RESTR[z.restr]||[z.restr])[0]} · ${limTxt(z.lo,z.loRef)} → ${limTxt(z.up,z.upRef)}${a.name?" · gestionnaire : "+a.name:""}${z.msg?" – "+z.msg.slice(0,220):""}`); });
-  r.zic.forEach(z=>add("red","📵",`ZICAD : ${z.name}`,"Captation de données (photo, vidéo, capteurs) interdite sauf dérogation, à demander au moins 2 mois avant."));
+    add(lv,"🛩️",`Zone UAS SIA : ${z.name}${z.inZone?"":" (zone tampon)"}`,`${(RESTR[z.restr]||[z.restr])[0]} · ${limTxt(z.lo,z.loRef)} → ${limTxt(z.up,z.upRef)}${a.name?" · gestionnaire : "+a.name:""}${z.msg?" – "+z.msg.slice(0,220):""}`,a.name||a.email||a.phone?{n:a.name||"Gestionnaire de la zone",s:[a.service,a.contact,a.days?"préavis "+Math.ceil(a.days)+" j":""].filter(Boolean).join(" · ")||"Gestionnaire publié par le SIA",mail:a.email,tel:a.phone,links:a.url?[["Site du gestionnaire",a.url]]:[],go:"ctSteps"}:null); });
+  r.zic.forEach(z=>add("red","📵",`ZICAD : ${z.name}`,"Captation de données (photo, vidéo, capteurs) interdite sauf dérogation, à demander au moins 2 mois avant.",CT.zicad));
   if(poly&&ZIC.st==="none") loadZICAD();
-  if(ENV.st==="ok"){ if(ENV.bat>=150&&m.e_pop.startsWith("Hors")) add("orange","🏘️",`${ENV.bat} bâtiments à moins de 300 m`,"Agglomération probable : vérifie le champ Environnement de la fiche mission (déclaration préfectorale).");
-    if(ENV.roads.length) add("orange","🛣️",`${ENV.roads.length} voie(s) dans la zone contrôlée au sol`,ENV.roads.slice(0,6).map(x=>x.name||x.nature).join(", ")+" : prévoir fermeture ou contrôle des accès.");
-    if(ENV.rails.length) add(ENV.rails.some(x=>x.inCtrl)?"red":"orange","🚆","Voie ferrée à moins de 300 m","Distance de sécurité et accord du gestionnaire si la zone contrôlée au sol la touche.");
-    if(ENV.power.length) add("orange","⚡",`Ligne électrique à ${fmtD(ENV.power[0].d)}`,"Risque de collision et d'interférences : repérer le tracé sur place.");
+  if(ENV.st==="ok"){ if(ENV.bat>=150&&m.e_pop.startsWith("Hors")) add("orange","🏘️",`${ENV.bat} bâtiments à moins de 300 m`,"Agglomération probable : vérifie le champ Environnement de la fiche mission (déclaration préfectorale).",CT.pref("Déclaration si zone peuplée"));
+    if(ENV.roads.length) add("orange","🛣️",`${ENV.roads.length} voie(s) dans la zone contrôlée au sol`,ENV.roads.slice(0,6).map(x=>x.name||x.nature).join(", ")+" : prévoir fermeture ou contrôle des accès.",CT.mairie);
+    if(ENV.rails.length) add(ENV.rails.some(x=>x.inCtrl)?"red":"orange","🚆","Voie ferrée à moins de 300 m","Distance de sécurité et accord du gestionnaire si la zone contrôlée au sol la touche.",CT.rail);
+    if(ENV.power.length) add("orange","⚡",`Ligne électrique à ${fmtD(ENV.power[0].d)}`,"Risque de collision et d'interférences : repérer le tracé sur place.",CT.power);
     if(ENV.obst.length) add("blue","🗼",`${ENV.obst.length} obstacle(s) ponctuel(s) à moins de 300 m`,ENV.obst.slice(0,4).map(o=>`${o.nature} à ${fmtD(o.d)}`).join(", ")); }
   // Points de passage
   const T=(S.wps||[]).find(w=>w.t==="Télépilote");
   if(poly&&T){ const dmax=Math.max(...poly.map(p=>hav([T.lat,T.lon],p))); const lim=+m.v_dist||500; add(dmax>lim?"orange":"green","🧍",`Distance max télépilote ↔ zone : ${fmtD(dmax)}`,dmax>lim?`Supérieure à la distance maximale prévue (${fmtD(lim)}) : vérifier la vue directe ou ajouter des observateurs.`:"Compatible avec la distance maximale prévue."); }
   if(poly&&!(S.wps||[]).some(w=>w.t==="Décollage")) add("blue","📌","Point de décollage non placé","Place le décollage, le télépilote et un atterrissage d'urgence (bouton 📌 Point) : ils figurent dans le dossier de vol.");
   // AlphaTango / exploitant
-  if(!m.op_uas) add("blue","🪪","N° d'exploitant UAS non renseigné","Renseigne l'exploitant dans l'onglet AlphaTango (extrait du registre) pour l'ajouter aux déclarations.");
-  if(F.op.valid&&m.m_date){ const [dd,mm,yy]=F.op.valid.split("/").map(Number); if(yy&&new Date(yy,mm-1,dd)<parseDate(m.m_date)) add("red","🪪","Enregistrement exploitant expiré à la date du vol",`Fin de validité ${F.op.valid} – renouveler dans AlphaTango.`); }
-  if((+m.d_mass||0)>=0.8&&!/UAS-FR-\d+/i.test(m.d_reg||"")) add("orange","🏷️","Aéronef ≥ 800 g : n° d'enregistrement UAS-FR à renseigner","L'enregistrement de l'aéronef dans AlphaTango est requis ; sélectionne-le dans la flotte importée.");
-  if(m.m_uas!==""&&F.uas[+m.m_uas]&&F.uas[+m.m_uas].status&&!/valide/i.test(F.uas[+m.m_uas].status)) add("red","🏷️","Statut de l'aéronef dans AlphaTango : "+F.uas[+m.m_uas].status,"Un aéronef suspendu, perdu ou volé ne peut pas être utilisé.");
+  if(!m.op_uas) add("blue","🪪","N° d'exploitant UAS non renseigné","Renseigne l'exploitant dans l'onglet AlphaTango (extrait du registre) pour l'ajouter aux déclarations.",CT.at);
+  if(F.op.valid&&m.m_date){ const [dd,mm,yy]=F.op.valid.split("/").map(Number); if(yy&&new Date(yy,mm-1,dd)<parseDate(m.m_date)) add("red","🪪","Enregistrement exploitant expiré à la date du vol",`Fin de validité ${F.op.valid} – renouveler dans AlphaTango.`,CT.at); }
+  if((+m.d_mass||0)>=0.8&&!/UAS-FR-\d+/i.test(m.d_reg||"")) add("orange","🏷️","Aéronef ≥ 800 g : n° d'enregistrement UAS-FR à renseigner","L'enregistrement de l'aéronef dans AlphaTango est requis ; sélectionne-le dans la flotte importée.",CT.at);
+  if(m.m_uas!==""&&F.uas[+m.m_uas]&&F.uas[+m.m_uas].status&&!/valide/i.test(F.uas[+m.m_uas].status)) add("red","🏷️","Statut de l'aéronef dans AlphaTango : "+F.uas[+m.m_uas].status,"Un aéronef suspendu, perdu ou volé ne peut pas être utilisé.",CT.at);
   if(!m.d_rid && !/^C0$/.test(m.d_class)) add("orange","📶","Signalement électronique","Les drones en catégorie Spécifique doivent être équipés d'un signalement électronique européen ; en Ouverte, obligatoire selon la classe et la masse (≥ 250 g).");
   if(S.m.m_date){ const d=parseDate(S.m.m_date); const today=new Date(); today.setHours(0,0,0,0); if(d<today) add("orange","📅","Date de mission passée","Mets à jour la date pour recalculer délais et ensoleillement."); }
   return r;
@@ -1067,11 +1091,23 @@ function refreshInner(noQ){
   { const ci=document.getElementById("contIn"), gi=document.getElementById("gbMfrIn"); if(document.activeElement!==ci) ci.value=bands().cont; if(document.activeElement!==gi) gi.value=S.gbMfr||""; } document.getElementById("heightIn").value=S.height;
   // Contraintes
   const order={red:0,orange:1,blue:2,green:3};
-  document.getElementById("cstList").innerHTML=r.list.slice().sort((a,b)=>order[a.lv]-order[b.lv]).map(x=>`<div class="cst ${x.lv}"><div class="ic">${x.ic}</div><div><b>${esc(x.t)}</b><p>${esc(x.p)}</p></div></div>`).join("");
+  document.getElementById("cstList").innerHTML=r.list.slice().sort((a,b)=>order[a.lv]-order[b.lv]).map(x=>`<div class="cst ${x.lv}"><div class="ic">${x.ic}</div><div style="flex:1;min-width:0"><b>${esc(x.t)}</b><p>${esc(x.p)}</p>${(x.ct||[]).map(ctHtml).join("")}</div></div>`).join("");
   document.querySelectorAll('.tab[data-v="cst"] .n')[0].style.background=r.list.some(x=>x.lv==="red")?"var(--red)":r.list.some(x=>x.lv==="orange")?"var(--ora)":"";
   renderAuth(r); renderNotams(r); renderScn(r); renderDossier(r); drawWps(); updateZoneBox(); renderZoneExtra(); renderSiaBox(); save(true); if(!noQ){ queryUAS(); loadAlt(); revGeo(); loadEnv(); } if(document.getElementById("v-meteo").classList.contains("act")) loadMeteo();
 }
 
+function ctHtml(c){ const b=[];
+  if(c.mail) b.push(`<span class="ctv mono">${esc(c.mail)}</span><button class="btn sm" data-ctcopy="${esc(c.mail)}">Copier</button>`);
+  if(c.tpl) b.push(`<button class="btn sm" data-ctmail="${c.tpl}" data-to="${esc(c.mail||"")}">✉️ Mail type</button>`);
+  else if(c.mail) b.push(`<a class="btn sm" style="text-decoration:none" href="mailto:${esc(c.mail)}">✉️ Écrire</a>`);
+  if(c.tel) b.push(`<a class="btn sm" style="text-decoration:none" href="tel:${esc(String(c.tel).replace(/\s/g,""))}">☎ ${esc(c.tel)}</a>`);
+  (c.links||[]).forEach(l=>b.push(`<a class="btn sm" style="text-decoration:none" href="${esc(l[1])}" target="_blank" rel="noopener">${esc(l[0])} ↗</a>`));
+  if(c.go) b.push(`<button class="btn sm ctgo" data-ctgo="${c.go}">Contacts →</button>`);
+  return `<div class="ctc"><div class="ctn"><span class="cti">👤</span><div><b>${esc(c.n)}</b>${c.s?`<span>${esc(c.s)}</span>`:""}</div></div>${b.length?`<div class="ctb">${b.join("")}</div>`:""}</div>`; }
+document.addEventListener("click",e=>{
+  const cp=e.target.closest("[data-ctcopy]"); if(cp){ (navigator.clipboard?navigator.clipboard.writeText(cp.dataset.ctcopy):Promise.reject()).then(()=>toast("Adresse copiée"),()=>toast("Copie impossible",true)); return; }
+  const ml=e.target.closest("[data-ctmail]"); if(ml){ const t=(window._mails||{})[ml.dataset.ctmail]; if(!t){toast("Mail type indisponible : trace la zone d'abord",true);return;} location.href=`mailto:${encodeURIComponent(t.to||ml.dataset.to||"")}?subject=${encodeURIComponent(t.subj)}&body=${encodeURIComponent(t.body.slice(0,1800))}`; return; }
+  const go=e.target.closest("[data-ctgo]"); if(go){ showTab("auth"); setTimeout(()=>{ const el=document.getElementById(go.dataset.ctgo); if(el){ el.scrollIntoView({behavior:"smooth",block:"start"}); el.classList.add("flash"); setTimeout(()=>el.classList.remove("flash"),1600);} },60); } });
 function copyBtn(id,label="Copier"){ return `<button class="btn sm" data-copy="${id}">${label}</button>`; }
 function mailtoBtn(to,subj,body){ return `<a class="btn sm" style="text-decoration:none" href="mailto:${encodeURIComponent(to)}?subject=${encodeURIComponent(subj)}&body=${encodeURIComponent(body.slice(0,1800))}">Ouvrir dans la messagerie</a>`; }
 function zoneText(r){ if(!r.poly) return "(zone non définie)"; if(S.zone.type==="circle") return `Cercle – centre ${r.c[0].toFixed(5)}, ${r.c[1].toFixed(5)} (${dms(r.c[0],1)} ${dms(r.c[1],0)}) – rayon ${S.zone.radius} m`;
@@ -1079,10 +1115,10 @@ function zoneText(r){ if(!r.poly) return "(zone non définie)"; if(S.zone.type==
 function datesTxt(){ const m=S.m; return `${m.m_date?fdate(parseDate(m.m_date)):"(date à préciser)"}${m.m_date2&&m.m_date2!==m.m_date?" au "+fdate(parseDate(m.m_date2)):""}, de ${m.m_start||"--:--"} à ${m.m_end||"--:--"} (heure locale)`; }
 
 function renderAuth(r){
-  const m=S.m, d=r.dept, populated=!m.e_pop.startsWith("Hors"), box=document.getElementById("authList"); let h=renderDemarches(r)+`<h3 style="margin-top:22px">Détails et modèles de messages</h3>`;
+  const m=S.m, d=r.dept, populated=!m.e_pop.startsWith("Hors"), box=document.getElementById("authList"); window._mails={}; let h=`<div id="ctSteps"></div>`+renderDemarches(r)+`<h3 style="margin-top:22px">Détails et modèles de messages</h3>`;
   // --- 1. Préfecture
   const need=populated||r.night||(+S.height>120);
-  h+=`<div class="card"><div class="row" style="justify-content:space-between"><b>1 · Préfecture</b><span class="pill ${need?"orange":"green"}">${need?"Déclaration requise":"Non requise a priori"}</span></div>`;
+  h+=`<div class="card" id="ctPref"><div class="row" style="justify-content:space-between"><b>1 · Préfecture</b><span class="pill ${need?"orange":"green"}">${need?"Déclaration requise":"Non requise a priori"}</span></div>`;
   if(d){ h+=`<p class="small" style="margin:8px 0 4px">${esc(d[0]+" – "+d[1])}${r.deptAuto?" · estimé d'après le centre de zone, à confirmer dans l'onglet Mission":""}</p>
     <div class="row"><span class="mono" style="font-size:13px;color:#cfe3ff">${esc(d[2])}</span>${copyBtn("pmail","Copier l'adresse")}</div><span id="pmail" hidden>${esc(d[2])}</span>`;
     if(DEPT_NOTES[d[0]]) h+=`<div class="warnbox" style="margin-top:8px">${esc(DEPT_NOTES[d[0]])}</div>`; }
@@ -1122,12 +1158,13 @@ Je reste à votre disposition pour toute information complémentaire.
 Cordialement,
 ${m.pilot_name||"[nom]"} – ${m.op_name||""}
 ${m.pilot_phone||""} ${m.op_mail||""}`;
+  window._mails.pref={to:d?d[2]:"",subj:pSubj,body:pBody};
   h+=`<h3>Mail type à la préfecture</h3><pre class="tpl" id="pTpl">Objet : ${esc(pSubj)}\n\n${esc(pBody)}</pre><div class="row">${copyBtn("pTpl","Copier le mail")}${d?mailtoBtn(d[2],pSubj,pBody):""}</div></div>`;
 
   // --- 2. Aéroport
   const near=r.ads.filter(x=>x.d<10000||(x.a[4]==="A"&&x.d<5000));
   const needAD=near.length>0||m.e_ctr;
-  h+=`<div class="card"><div class="row" style="justify-content:space-between"><b>2 · Aérodrome / contrôle aérien</b><span class="pill ${needAD?"orange":"green"}">${needAD?"Accord ATS probable":"Pas d'aérodrome proche (base)"}</span></div>`;
+  h+=`<div class="card" id="ctAts"><div class="row" style="justify-content:space-between"><b>2 · Aérodrome / contrôle aérien</b><span class="pill ${needAD?"orange":"green"}">${needAD?"Accord ATS probable":"Pas d'aérodrome proche (base)"}</span></div>`;
   if(r.ads.length){ h+=`<table class="t" style="margin-top:8px"><tr><th>Aérodrome</th><th>Distance</th><th>Position zone</th></tr>${r.ads.slice(0,4).map(x=>`<tr><td><b>${x.a[0]}</b> ${esc(x.a[1])}<br><span class="small">${x.a[4]==="M"?"Militaire":x.a[4]==="C"?"Civil contrôlé":"Civil"}</span></td><td>${fmtD(x.d)}</td><td>${Math.round(x.b)}° ${card16(x.b)}</td></tr>`).join("")}</table>`; }
   const tgt=near[0]||r.ads[0];
   h+=`<h3>Protocole de demande d'accord</h3><ul class="steps">
@@ -1157,11 +1194,12 @@ Le fichier KML de la zone est joint.
 
 Cordialement,
 ${m.pilot_name||""} – ${m.op_name||""} ${m.op_mail||""}`;
+    window._mails.ats={to:"",subj:aSubj,body:aBody};
     h+=`<h3>Mail type à l'organisme ATS</h3><pre class="tpl" id="aTpl">Objet : ${esc(aSubj)}\n\n${esc(aBody)}</pre><div class="row">${copyBtn("aTpl","Copier le mail")}</div>`; }
   h+=`</div>`;
 
   // --- 3. Autres
-  h+=`<div class="card"><b>3 · Autres démarches possibles</b><ul class="steps" style="margin-top:8px">
+  h+=`<div class="card" id="ctOther"><b>3 · Autres démarches possibles</b><ul class="steps" style="margin-top:8px">
    <li><b>DSAC</b> – déclaration STS ou autorisation d'exploitation (SORA/PDRA) via AlphaTango ; dérogations cas B/D : <span class="mono">dsac-autorisations-drones-bf@aviation-civile.gouv.fr</span></li>
    <li><b>Ministère des Armées</b> – notification préalable via AlphaTango lorsque le type de vol l'exige (notamment certains vols hors vue).</li>
    ${m.e_park?"<li><b>Gestionnaire de l'espace protégé</b> (parc, réserve) – accord / réglementation de survol.</li>":""}

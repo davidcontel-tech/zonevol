@@ -956,7 +956,7 @@ function analyze(){
     dsac:{n:"DSAC – autorisations drones",s:"Autorisation d'exploitation (SORA / PDRA)",mail:"dsac-autorisations-drones-bf@aviation-civile.gouv.fr",links:[["AlphaTango","https://alphatango.aviation-civile.gouv.fr"]],go:"ctOther"},
     at:{n:"AlphaTango (DGAC)",s:"Registre exploitant, aéronefs, déclarations",links:[["Ouvrir AlphaTango","https://alphatango.aviation-civile.gouv.fr"]]},
     sofia:{n:"SOFIA Briefing (DSNA)",s:"Consulter le NOTAM et son organisme émetteur",links:[["Ouvrir SOFIA","https://sofia-briefing.aviation-civile.gouv.fr"]]},
-    mairie:{n:"Mairie"+(S.m.m_commune?" de "+S.m.m_commune:""),s:"Arrêté de circulation / occupation de l'espace public",go:"ctOther"},
+    mairie:{n:"Mairie"+(S.m.m_commune?(/^[aeiouyéèêâîôûh]/i.test(S.m.m_commune)?" d'":" de ")+S.m.m_commune:""),s:"Arrêté de circulation / occupation de l'espace public",go:"ctOther"},
     proprio:{n:"Propriétaire du terrain",s:"Accord écrit",go:"ctOther"},
     rail:{n:"SNCF Réseau (gestionnaire de la voie)",s:"Accord si la zone contrôlée au sol touche la voie",go:"ctOther"},
     power:{n:"Gestionnaire du réseau électrique (RTE / Enedis)",s:"Information conseillée à proximité immédiate",go:"ctOther"},

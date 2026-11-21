@@ -80,6 +80,11 @@ main{display:grid;grid-template-columns:1fr 470px;height:calc(100% - 52px)}
 .addrlist{display:none;position:absolute;top:32px;left:0;width:300px;background:#fff;color:#1b2536;border-radius:8px;box-shadow:0 4px 16px rgba(0,0,0,.4);overflow:hidden;z-index:1003}
 .addrlist div{padding:8px 10px;cursor:pointer;font-size:12.5px;border-bottom:1px solid #eef1f5}
 .addrlist div:hover{background:#e8f0fe}
+.wppick{display:flex;flex-direction:column;gap:3px;min-width:190px}
+.wppick b{font-size:12px;color:var(--mut);margin-bottom:2px}
+.wppick button{display:flex;align-items:center;gap:8px;background:#0b1626;border:1px solid var(--line);border-radius:7px;padding:6px 8px;color:var(--txt);cursor:pointer;font-size:13px;text-align:left}
+.wppick button:hover{border-color:var(--acc);background:#13294a}
+.wppick span{display:inline-grid;place-items:center;width:20px;height:20px;border-radius:50%;color:#fff;font-weight:700;font-size:11px;flex-shrink:0}
 .legend i.sq{border-radius:2px}
 .offmap{position:absolute;z-index:1002;top:50px;left:50%;transform:translateX(-50%);width:min(440px,90%);background:rgba(8,16,29,.96);border:1px solid var(--ora);border-radius:10px;padding:12px 14px;font-size:12.5px;line-height:1.5;color:#e6eefb;display:none;box-shadow:0 6px 24px rgba(0,0,0,.5)}
 .offmap b{color:var(--ora)}
@@ -178,7 +183,6 @@ table.t th{color:var(--mut);font-weight:500}
       <button class="btn sm" id="tUndo" title="Retirer le dernier point">↩︎</button>
       <button class="btn sm" id="tDone">✔ Terminer</button>
       <button class="btn sm" id="tWp">📌 Point</button>
-      <select class="btn sm" id="wpType" title="Type de point" style="width:auto;max-width:180px"><option>Décollage</option><option>Atterrissage</option><option>Télépilote</option><option>Atterrissage d'urgence</option><option>Observateur</option><option>Point d'intérêt</option></select>
       <button class="btn sm trashbtn" id="tClear" title="Effacer la zone"><svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 6h18"/><path d="M8 6V4h8v2"/><path d="M5 6l1 14a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2l1-14"/><path d="M10 11v6M14 11v6"/></svg> Effacer</button>
       <button class="btn sm" id="tGoto">📍 Aller à</button>
       <button class="btn sm" id="tCoords">⌨︎ Coordonnées</button>
@@ -712,7 +716,7 @@ function setMode(m){ mode=m; tmpCenter=null; tmpLayer.clearLayers();
   document.getElementById("tPoly").classList.toggle("on",m==="polygon");
   document.getElementById("tCircle").classList.toggle("on",m==="circle"); document.getElementById("tWp").classList.toggle("on",m==="wp");
   if(m==="polygon"){ if(S.zone.type!=="polygon"){S.zone={type:"polygon",pts:[],center:null,radius:0};} hint.innerHTML="Clique pour ajouter des sommets. <b>Double-clic</b> ou <b>Terminer</b> pour fermer la zone."; }
-  else if(m==="wp"){ hint.innerHTML="Choisis le <b>type de point</b> à côté du bouton, puis clique sur la carte. Les points sont déplaçables."; }
+  else if(m==="wp"){ hint.innerHTML="Clique sur la carte à l'endroit voulu, puis <b>choisis le type de point</b> dans la bulle. Les points restent déplaçables."; }
   else if(m==="circle"){ hint.innerHTML="Clique pour placer le <b>centre</b>, puis un second clic pour fixer le <b>rayon</b>."; }
   else hint.innerHTML= zonePoly()? "Zone enregistrée. Fais glisser les sommets pour l'ajuster." : "Choisis <b>Polygone</b> ou <b>Cercle</b>, puis clique sur la carte pour découper ta zone de vol.";
   drawZone(); }
@@ -1286,7 +1290,12 @@ function drawWps(){ wpLayer.clearLayers(); (S.wps||[]).forEach((w,i)=>{ const mk
   box.querySelectorAll("[data-wpn]").forEach(x=>x.oninput=()=>{ S.wps[+x.dataset.wpn].n=x.value; save(true); });
 }
 document.getElementById("tWp").onclick=()=>setMode(mode==="wp"?null:"wp");
-map.on("click",e=>{ if(mode!=="wp") return; S.wps.push({t:document.getElementById("wpType").value,lat:+e.latlng.lat.toFixed(6),lon:+e.latlng.lng.toFixed(6),n:""}); refresh(true); });
+let wpPick=null;
+map.on("click",e=>{ if(mode!=="wp") return; const ll=[+e.latlng.lat.toFixed(6),+e.latlng.lng.toFixed(6)];
+  const html=`<div class="wppick"><b>Type de point</b>${Object.entries(WPC).map(([t,c])=>`<button data-wpick="${esc(t)}"><span style="background:${c[0]}">${c[1]}</span>${esc(t)}</button>`).join("")}</div>`;
+  if(wpPick) map.removeLayer(wpPick);
+  wpPick=L.popup({closeButton:true,autoPan:true,className:"wppop",offset:[0,-4]}).setLatLng(e.latlng).setContent(html).openOn(map);
+  setTimeout(()=>{ document.querySelectorAll("[data-wpick]").forEach(b=>b.onclick=ev=>{ ev.stopPropagation(); S.wps.push({t:b.dataset.wpick,lat:ll[0],lon:ll[1],n:""}); map.closePopup(); refresh(true); }); },0); });
 document.addEventListener("click",e=>{ const d=e.target.dataset&&e.target.dataset.wpdel; if(d!=null){ S.wps.splice(+d,1); refresh(true); } });
 
 /* =========================================================

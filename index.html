@@ -110,7 +110,15 @@ h3{font-size:13px;text-transform:uppercase;letter-spacing:.6px;color:var(--mut);
 .fld input:focus,.fld select:focus,.fld textarea:focus{outline:none;border-color:var(--acc)}
 .chk{display:flex;gap:8px;align-items:flex-start;margin:6px 0;font-size:13px;cursor:pointer}
 .chk input{margin-top:2px;accent-color:var(--acc)}
-.mchk{background:#0b1626;border:1px solid var(--line);border-radius:7px;padding:4px 9px}
+.mchk{background:#0b1626;border:1px solid var(--line);border-radius:7px;padding:0;overflow:hidden}
+.fld .mchk label.chk{display:flex;align-items:center;gap:10px;margin:0;padding:9px 12px;font-size:13px;color:var(--txt);border-top:1px solid var(--line);cursor:pointer;line-height:1.35}
+.fld .mchk label.chk:first-child{border-top:0}
+.fld .mchk label.chk:hover{background:rgba(255,255,255,.03)}
+.fld .mchk label.chk:has(input:checked){background:rgba(56,139,253,.08)}
+.fld .mchk input[type=checkbox]{width:16px;height:16px;min-width:16px;flex:none;margin:0;padding:0;accent-color:var(--acc)}
+.fld .mchk .small{display:block;padding:9px 12px}
+.mhead{display:flex;justify-content:space-between;align-items:baseline;gap:8px}
+.mcnt{font-size:11px;color:var(--mut);white-space:nowrap}
 .stat{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
 .stat div{background:#0b1626;border:1px solid var(--line);border-radius:8px;padding:8px}
 .stat b{display:block;font-size:16px}
@@ -895,14 +903,14 @@ function buildForm(){ const box=document.getElementById("missionForm"); let html
     else if(f.t==="area") inp=`<textarea id="${f.id}" placeholder="${f.ph||""}"></textarea>`;
     else if(f.t==="check"){ flush(); html+=`<label class="chk"><input type="checkbox" id="${f.id}"> ${f.l}</label>`; return; }
     else if(f.t==="multi"||f.t==="fleetMulti"){ flush(); const opts=f.t==="multi"?f.o.map(o=>[o,o]):F.uas.map((u,i)=>[String(i),uasLabel(u)]);
-      html+=`<div class="fld"><label>${f.l}</label><div class="mchk">${opts.length?opts.map(([v,l])=>`<label class="chk"><input type="checkbox" data-multi="${f.id}" value="${esc(v)}" ${(S.m[f.id]||[]).includes(v)?"checked":""}> ${esc(l)}</label>`).join(""):'<span class="small">Flotte vide : importe-la dans l\'onglet AlphaTango.</span>'}</div></div>`; return; }
+      const nSel=opts.filter(([v])=>(S.m[f.id]||[]).includes(v)).length; html+=`<div class="fld"><div class="mhead"><label>${f.l}</label>${opts.length?`<span class="mcnt" data-mcnt="${f.id}">${nSel} / ${opts.length}</span>`:""}</div><div class="mchk">${opts.length?opts.map(([v,l])=>`<label class="chk"><input type="checkbox" data-multi="${f.id}" value="${esc(v)}" ${(S.m[f.id]||[]).includes(v)?"checked":""}> ${esc(l)}</label>`).join(""):'<span class="small">Flotte vide : importe-la dans l\'onglet AlphaTango.</span>'}</div></div>`; return; }
     else inp=`<input type="${f.t}" id="${f.id}" placeholder="${f.ph||""}" ${f.t==="number"?'step="any"':""}>`;
     const el=`<div class="fld"><label for="${f.id}">${f.l}</label>${inp}</div>`;
     if(f.half){ halfBuf.push(el); if(halfBuf.length===2) flush(); } else { flush(); html+=el; }
   }); flush(); if(open) html+="</div>"; box.innerHTML=html;
   ["resp","addr","phone"].forEach(k=>{ if(!S.m["op_"+k]&&F.op[k]) S.m["op_"+k]=F.op[k]; });
   if(!S.m.op_name&&F.op.name) S.m.op_name=F.op.name; if(!S.m.op_uas&&F.op.fra) S.m.op_uas=F.op.fra; if(!S.m.op_mail&&F.op.mail) S.m.op_mail=F.op.mail;
-  box.querySelectorAll("[data-multi]").forEach(c=>c.onchange=()=>{ const k=c.dataset.multi; S.m[k]=[...box.querySelectorAll(`[data-multi="${k}"]:checked`)].map(x=>x.value); refresh(true); });
+  box.querySelectorAll("[data-multi]").forEach(c=>c.onchange=()=>{ const k=c.dataset.multi; S.m[k]=[...box.querySelectorAll(`[data-multi="${k}"]:checked`)].map(x=>x.value); const ct=box.querySelector(`[data-mcnt="${k}"]`); if(ct) ct.textContent=S.m[k].length+" / "+box.querySelectorAll(`[data-multi="${k}"]`).length; refresh(true); });
   FIELDS.forEach(f=>{ if(!f.id||f.t==="multi"||f.t==="fleetMulti") return; const el=document.getElementById(f.id);
     if(f.t==="check") el.checked=!!S.m[f.id]; else el.value=S.m[f.id]??"";
     if(f.t==="fleetUas"){ el.onchange=()=>{ if(el.value==="") {S.m.m_uas="";refresh();} else applyUas(+el.value); }; return; }

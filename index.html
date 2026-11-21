@@ -1270,9 +1270,16 @@ document.addEventListener("click",e=>{ const a=e.target.closest("[data-mact]"); 
     return; }
   const c=e.target.closest("[data-mcard]"); if(c&&!e.target.closest("select")){ openCard=openCard===c.dataset.mcard?null:c.dataset.mcard; renderMissions(); } });
 document.addEventListener("change",e=>{ const s=e.target.dataset&&e.target.dataset.mstat; if(s){ const m=MISSIONS.find(x=>x.id===s); if(m){ m.status=e.target.value; if(m.id===S.id) S.status=m.status; save(true); renderMissions(); } } });
-function loadCurrent(){ buildForm(); setMode(null); drawZone(); wfsKey=""; METEO=null; refresh(); const p=zonePoly(); if(p) map.fitBounds(L.latLngBounds(p).pad(.4)); }
+function loadCurrent(noZoom){ buildForm(); setMode(null); drawZone(); wfsKey=""; METEO=null; refresh(); if(!noZoom) zoomToMission(); }
+function zoomToMission(anim=true){ const p=zonePoly(); let pts=[];
+  if(p){ const b=bufferPoly(p,bands().tot)||p; pts=b.slice(); }
+  (S.wps||[]).forEach(w=>pts.push([w.lat,w.lon]));
+  setTimeout(()=>{ map.invalidateSize();
+    if(pts.length){ const bb=L.latLngBounds(pts); anim?map.flyToBounds(bb,{padding:[60,60],maxZoom:18,duration:.8}):map.fitBounds(bb,{padding:[60,60],maxZoom:18}); }
+    else if(S.geo&&S.geo.label){ geocode(S.geo.label).then(r=>{ if(r[0]) map.flyTo([r[0].lat,r[0].lon],16,{duration:.8}); }).catch(()=>{}); toast("Cette mission n'a pas encore de zone tracée"); }
+    else toast("Cette mission n'a pas encore de zone tracée"); },120); }
 function openMission(id){ const s=MISSIONS.find(x=>x.id===id); if(!s) return; save(true); S=s; openCard=id; loadCurrent(); renderMissions(); }
-function newMission(){ save(true); S=blank(); MISSIONS.unshift(S); openCard=S.id; loadCurrent(); map.setView([46.6,2.4],6); showTab("zone"); toast("Nouvelle mission #"+S.id+" créée"); }
+function newMission(){ save(true); S=blank(); MISSIONS.unshift(S); openCard=S.id; loadCurrent(true); map.setView([46.6,2.4],6); showTab("zone"); toast("Nouvelle mission #"+S.id+" créée"); }
 document.getElementById("btnCreate").onclick=newMission;
 function showTab(v){ document.querySelectorAll(".tab").forEach(x=>x.classList.toggle("act",x.dataset.v===v)); document.querySelectorAll(".view").forEach(x=>x.classList.toggle("act",x.id==="v-"+v)); if(v==="meteo") loadMeteo(); }
 

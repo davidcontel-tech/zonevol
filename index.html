@@ -91,12 +91,16 @@ main{display:grid;grid-template-columns:1fr 470px;height:calc(100% - 52px)}
 .offmap button{float:right;margin-left:8px}
 .legend i{display:inline-block;width:10px;height:10px;border-radius:50%;margin-right:6px;vertical-align:-1px}
 #panel{background:var(--panel);border-left:1px solid var(--line);display:flex;flex-direction:column;min-height:0}
-.tabs{display:flex;overflow-x:auto;border-bottom:1px solid var(--line);scrollbar-width:none;flex-shrink:0}
-.tabs::-webkit-scrollbar{display:none}
-.tab{padding:11px 12px;cursor:pointer;color:var(--mut);white-space:nowrap;border-bottom:2px solid transparent;font-weight:500;font-size:13px;background:none;border-top:0;border-left:0;border-right:0}
-.tab.act{color:var(--txt);border-bottom-color:var(--acc)}
-.tab .n{display:inline-grid;place-items:center;width:18px;height:18px;border-radius:50%;background:var(--card);font-size:10px;margin-right:5px}
-.tab.act .n{background:var(--acc)}
+.tabs{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:2px;padding:6px;border-bottom:1px solid var(--line);flex-shrink:0}
+.tab{position:relative;display:flex;flex-direction:column;align-items:center;gap:3px;padding:7px 2px 6px;cursor:pointer;color:var(--mut);background:none;border:0;border-radius:8px;font-weight:500;font-size:11px;line-height:1.15;min-width:0}
+.tab:hover{background:rgba(255,255,255,.04);color:var(--txt)}
+.tab svg{width:19px;height:19px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.tab .tl{max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.tab.act{color:var(--txt);background:rgba(56,139,253,.16);box-shadow:inset 0 0 0 1px rgba(56,139,253,.45)}
+.tab.act svg{color:var(--acc)}
+.tab .n{position:absolute;top:3px;left:5px;display:inline-grid;place-items:center;min-width:14px;height:14px;padding:0 2px;border-radius:7px;background:var(--card);font-size:9px;color:var(--mut)}
+.tab.act .n{background:var(--acc);color:#fff}
+.tab[data-v="list"] .n{display:none}
 .view{display:none;overflow-y:auto;padding:14px;flex:1}
 .view.act{display:block}
 h2{font-size:16px;margin:2px 0 10px}
@@ -234,16 +238,16 @@ table.t th{color:var(--mut);font-weight:500}
   </div>
   <aside id="panel">
     <nav class="tabs" id="tabs">
-      <button class="tab act" data-v="list"><span class="n">☰</span>Missions</button>
-      <button class="tab" data-v="zone"><span class="n">1</span>Zone</button>
-      <button class="tab" data-v="mission"><span class="n">2</span>Mission</button>
-      <button class="tab" data-v="fleet"><span class="n">3</span>AlphaTango</button>
-      <button class="tab" data-v="cst"><span class="n">4</span>Contraintes</button>
-      <button class="tab" data-v="scn"><span class="n">5</span>Réglementation</button>
-      <button class="tab" data-v="auth"><span class="n">6</span>Qui contacter</button>
-      <button class="tab" data-v="notam"><span class="n">7</span>NOTAM / SUP AIP</button>
-      <button class="tab" data-v="meteo"><span class="n">8</span>Météo</button>
-      <button class="tab" data-v="dos"><span class="n">9</span>Dossier de vol</button>
+      <button class="tab act" data-v="list" title="Missions"><span class="n">☰</span><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"/></svg><span class="tl">Missions</span></button>
+      <button class="tab" data-v="zone" title="Zone"><span class="n">1</span><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3l8 5v8l-8 5-8-5V8z"/></svg><span class="tl">Zone</span></button>
+      <button class="tab" data-v="mission" title="Mission"><span class="n">2</span><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="4" width="14" height="17" rx="2"/><path d="M9 4V3h6v1M9 10h6M9 14h6M9 18h3"/></svg><span class="tl">Mission</span></button>
+      <button class="tab" data-v="fleet" title="AlphaTango"><span class="n">3</span><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="6" cy="6" r="2.5"/><circle cx="18" cy="6" r="2.5"/><circle cx="6" cy="18" r="2.5"/><circle cx="18" cy="18" r="2.5"/><path d="M8 8l8 8M16 8l-8 8"/></svg><span class="tl">AlphaTango</span></button>
+      <button class="tab" data-v="cst" title="Contraintes"><span class="n">4</span><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3L2 20h20zM12 10v4M12 17h.01"/></svg><span class="tl">Contraintes</span></button>
+      <button class="tab" data-v="scn" title="Réglementation et scénarios"><span class="n">5</span><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v18M5 21h14M6 7h12M6 7l-3 7a3 3 0 0 0 6 0zM18 7l-3 7a3 3 0 0 0 6 0z"/></svg><span class="tl">Règles</span></button>
+      <button class="tab" data-v="auth" title="Qui contacter"><span class="n">6</span><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 7l9 6 9-6"/></svg><span class="tl">Contacts</span></button>
+      <button class="tab" data-v="notam" title="NOTAM / SUP AIP"><span class="n">7</span><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="2"/><path d="M8.5 8.5a5 5 0 0 0 0 7M15.5 8.5a5 5 0 0 1 0 7M5.5 5.5a9 9 0 0 0 0 13M18.5 5.5a9 9 0 0 1 0 13"/></svg><span class="tl">NOTAM</span></button>
+      <button class="tab" data-v="meteo" title="Météo"><span class="n">8</span><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 18a4 4 0 0 1-.5-8A6 6 0 0 1 18 9a4.5 4.5 0 0 1 0 9z"/></svg><span class="tl">Météo</span></button>
+      <button class="tab" data-v="dos" title="Dossier de vol"><span class="n">9</span><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/><path d="M14 3v6h6M8 13h8M8 17h6"/></svg><span class="tl">Dossier</span></button>
     </nav>
 
     <!-- MISSIONS -->

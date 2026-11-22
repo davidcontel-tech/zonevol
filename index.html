@@ -404,6 +404,7 @@ table.t th{color:var(--mut);font-weight:500}
   </aside>
 </main>
 
+<datalist id="droneList"></datalist>
 <div class="modal" id="modal"><div class="box" id="modalBox"></div></div>
 <div class="toast" id="toast"></div>
 
@@ -612,12 +613,14 @@ const FIELDS = [
  {id:"insurance",l:"Assurance RC (assureur, n° police)",t:"text"},
  {s:"Aéronef"},
  {id:"m_uas",l:"Aéronef de la flotte AlphaTango",t:"fleetUas"},
+ {t:"droneinfo"},
  {id:"d_reg",l:"N° d'enregistrement (UAS-FR-…)",t:"text"},
  {id:"d_model",l:"Modèle",t:"text",ph:"ex. DJI Mavic 3 Enterprise",half:1},
  {id:"d_serial",l:"N° de série",t:"text",half:1},
  {id:"d_class",l:"Classe (marquage CE)",t:"select",o:["C0","C1","C2","C3","C4","C5","C6","Sans classe (ancien modèle)","Construction privée"],half:1},
  {id:"d_mass",l:"Masse max au décollage (kg)",t:"number",v:"0.9",half:1},
  {id:"d_vmax",l:"Vitesse max constructeur (km/h)",t:"number",half:1},
+ {id:"d_wind",l:"Vent max supporté (km/h)",t:"number",half:1},
  {id:"d_ridnum",l:"N° d'identification à distance",t:"text",half:1},
  {id:"d_rid",l:"Signalement électronique (Remote ID) actif",t:"check",v:true},
  {id:"d_equip",l:"Équipements additionnels",t:"multi",o:["Caméra","Caméra thermique","Capteur barométrique","Parachute avec alimentation indépendante","Coupe-circuit avec alimentation indépendante","Coupe-circuit sans alimentation indépendante","Dispositif d'identification lumineux","Feux de navigation / anticollision","Kit de classe C5"]},
@@ -877,7 +880,8 @@ function renderFleet(){ const el=document.getElementById("fleetBox"); if(!el) re
   document.getElementById("fleetImp").onclick=()=>{ const t=fleetPaste.value; if(!t.trim()) return; const n=/UAS-FR-\d+|FRA[a-z0-9]{8}/i.test(t)&&/Constructeur|EXPLOITANT/i.test(t)?importExtract(t):importFleetCSV(t); toast(n?n+" élément(s) importé(s)":"Rien de reconnu",!n); renderFleet(); buildForm(); refreshLight(); };
 }
 function applyUas(i){ const u=F.uas[i]; if(!u) return; Object.assign(S.m,{m_uas:String(i),d_model:[u.maker,u.model].filter(Boolean).join(" "),d_serial:u.serial||"",d_reg:u.reg||"",d_rid:!!u.rid});
-  if(u.mass!=null) S.m.d_mass=String(u.mass); if(u.cls) S.m.d_class=u.cls; buildForm(); refresh(); toast("Aéronef appliqué à la mission"); }
+  const dd=findDrone([u.maker,u.model].filter(Boolean).join(" ")); if(dd){ if(dd.vmax) S.m.d_vmax=String(dd.vmax); if(dd.wind) S.m.d_wind=String(dd.wind); if(u.mass==null&&dd.mass) S.m.d_mass=String(dd.mass); if(!u.cls&&dd.cls) S.m.d_class=dd.cls; }
+  if(u.mass!=null) S.m.d_mass=String(u.mass); if(u.cls) S.m.d_class=u.cls; buildForm(); refresh(); toast(dd?"Aéronef appliqué, caractéristiques complétées depuis la base":"Aéronef appliqué à la mission"); }
 document.addEventListener("click",e=>{ const t=e.target;
   if(t.dataset.delu!=null){ F.uas.splice(+t.dataset.delu,1); saveF(); renderFleet(); buildForm(); }
   if(t.dataset.delp!=null){ F.pilots.splice(+t.dataset.delp,1); saveF(); renderFleet(); buildForm(); }
@@ -921,6 +925,7 @@ function buildForm(){ const box=document.getElementById("missionForm"); let html
   const flush=()=>{ if(halfBuf.length){ html+=`<div class="grid2">${halfBuf.join("")}</div>`; halfBuf=[]; } };
   FIELDS.forEach(f=>{
     if(f.s){ flush(); if(open) html+="</div>"; html+=`<h3>${f.s}</h3><div class="card">`; open=true; return; }
+    if(f.t==="droneinfo"){ flush(); html+=`<div id="droneInfo"></div>`; return; }
     let inp="";
     if(f.t==="select") inp=`<select id="${f.id}">${f.o.map(o=>`<option>${o}</option>`).join("")}</select>`;
     else if(f.t==="dept") inp=`<select id="${f.id}">${deptOpts}</select>`;
@@ -930,7 +935,7 @@ function buildForm(){ const box=document.getElementById("missionForm"); let html
     else if(f.t==="check"){ flush(); html+=`<label class="chk"><input type="checkbox" id="${f.id}"> ${f.l}</label>`; return; }
     else if(f.t==="multi"||f.t==="fleetMulti"){ flush(); const opts=f.t==="multi"?f.o.map(o=>[o,o]):F.uas.map((u,i)=>[String(i),uasLabel(u)]);
       const nSel=opts.filter(([v])=>(S.m[f.id]||[]).includes(v)).length; html+=`<div class="fld"><div class="mhead"><label>${f.l}</label>${opts.length?`<span class="mcnt" data-mcnt="${f.id}">${nSel} / ${opts.length}</span>`:""}</div><div class="mchk">${opts.length?opts.map(([v,l])=>`<label class="chk"><input type="checkbox" data-multi="${f.id}" value="${esc(v)}" ${(S.m[f.id]||[]).includes(v)?"checked":""}> ${esc(l)}</label>`).join(""):'<span class="small">Flotte vide : importe-la dans l\'onglet AlphaTango.</span>'}</div></div>`; return; }
-    else inp=`<input type="${f.t}" id="${f.id}" placeholder="${f.ph||""}" ${f.t==="number"?'step="any"':""}>`;
+    else inp=`<input type="${f.t}" id="${f.id}" placeholder="${f.ph||""}" ${f.t==="number"?'step="any"':""} ${f.id==="d_model"?'list="droneList" autocomplete="off"':""}>`;
     const el=`<div class="fld"><label for="${f.id}">${f.l}</label>${inp}</div>`;
     if(f.half){ halfBuf.push(el); if(halfBuf.length===2) flush(); } else { flush(); html+=el; }
   }); flush(); if(open) html+="</div>"; box.innerHTML=html;
@@ -941,7 +946,8 @@ function buildForm(){ const box=document.getElementById("missionForm"); let html
     if(f.t==="check") el.checked=!!S.m[f.id]; else el.value=S.m[f.id]??"";
     if(f.t==="fleetUas"){ el.onchange=()=>{ if(el.value==="") {S.m.m_uas="";refresh();} else applyUas(+el.value); }; return; }
     if(f.t==="fleetPilot"){ el.onchange=()=>{ const p=F.pilots[+el.value]; S.m.m_pilot=el.value; if(p){ S.m.pilot_name=p.name; S.m.pilot_phone=p.phone; const pc=(p.cert||"").toUpperCase(); const opts=FIELDS.find(x=>x.id==="pilot_cert").o; const found=opts.filter(o=>{ const k=o.toUpperCase(); return (pc.includes("A1")&&k.startsWith("FORMATION A1"))||(pc.includes("A2")&&k.includes("A2"))||(pc.includes("STS-01")&&k==="CATS STS-01")||(pc.includes("STS-02")&&k==="CATS STS-02")||(pc.includes("CATT")&&k.startsWith("CATT")); }); if(found.length) S.m.pilot_cert=found; buildForm(); } refresh(); }; return; }
-    el.addEventListener(f.t==="check"||f.t==="select"||f.t==="dept"?"change":"input",()=>{ S.m[f.id]= f.t==="check"? el.checked : el.value; refresh(); }); });
+    el.addEventListener(f.t==="check"||f.t==="select"||f.t==="dept"?"change":"input",()=>{ S.m[f.id]= f.t==="check"? el.checked : el.value; refresh(); });
+    if(f.id==="d_model") el.addEventListener("change",()=>{ const d=findDrone(el.value); if(d&&droneKey(el.value)===droneKey(d.maker+d.model)) applyDrone(d); }); });
 }
 
 document.getElementById("heightIn").oninput=e=>{S.height=+e.target.value||0;refresh();};
@@ -1106,7 +1112,7 @@ function refreshInner(noQ){
   const order={red:0,orange:1,blue:2,green:3};
   document.getElementById("cstList").innerHTML=r.list.slice().sort((a,b)=>order[a.lv]-order[b.lv]).map(x=>`<div class="cst ${x.lv}"><div class="ic">${x.ic}</div><div style="flex:1;min-width:0"><b>${esc(x.t)}</b><p>${esc(x.p)}</p>${(x.ct||[]).map(ctHtml).join("")}</div></div>`).join("");
   document.querySelectorAll('.tab[data-v="cst"] .n')[0].style.background=r.list.some(x=>x.lv==="red")?"var(--red)":r.list.some(x=>x.lv==="orange")?"var(--ora)":"";
-  renderAuth(r); renderNotams(r); renderScn(r); renderDossier(r); drawWps(); updateZoneBox(); renderZoneExtra(); renderSiaBox(); save(true); if(!noQ){ queryUAS(); loadAlt(); revGeo(); loadEnv(); } if(document.getElementById("v-meteo").classList.contains("act")) loadMeteo();
+  renderAuth(r); renderNotams(r); renderScn(r); renderDossier(r); drawWps(); updateZoneBox(); renderZoneExtra(); renderSiaBox(); renderDroneInfo(); syncWind(); save(true); if(!noQ){ queryUAS(); loadAlt(); revGeo(); loadEnv(); } if(document.getElementById("v-meteo").classList.contains("act")) loadMeteo();
 }
 
 function ctHtml(c){ const b=[];
@@ -1459,7 +1465,7 @@ function renderMeteo(){ const box=document.getElementById("meteoBox"); if(!METEO
   h+=`</table><p class="small">Vent et rafales à 10 m (km/h), colorés selon la limite du drone. Kp : activité géomagnétique (≥ 5 : GNSS perturbé). Sources : Open-Meteo, NOAA SWPC.</p>`;
   box.innerHTML=h; }
 document.getElementById("meteoGo").onclick=()=>loadMeteo(true);
-document.getElementById("windLim").oninput=renderMeteo;
+document.getElementById("windLim").oninput=e=>{ S.m.d_wind=e.target.value; save(true); renderMeteo(); };
 
 /* =========================================================
    DOSSIER DE VOL PDF (jsPDF)
@@ -1869,6 +1875,37 @@ document.getElementById("bkChip").onclick=()=>{ showTab("list"); document.queryS
 document.getElementById("bkFile").onchange=e=>{ const f=e.target.files[0]; e.target.value=""; if(!f) return; const rd=new FileReader(); rd.onload=()=>{ try{ const o=JSON.parse(rd.result); if(!(o.missions||(o.m&&o.zone))) throw new Error("format"); afterMerge(mergeData(o,true)); }catch(err){ toast("Fichier de sauvegarde non reconnu",true); } }; rd.readAsText(f,"utf-8"); };
 setInterval(updateBkChip,60000);
 try{ if(navigator.storage&&navigator.storage.persist) navigator.storage.persist(); }catch(e){}
+
+/* =========================================================
+   BASE DE MODÈLES DE DRONES (valeurs constructeur indicatives)
+   ========================================================= */
+// [fabricant, modèle, masse au décollage (g), classe UE ("" = à vérifier sur l'étiquette), vent max (km/h), vitesse max (km/h)]
+const DRONES=[
+ ["DJI","Mini 2",242,"",30,58],["DJI","Mini 3",248,"C0",38,58],["DJI","Mini 3 Pro",249,"C0",38,58],["DJI","Mini 4 Pro",249,"C0",38,58],
+ ["DJI","Avata 2",377,"C1",38,97],["DJI","Air 3",720,"C1",43,76],["DJI","Air 3S",724,"C1",43,76],["DJI","Mavic Air 2",570,"",38,68],
+ ["DJI","Mavic 2 Pro",907,"",36,72],["DJI","Mavic 3",895,"C1",43,76],["DJI","Mavic 3 Classic",895,"C1",43,76],["DJI","Mavic 3 Pro",958,"C1",43,76],
+ ["DJI","Mavic 3 Enterprise",915,"C2",43,76,"Mavic 3E|M3E"],["DJI","Mavic 3 Thermal",920,"C2",43,76,"Mavic 3T|M3T"],["DJI","Phantom 4 Pro V2.0",1375,"",36,72,"Phantom 4 Pro"],
+ ["DJI","Matrice 30",3999,"",54,83],["DJI","Matrice 300 RTK",9000,"",54,83],["DJI","Matrice 350 RTK",9200,"",43,83]];
+function droneKey(s){ return String(s||"").toLowerCase().replace(/[^a-z0-9]+/g,""); }
+function customDrones(){ try{ return JSON.parse(localStorage.getItem("zonevol_drones")||"[]"); }catch(e){ return []; } }
+function allDrones(){ return DRONES.map(x=>({maker:x[0],model:x[1],mass:x[2]/1000,cls:x[3],wind:x[4],vmax:x[5],alias:x[6]||""})).concat(customDrones().map(x=>Object.assign({custom:true},x))); }
+function hasTerm(text,term){ const q=String(term||"").toLowerCase().trim(); if(!q) return false; return new RegExp("(^|[^a-z0-9])"+q.replace(/[.*+?^${}()|[\]\\]/g,"\\$&").replace(/\s+/g,"[^a-z0-9]*")+"([^a-z0-9]|$)").test(String(text||"").toLowerCase()); }
+function findDrone(txt){ const k=droneKey(txt); if(!k) return null; const L=allDrones();
+  const ex=L.find(d=>droneKey(d.maker+d.model)===k||droneKey(d.model)===k||d.alias.split("|").some(a=>a&&droneKey(a)===k)); if(ex) return ex;
+  const hits=[]; L.forEach(d=>[d.model].concat(d.alias.split("|")).forEach(t=>{ if(t&&hasTerm(txt,t)) hits.push({d,len:droneKey(t).length}); }));
+  return hits.sort((a,b)=>b.len-a.len)[0]?.d||null; }
+function fillDroneList(){ const dl=document.getElementById("droneList"); if(dl) dl.innerHTML=allDrones().map(d=>`<option value="${esc((d.maker?d.maker+" ":"")+d.model)}"></option>`).join(""); }
+function applyDrone(d){ S.m.d_mass=String(d.mass); if(d.cls) S.m.d_class=d.cls; if(d.vmax) S.m.d_vmax=String(d.vmax); if(d.wind) S.m.d_wind=String(d.wind); buildForm(); refresh(); toast("Caractéristiques de la base appliquées : à vérifier sur la fiche constructeur"); }
+function renderDroneInfo(){ const el=document.getElementById("droneInfo"); if(!el) return; const t=(S.m.d_model||"").trim(); if(!t){ el.innerHTML=""; return; }
+  const d=findDrone(t);
+  if(d){ const same=(+S.m.d_mass===d.mass)&&(!d.cls||S.m.d_class===d.cls)&&(!d.wind||+S.m.d_wind===d.wind)&&(!d.vmax||+S.m.d_vmax===d.vmax);
+    el.innerHTML=`<div class="ctc" style="margin:0 0 8px"><div class="ctn"><span class="cti">🛰️</span><div style="flex:1"><b>${esc((d.maker?d.maker+" ":"")+d.model)}${d.custom?" (ajouté par toi)":""}</b><span>${Math.round(d.mass*1000)} g · classe ${d.cls||"à vérifier sur l'étiquette"} · vent max ${d.wind||"?"} km/h · vitesse max ${d.vmax||"?"} km/h</span></div></div>
+     <div class="ctb">${same?'<span class="small">✓ Valeurs de la base déjà appliquées.</span>':'<button class="btn pri sm" data-dapply="1">Appliquer ces valeurs</button>'}<span class="small">Valeurs constructeur indicatives : vérifie la fiche technique et l'étiquette de classe de ton exemplaire.</span></div></div>`; }
+  else el.innerHTML=`<div class="ctc" style="margin:0 0 8px"><div class="ctn"><span class="cti">🛰️</span><div style="flex:1"><b>Modèle absent de la base</b><span>${DRONES.length} modèles connus. Saisis la masse, la classe et le vent max ci-dessous${+S.m.d_mass?", puis ajoute ce modèle pour le retrouver la prochaine fois":""}.</span></div></div>${+S.m.d_mass?'<div class="ctb"><button class="btn sm" data-dadd="1">Ajouter ce modèle à la base</button></div>':""}</div>`; }
+document.addEventListener("click",e=>{ if(e.target.closest("[data-dapply]")){ const d=findDrone(S.m.d_model); if(d) applyDrone(d); }
+  if(e.target.closest("[data-dadd]")){ const t=(S.m.d_model||"").trim(); if(!t) return; const L=customDrones(); L.push({maker:"",model:t,mass:+S.m.d_mass||0,cls:S.m.d_class||"",wind:+S.m.d_wind||0,vmax:+S.m.d_vmax||0}); try{ localStorage.setItem("zonevol_drones",JSON.stringify(L)); }catch(err){} fillDroneList(); renderDroneInfo(); toast("Modèle ajouté à la base de cet appareil"); } });
+function syncWind(){ const w=document.getElementById("windLim"); if(w&&S.m.d_wind&&document.activeElement!==w&&w.value!==String(S.m.d_wind)){ w.value=S.m.d_wind; if(typeof renderMeteo==="function"&&METEO) renderMeteo(); } }
+fillDroneList();
 
 /* ---- init ---- */
 renderFleet(); buildForm(); setMode(null); refresh(); renderMissions(); renderBackup(); initSIA();

@@ -107,6 +107,20 @@ main{display:grid;grid-template-columns:1fr 470px;height:calc(100% - 52px)}
 .tab .n{position:absolute;top:3px;left:5px;display:inline-grid;place-items:center;min-width:14px;height:14px;padding:0 2px;border-radius:7px;background:var(--card);font-size:9px;color:var(--mut)}
 .tab.act .n{background:var(--acc);color:#fff}
 .tab[data-v="list"] .n{display:none}
+.hnav{display:flex;gap:4px;margin-left:18px;align-self:stretch}
+.hnav button{background:none;border:0;border-bottom:3px solid transparent;color:var(--mut);padding:0 14px;font-weight:500;font-size:14px;cursor:pointer}
+.hnav button:hover{color:var(--txt)}.hnav button.act{color:var(--txt);border-bottom-color:var(--acc)}
+#acct{display:none;height:calc(100% - 52px);overflow:auto}
+body[data-app="account"] main{display:none}body[data-app="account"] #acct{display:block}body[data-app="account"] header .mname{display:none}
+.acctwrap{display:grid;grid-template-columns:230px minmax(0,1fr);min-height:calc(100vh - 52px)}
+.acctnav{background:#08101d;border-right:1px solid var(--line);padding:14px 8px;display:flex;flex-direction:column;gap:2px}
+.acctnav button{display:flex;align-items:center;gap:10px;background:none;border:0;border-radius:8px;color:var(--mut);padding:10px 12px;text-align:left;cursor:pointer;font-size:14px}
+.acctnav button:hover{background:rgba(255,255,255,.05);color:var(--txt)}.acctnav button.act{background:rgba(56,139,253,.16);color:var(--txt);box-shadow:inset 0 0 0 1px rgba(56,139,253,.45)}
+.acctnav svg{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;flex:none}
+.acctmain{padding:22px 28px;max-width:980px;width:100%}
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin-bottom:12px}
+.kpi{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:14px}.kpi b{display:block;font-size:26px}.kpi span{color:var(--mut);font-size:12.5px}.kpi.bad b{color:var(--ora)}
+@media (max-width:900px){#acct{height:auto}.acctwrap{grid-template-columns:1fr}.acctnav{flex-direction:row;overflow-x:auto;border-right:0;border-bottom:1px solid var(--line);padding:8px}.acctnav button{white-space:nowrap;padding:8px 10px}.acctmain{padding:14px}.hnav{margin-left:6px}.hnav button{padding:0 8px}header .logo small{display:none}}
 .bdg{display:inline-block;padding:1px 8px;border-radius:9px;font-size:11px;font-weight:600;white-space:nowrap}
 .bdg.green{background:rgba(46,160,67,.2);color:#56d364}.bdg.orange{background:rgba(240,136,62,.2);color:#f0883e}.bdg.red{background:rgba(248,81,73,.2);color:#ff7b72}.bdg.na{background:rgba(139,148,158,.2);color:var(--mut)}
 #fleetBox details.card>summary{cursor:pointer;list-style:none}#fleetBox details.card>summary::-webkit-details-marker{display:none}#fleetBox details.card>summary::before{content:"▸ ";color:var(--mut)}#fleetBox details[open].card>summary::before{content:"▾ "}
@@ -198,6 +212,7 @@ table.t th{color:var(--mut);font-weight:500}
     <svg viewBox="0 0 32 32" fill="none"><circle cx="16" cy="16" r="14" stroke="#3d8bfd" stroke-width="2"/><path d="M16 6l3 8h8l-6.5 5 2.5 8L16 22l-7 5 2.5-8L5 14h8z" fill="#22d3ee" opacity=".9"/></svg>
     BFV Prévol <small>BearFoot Visual</small>
   </div>
+  <nav class="hnav" id="hnav"><button data-app="prevol" class="act">Prévol</button><button data-app="account">Mon compte</button></nav>
   <div class="mname" id="hdrName">Nouvelle mission</div>
   <div class="sp"></div>
   <button class="btn sm bkchip" id="bkChip" style="display:none" title="Tes missions ne sont stockées que dans ce navigateur : exporte une sauvegarde">⚠ Sauvegarder</button>
@@ -260,13 +275,12 @@ table.t th{color:var(--mut);font-weight:500}
       <button class="tab act" data-v="list" title="Missions"><span class="n">☰</span><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"/></svg><span class="tl">Missions</span></button>
       <button class="tab" data-v="zone" title="Zone"><span class="n">1</span><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3l8 5v8l-8 5-8-5V8z"/></svg><span class="tl">Zone</span></button>
       <button class="tab" data-v="mission" title="Mission"><span class="n">2</span><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="4" width="14" height="17" rx="2"/><path d="M9 4V3h6v1M9 10h6M9 14h6M9 18h3"/></svg><span class="tl">Mission</span></button>
-      <button class="tab" data-v="fleet" title="Mon compte : exploitant, pilotes, aéronefs"><span class="n">3</span><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4.4 3.6-7 8-7s8 2.6 8 7"/></svg><span class="tl">Mon compte</span></button>
-      <button class="tab" data-v="cst" title="Contraintes"><span class="n">4</span><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3L2 20h20zM12 10v4M12 17h.01"/></svg><span class="tl">Contraintes</span></button>
-      <button class="tab" data-v="scn" title="Réglementation et scénarios"><span class="n">5</span><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v18M5 21h14M6 7h12M6 7l-3 7a3 3 0 0 0 6 0zM18 7l-3 7a3 3 0 0 0 6 0z"/></svg><span class="tl">Règles</span></button>
-      <button class="tab" data-v="auth" title="Qui contacter"><span class="n">6</span><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 7l9 6 9-6"/></svg><span class="tl">Contacts</span></button>
-      <button class="tab" data-v="notam" title="NOTAM / SUP AIP"><span class="n">7</span><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="2"/><path d="M8.5 8.5a5 5 0 0 0 0 7M15.5 8.5a5 5 0 0 1 0 7M5.5 5.5a9 9 0 0 0 0 13M18.5 5.5a9 9 0 0 1 0 13"/></svg><span class="tl">NOTAM</span></button>
-      <button class="tab" data-v="meteo" title="Météo"><span class="n">8</span><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 18a4 4 0 0 1-.5-8A6 6 0 0 1 18 9a4.5 4.5 0 0 1 0 9z"/></svg><span class="tl">Météo</span></button>
-      <button class="tab" data-v="dos" title="Dossier de vol"><span class="n">9</span><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/><path d="M14 3v6h6M8 13h8M8 17h6"/></svg><span class="tl">Dossier</span></button>
+      <button class="tab" data-v="cst" title="Contraintes"><span class="n">3</span><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3L2 20h20zM12 10v4M12 17h.01"/></svg><span class="tl">Contraintes</span></button>
+      <button class="tab" data-v="scn" title="Réglementation et scénarios"><span class="n">4</span><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v18M5 21h14M6 7h12M6 7l-3 7a3 3 0 0 0 6 0zM18 7l-3 7a3 3 0 0 0 6 0z"/></svg><span class="tl">Règles</span></button>
+      <button class="tab" data-v="auth" title="Qui contacter"><span class="n">5</span><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 7l9 6 9-6"/></svg><span class="tl">Contacts</span></button>
+      <button class="tab" data-v="notam" title="NOTAM / SUP AIP"><span class="n">6</span><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="2"/><path d="M8.5 8.5a5 5 0 0 0 0 7M15.5 8.5a5 5 0 0 1 0 7M5.5 5.5a9 9 0 0 0 0 13M18.5 5.5a9 9 0 0 1 0 13"/></svg><span class="tl">NOTAM</span></button>
+      <button class="tab" data-v="meteo" title="Météo"><span class="n">7</span><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 18a4 4 0 0 1-.5-8A6 6 0 0 1 18 9a4.5 4.5 0 0 1 0 9z"/></svg><span class="tl">Météo</span></button>
+      <button class="tab" data-v="dos" title="Dossier de vol"><span class="n">8</span><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/><path d="M14 3v6h6M8 13h8M8 17h6"/></svg><span class="tl">Dossier</span></button>
     </nav>
 
     <!-- MISSIONS -->
@@ -309,12 +323,6 @@ table.t th{color:var(--mut);font-weight:500}
     <section class="view" id="v-mission">
       <h2>Informations de vol</h2>
       <div id="missionForm"></div>
-    </section>
-
-    <!-- ALPHATANGO -->
-    <section class="view" id="v-fleet">
-      <h2>Mon compte</h2>
-      <div id="fleetBox"></div>
     </section>
 
     <!-- 3 CONTRAINTES -->
@@ -406,6 +414,7 @@ table.t th{color:var(--mut);font-weight:500}
     </section>
   </aside>
 </main>
+<div id="acct"><div id="fleetBox"></div></div>
 
 <datalist id="droneList"></datalist>
 <div class="modal" id="modal"><div class="box" id="modalBox"></div></div>
@@ -601,7 +610,7 @@ const FIELDS = [
  {id:"m_dept",l:"Département",t:"dept",half:1},
  {id:"m_desc",l:"Description des opérations",t:"area"},
  {s:"Exploitant & télépilote"},
- {id:"m_pilot",l:"Télépilote (depuis l'onglet Mon compte)",t:"fleetPilot"},
+ {id:"m_pilot",l:"Télépilote (depuis l'page Mon compte)",t:"fleetPilot"},
  {id:"op_name",l:"Exploitant (société)",t:"text"},
  {id:"op_resp",l:"Responsable",t:"text",half:1},
  {id:"op_uas",l:"N° d'exploitant UAS (FRA…)",t:"text",half:1},
@@ -868,7 +877,7 @@ async function importPdfFiles(files){ if(!files.length) return; const st=documen
   if(bad.length) openModal(`<h2>PDF non reconnu</h2><p class="small">Je n'ai trouvé ni numéro d'exploitant (FRA…) ni aéronef (UAS-FR-…) dans ${bad.length>1?"ces fichiers":"ce fichier"}. Voici le texte lu : s'il est vide, le PDF est une image scannée. Sinon, copie-le dans le champ « coller » ci-dessous, ou envoie-le moi pour adapter la lecture.</p>${bad.map(b=>`<b class="small">${esc(b.name)}</b><textarea class="mono" rows="7" style="width:100%;background:#0b1626;border:1px solid var(--line);border-radius:8px;padding:8px;margin:4px 0 10px" readonly>${esc(b.text.slice(0,2500))}</textarea>`).join("")}<div class="row"><button class="btn" onclick="closeModal()">Fermer</button></div>`); }
 function uasLabel(u){ return `${u.reg||"(sans n°)"} – ${[u.maker,u.model].filter(Boolean).join(" ")||"modèle ?"}`; }
 /* ---- Mon compte : profil exploitant, pilotes (diplômes), aéronefs ---- */
-let FS="profil";
+let FS="home";
 const DIPL=["Catégorie ouverte A1/A3","Catégorie ouverte A2","CATS STS-01","CATS STS-02","CATT S1/S2/S3","Vol de nuit (formation)","Autre"];
 function dFR(s){ const m=String(s||"").match(/(\d{2})\/(\d{2})\/(\d{4})/); return m?new Date(+m[3],+m[2]-1,+m[1]):null; }
 function vStatus(s,ref){ const d=dFR(s); if(!d) return {k:"na",t:"date ?",days:null}; const days=Math.round((d-(ref||new Date()))/864e5); return days<0?{k:"red",t:"expiré",days}:days<=60?{k:"orange",t:"expire dans "+days+" j",days}:{k:"green",t:"valide",days}; }
@@ -888,10 +897,16 @@ function accountIssuesAt(m){ const out=[]; if(!m.m_date) return out; const ref=p
   return out; }
 function fIn(l,attr,v,ph,full){ return `<div class="fld"${full?' style="grid-column:1/-1"':""}><label>${l}</label><input ${attr} value="${esc(v||"")}" placeholder="${ph||""}"></div>`; }
 function renderFleet(){ const el=document.getElementById("fleetBox"); if(!el) return; normF(); const o=F.op, al=accountAlerts();
-  const nav=[["profil","Profil"],["pilots","Pilotes ("+F.pilots.length+")"],["uas","Aéronefs ("+F.uas.length+")"],["imp","Importer AlphaTango"]].map(([k,l])=>`<button class="btn sm${FS===k?" pri":""}" data-fs="${k}">${l}</button>`).join(" ");
-  let h=`<div class="row" style="flex-wrap:wrap;gap:6px;margin-bottom:10px">${nav}</div>`;
-  if(al.length) h+=`<div class="card"><b>Validités à surveiller</b><ul class="small" style="padding-left:18px;line-height:1.7;margin:6px 0 0">${al.map(a=>`<li><span class="bdg ${a.lv}">${a.lv==="red"?"expiré":"bientôt"}</span> ${esc(a.t)}</li>`).join("")}</ul></div>`;
-  if(FS==="profil"){
+  const NAV=[["home","Tableau de bord","M3 12l9-8 9 8M5 10v10h5v-6h4v6h5V10"],["profil","Mon profil","M12 4a4 4 0 1 0 0 8 4 4 0 0 0 0-8zM4 21c0-4.4 3.6-7 8-7s8 2.6 8 7"],["pilots","Pilotes ("+F.pilots.length+")","M4 14v-2a8 8 0 0 1 16 0v2M4 14h3v5H4zM17 14h3v5h-3z"],["uas","Machines ("+F.uas.length+")","M6 6l12 12M18 6L6 18M4 4h4v4H4zM16 4h4v4h-4zM4 16h4v4H4zM16 16h4v4h-4z"],["models","Modèles de drones","M3 11l18-7-7 18-2-8z"],["imp","Importer AlphaTango","M12 3v12M7 10l5 5 5-5M5 21h14"]];
+  const nav=NAV.map(([k,l,ic])=>`<button class="${FS===k?"act":""}" data-fs="${k}"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="${ic}"/></svg>${l}</button>`).join("");
+  let h="";
+  if(FS==="home"){
+    const up=MISSIONS.filter(x=>x.m&&x.m.m_date&&parseDate(x.m.m_date)>=new Date(new Date().setHours(0,0,0,0))).sort((a,b)=>a.m.m_date<b.m.m_date?-1:1).slice(0,6), le=lastExport();
+    h+=`<h3 style="margin-top:0">Tableau de bord</h3><div class="kpis"><div class="kpi"><b>${MISSIONS.length}</b><span>Missions</span></div><div class="kpi"><b>${F.pilots.length}</b><span>Pilotes</span></div><div class="kpi"><b>${F.uas.length}</b><span>Machines</span></div><div class="kpi ${al.length?"bad":""}"><b>${al.length}</b><span>Validités à surveiller</span></div></div>
+    <div class="card"><b>Validités à surveiller</b>${al.length?`<ul class="small" style="padding-left:18px;line-height:1.7;margin:6px 0 0">${al.map(a=>`<li><span class="bdg ${a.lv}">${a.lv==="red"?"expiré":"bientôt"}</span> ${esc(a.t)}</li>`).join("")}</ul>`:`<p class="small" style="margin:6px 0 0">Rien à signaler${(F.op.valid||F.pilots.some(p=>p.dipl.length)||F.uas.some(u=>u.regEnd))?"":" (renseigne les dates de fin de validité dans ton profil, tes diplômes et tes machines pour être alerté)"}.</p>`}</div>
+    <div class="card"><b>Prochaines missions</b>${up.length?`<table class="t">${up.map(x=>`<tr><td><b>${esc(x.m.m_name||"Mission #"+x.id)}</b><br><span class="small">${parseDate(x.m.m_date).toLocaleDateString("fr-FR")}</span></td><td style="text-align:right"><button class="btn sm" data-gomis="${x.id}">Ouvrir dans Prévol</button></td></tr>`).join("")}</table>`:'<p class="small" style="margin:6px 0 0">Aucune mission datée à venir.</p>'}</div>
+    <div class="card"><b>Sauvegarde</b><p class="small" style="margin:6px 0 0">Dernier export : ${le?new Date(le).toLocaleString("fr-FR")+" ("+ageTxt(le)+")":"<span style='color:var(--ora)'>jamais</span>"}. <button class="btn sm" data-gomis="list">Exporter depuis Missions</button></p></div>`;
+  } else if(FS==="profil"){
     h+=`<h3>Exploitant</h3><div class="card"><div class="grid2">${fIn("Société / raison sociale",'data-op="name"',o.name)}${fIn("Nom commercial",'data-op="trade"',o.trade)}${fIn("SIRET",'data-op="siret"',o.siret)}${fIn("N° d'exploitant UAS",'data-op="fra"',o.fra,"FRAxxxxxxxxxxxx")}
       ${fIn("Fin de validité de l'enregistrement",'data-op="valid" data-re',o.valid,"jj/mm/aaaa")}${fIn("Code d'identification à distance",'data-op="rid"',o.rid)}
       ${fIn("Fin de validité de la déclaration en scénarios standard",'data-op="stsEnd" data-re',o.stsEnd,"jj/mm/aaaa")}${fIn("Site DSAC de rattachement",'data-op="dsac"',o.dsac,"ex. DSAC-SO")}</div>
@@ -916,6 +931,12 @@ function renderFleet(){ const el=document.getElementById("fleetBox"); if(!el) re
       <label class="chk"><input type="checkbox" data-ui="${i}" data-uk="rid"${u.rid?" checked":""}> Signalement électronique (identification à distance)</label>
       ${fIn("Notes",`data-ui="${i}" data-uk="notes"`,u.notes)}
       <div class="row" style="gap:6px;margin-top:6px"><button class="btn sm" data-useu="${i}">Utiliser dans la mission</button><button class="btn sm" data-delu="${i}">Supprimer</button></div></details>`).join(""):'<div class="card small">Aucun aéronef. Ajoute-en un ou importe ta liste AlphaTango.</div>')+`<button class="btn pri sm" id="uAdd" style="margin-top:8px">+ Ajouter un aéronef</button>`;
+  } else if(FS==="models"){
+    const cust=customDrones(), L=allDrones();
+    h+=`<h3 style="margin-top:0">Modèles de drones</h3><p class="small">Base indicative (masse, classe, vent max, vitesse) : à vérifier sur la fiche du constructeur. Les modèles ajoutés ici restent sur cet appareil.</p>
+    <div class="fld"><input id="mdSearch" placeholder="Rechercher un modèle…"></div>
+    <div class="card" style="max-height:340px;overflow:auto"><table class="t" id="mdTable"><tr><th>Modèle</th><th>Masse</th><th>Classe</th><th>Vent max</th><th>Vitesse max</th><th></th></tr>${L.map(d=>`<tr data-k="${esc(((d.maker||"")+" "+d.model+" "+(d.alias||"")).toLowerCase())}"><td>${esc((d.maker?d.maker+" ":"")+d.model)}${d.custom?' <span class="bdg na">perso</span>':""}</td><td>${d.mass?Math.round(d.mass*1000)+" g":"—"}</td><td>${esc(d.cls||"—")}</td><td>${d.wind?d.wind+" km/h":"—"}</td><td>${d.vmax?d.vmax+" km/h":"—"}</td><td>${d.custom?`<button class="btn sm" data-delm="${cust.findIndex(c=>c.model===d.model&&(c.maker||"")===(d.maker||""))}">✕</button>`:""}</td></tr>`).join("")}</table></div>
+    <h3>Ajouter un modèle</h3><div class="card"><div class="grid2">${fIn("Marque",'id="mdMaker"',"")}${fIn("Modèle",'id="mdModel"',"")}${fIn("Masse (g)",'id="mdMass" type="number"',"")}${fIn("Classe (C0 à C6)",'id="mdCls"',"")}${fIn("Vent max (km/h)",'id="mdWind" type="number"',"")}${fIn("Vitesse max (km/h)",'id="mdVmax" type="number"',"")}</div><button class="btn pri sm" id="mdAdd">+ Ajouter à la base</button></div>`;
   } else {
     h+=`<div class="card"><b>Accès AlphaTango</b><p class="small">AlphaTango (DGAC) ne propose pas d'interface publique de connexion automatique : la liaison se fait par <b>export CSV</b> de « Mes aéronefs » et par le <b>relevé de situation</b> (PDF) que tu déposes ici. Les données restent sur ton appareil.</p>
       <a class="lnk" href="https://alphatango.aviation-civile.gouv.fr/login.jsp" target="_blank" rel="noopener">Ouvrir AlphaTango <span>DGAC ↗</span></a>
@@ -927,7 +948,9 @@ function renderFleet(){ const el=document.getElementById("fleetBox"); if(!el) re
       <div class="fld"><label>…ou coller le CSV / le texte du relevé</label><textarea id="fleetPaste" rows="5" class="mono"></textarea></div>
       <button class="btn pri sm" id="fleetImp">Importer</button></div>`;
   }
-  el.innerHTML=h;
+  el.innerHTML=`<div class="acctwrap"><nav class="acctnav">${nav}</nav><div class="acctmain">${h}</div></div>`;
+  const ms=document.getElementById("mdSearch"); if(ms) ms.oninput=()=>{ const q=ms.value.toLowerCase().trim(); document.querySelectorAll("#mdTable tr[data-k]").forEach(r=>r.style.display=!q||r.dataset.k.includes(q)?"":"none"); };
+  const ma=document.getElementById("mdAdd"); if(ma) ma.onclick=()=>{ const g=id=>document.getElementById(id).value.trim(), model=g("mdModel"); if(!model){ toast("Indique le modèle",true); return; } const Lc=customDrones(); Lc.push({maker:g("mdMaker"),model,mass:(+g("mdMass")||0)/1000,cls:g("mdCls").toUpperCase(),wind:+g("mdWind")||0,vmax:+g("mdVmax")||0}); try{ localStorage.setItem("zonevol_drones",JSON.stringify(Lc)); }catch(err){} fillDroneList(); renderFleet(); toast("Modèle ajouté à la base de cet appareil"); };
   el.oninput=e=>{ const t=e.target, d=t.dataset; if(d.op!=null) F.op[d.op]=t.value;
     else if(d.pi!=null&&d.pk){ const p=F.pilots[+d.pi]; if(!p) return; if(d.di!=null) p.dipl[+d.di][d.pk]=t.value; else p[d.pk]=t.value; }
     else if(d.ui!=null&&d.uk&&d.uk!=="_pick"){ const u=F.uas[+d.ui]; if(!u) return; if(d.uk==="rid") u.rid=t.checked; else if(d.uk==="mass") u.mass=t.value.trim()===""?null:(+String(t.value).replace(",",".")||null); else u[d.uk]=t.value; }
@@ -936,6 +959,8 @@ function renderFleet(){ const el=document.getElementById("fleetBox"); if(!el) re
     if(d.op==null&&d.pk==null&&d.uk==null) return; saveF(); buildForm(); if(d.re!=null||d.uk==="rid"||d.pk==="first"||d.pk==="last"||d.uk==="reg"||d.uk==="maker"||d.uk==="model") renderFleet(); };
   el.onclick=e=>{ const t=e.target.closest("button"); if(!t) return; const d=t.dataset;
     if(d.fs){ FS=d.fs; renderFleet(); return; }
+    if(d.gomis!=null){ if(d.gomis==="list"){ setApp("prevol"); showTab("list"); } else { setApp("prevol"); openMission(+d.gomis); showTab("zone"); } return; }
+    if(d.delm!=null){ const Lc=customDrones(); if(Lc[+d.delm]){ Lc.splice(+d.delm,1); try{ localStorage.setItem("zonevol_drones",JSON.stringify(Lc)); }catch(err){} fillDroneList(); renderFleet(); } return; }
     if(t.id==="pAdd"){ F.pilots.push({civ:"M",first:"",last:"",name:"",phone:"",cert:"",dipl:[]}); saveF(); renderFleet(); buildForm(); const ds=el.querySelectorAll("details"); if(ds.length) ds[ds.length-1].open=true; return; }
     if(t.id==="uAdd"){ F.uas.push({reg:"",maker:"",model:"",serial:"",mass:null,cls:"",type:"",rid:false}); saveF(); renderFleet(); buildForm(); const ds=el.querySelectorAll("details"); if(ds.length) ds[ds.length-1].open=true; return; }
     if(d.addd!=null){ F.pilots[+d.addd].dipl.push({t:DIPL[0],ref:"",from:"",to:""}); saveF(); renderFleet(); buildForm(); el.querySelectorAll("details")[+d.addd].open=true; return; }
@@ -953,6 +978,8 @@ document.addEventListener("click",e=>{ const t=e.target;
   if(t.dataset.delu!=null){ F.uas.splice(+t.dataset.delu,1); saveF(); renderFleet(); buildForm(); }
   if(t.dataset.delp!=null){ F.pilots.splice(+t.dataset.delp,1); saveF(); renderFleet(); buildForm(); }
   if(t.dataset.useu!=null) applyUas(+t.dataset.useu); });
+function setApp(a){ document.body.dataset.app=a; document.querySelectorAll("#hnav button").forEach(b=>b.classList.toggle("act",b.dataset.app===a)); if(a==="account") renderFleet(); else setTimeout(()=>{ try{ map.invalidateSize(); }catch(e){} },50); }
+document.getElementById("hnav").addEventListener("click",e=>{ const b=e.target.closest("button"); if(b) setApp(b.dataset.app); });
 function refreshLight(){ if(window._refreshing) return; refresh(true); }
 
 /* ---- modales ---- */
@@ -996,12 +1023,12 @@ function buildForm(){ const box=document.getElementById("missionForm"); let html
     let inp="";
     if(f.t==="select") inp=`<select id="${f.id}">${f.o.map(o=>`<option>${o}</option>`).join("")}</select>`;
     else if(f.t==="dept") inp=`<select id="${f.id}">${deptOpts}</select>`;
-    else if(f.t==="fleetUas") inp=`<select id="${f.id}"><option value="">${F.uas.length?"— choisir dans la flotte —":"— flotte vide : importe-la dans l'onglet Mon compte —"}</option>${F.uas.map((u,i)=>`<option value="${i}">${esc(uasLabel(u))}</option>`).join("")}</select>`;
+    else if(f.t==="fleetUas") inp=`<select id="${f.id}"><option value="">${F.uas.length?"— choisir dans la flotte —":"— flotte vide : importe-la dans l'page Mon compte —"}</option>${F.uas.map((u,i)=>`<option value="${i}">${esc(uasLabel(u))}</option>`).join("")}</select>`;
     else if(f.t==="fleetPilot") inp=`<select id="${f.id}"><option value="">${F.pilots.length?"— choisir —":"— aucun télépilote enregistré —"}</option>${F.pilots.map((p,i)=>`<option value="${i}">${esc(p.name)}</option>`).join("")}</select>`;
     else if(f.t==="area") inp=`<textarea id="${f.id}" placeholder="${f.ph||""}"></textarea>`;
     else if(f.t==="check"){ flush(); html+=`<label class="chk"><input type="checkbox" id="${f.id}"> ${f.l}</label>`; return; }
     else if(f.t==="multi"||f.t==="fleetMulti"){ flush(); const opts=f.t==="multi"?f.o.map(o=>[o,o]):F.uas.map((u,i)=>[String(i),uasLabel(u)]);
-      const nSel=opts.filter(([v])=>(S.m[f.id]||[]).includes(v)).length; html+=`<div class="fld"><div class="mhead"><label>${f.l}</label>${opts.length?`<span class="mcnt" data-mcnt="${f.id}">${nSel} / ${opts.length}</span>`:""}</div><div class="mchk">${opts.length?opts.map(([v,l])=>`<label class="chk"><input type="checkbox" data-multi="${f.id}" value="${esc(v)}" ${(S.m[f.id]||[]).includes(v)?"checked":""}> ${esc(l)}</label>`).join(""):'<span class="small">Flotte vide : importe-la dans l\'onglet Mon compte.</span>'}</div></div>`; return; }
+      const nSel=opts.filter(([v])=>(S.m[f.id]||[]).includes(v)).length; html+=`<div class="fld"><div class="mhead"><label>${f.l}</label>${opts.length?`<span class="mcnt" data-mcnt="${f.id}">${nSel} / ${opts.length}</span>`:""}</div><div class="mchk">${opts.length?opts.map(([v,l])=>`<label class="chk"><input type="checkbox" data-multi="${f.id}" value="${esc(v)}" ${(S.m[f.id]||[]).includes(v)?"checked":""}> ${esc(l)}</label>`).join(""):'<span class="small">Flotte vide : importe-la dans l\'page Mon compte.</span>'}</div></div>`; return; }
     else inp=`<input type="${f.t}" id="${f.id}" placeholder="${f.ph||""}" ${f.t==="number"?'step="any"':""} ${f.id==="d_model"?'list="droneList" autocomplete="off"':""}>`;
     const el=`<div class="fld"><label for="${f.id}">${f.l}</label>${inp}</div>`;
     if(f.half){ halfBuf.push(el); if(halfBuf.length===2) flush(); } else { flush(); html+=el; }
@@ -1104,9 +1131,9 @@ function analyze(){
   if(poly&&T){ const dmax=Math.max(...poly.map(p=>hav([T.lat,T.lon],p))); const lim=+m.v_dist||500; add(dmax>lim?"orange":"green","🧍",`Distance max télépilote ↔ zone : ${fmtD(dmax)}`,dmax>lim?`Supérieure à la distance maximale prévue (${fmtD(lim)}) : vérifier la vue directe ou ajouter des observateurs.`:"Compatible avec la distance maximale prévue."); }
   if(poly&&!(S.wps||[]).some(w=>w.t==="Décollage")) add("blue","📌","Point de décollage non placé","Place le décollage, le télépilote et un atterrissage d'urgence (bouton 📌 Point) : ils figurent dans le dossier de vol.");
   // AlphaTango / exploitant
-  if(!m.op_uas) add("blue","🪪","N° d'exploitant UAS non renseigné","Renseigne l'exploitant dans l'onglet Mon compte (extrait du registre) pour l'ajouter aux déclarations.",CT.at);
+  if(!m.op_uas) add("blue","🪪","N° d'exploitant UAS non renseigné","Renseigne l'exploitant dans l'page Mon compte (extrait du registre) pour l'ajouter aux déclarations.",CT.at);
   if(F.op.valid&&m.m_date){ const [dd,mm,yy]=F.op.valid.split("/").map(Number); if(yy&&new Date(yy,mm-1,dd)<parseDate(m.m_date)) add("red","🪪","Enregistrement exploitant expiré à la date du vol",`Fin de validité ${F.op.valid} – renouveler dans AlphaTango.`,CT.at); }
-  accountIssuesAt(m).forEach(x=>add(x.lv==="red"?"red":"orange","🪪",x.t,"Vérifie et renouvelle dans AlphaTango (onglet Mon compte).",CT.at));
+  accountIssuesAt(m).forEach(x=>add(x.lv==="red"?"red":"orange","🪪",x.t,"Vérifie et renouvelle dans AlphaTango (page Mon compte).",CT.at));
   if((+m.d_mass||0)>=0.8&&!/UAS-FR-\d+/i.test(m.d_reg||"")) add("orange","🏷️","Aéronef ≥ 800 g : n° d'enregistrement UAS-FR à renseigner","L'enregistrement de l'aéronef dans AlphaTango est requis ; sélectionne-le dans la flotte importée.",CT.at);
   if(m.m_uas!==""&&F.uas[+m.m_uas]&&F.uas[+m.m_uas].status&&!/valide/i.test(F.uas[+m.m_uas].status)) add("red","🏷️","Statut de l'aéronef dans AlphaTango : "+F.uas[+m.m_uas].status,"Un aéronef suspendu, perdu ou volé ne peut pas être utilisé.",CT.at);
   if(!m.d_rid && !/^C0$/.test(m.d_class)) add("orange","📶","Signalement électronique","Les drones en catégorie Spécifique doivent être équipés d'un signalement électronique européen ; en Ouverte, obligatoire selon la classe et la masse (≥ 250 g).");

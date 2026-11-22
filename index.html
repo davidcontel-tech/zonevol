@@ -107,6 +107,7 @@ main{display:grid;grid-template-columns:1fr 470px;height:calc(100% - 52px)}
 .tab .n{position:absolute;top:3px;left:5px;display:inline-grid;place-items:center;min-width:14px;height:14px;padding:0 2px;border-radius:7px;background:var(--card);font-size:9px;color:var(--mut)}
 .tab.act .n{background:var(--acc);color:#fff}
 .tab[data-v="list"] .n{display:none}
+#map.moving{cursor:crosshair}#map.moving .leaflet-marker-icon{pointer-events:none!important}
 .hnav{display:flex;gap:4px;margin-left:18px;align-self:stretch}
 .hnav button{background:none;border:0;border-bottom:3px solid transparent;color:var(--mut);padding:0 14px;font-weight:500;font-size:14px;cursor:pointer}
 .hnav button:hover{color:var(--txt)}.hnav button.act{color:var(--txt);border-bottom-color:var(--acc)}
@@ -774,7 +775,8 @@ map.on("click",e=>{ const p=[+e.latlng.lat.toFixed(6),+e.latlng.lng.toFixed(6)];
     else { S.zone={type:"circle",pts:[],center:tmpCenter,radius:Math.max(5,Math.round(hav(tmpCenter,p)))}; setMode(null); refresh(); } } });
 map.on("mousemove",e=>{ if(mode==="circle"&&tmpCenter){ tmpLayer.clearLayers(); L.circle(tmpCenter,{radius:hav(tmpCenter,[e.latlng.lat,e.latlng.lng]),color:"#3d8bfd",weight:2,dashArray:"5 5",fillOpacity:.1}).addTo(tmpLayer); } });
 map.on("dblclick",()=>{ if(mode==="polygon"){ setMode(null); refresh(); } });
-function drawZone(){ zoneLayer.clearLayers(); vtxLayer.clearLayers(); const z=S.zone;
+let vtxMk=[], movingIdx=null, movingOrig=null;
+function drawZone(){ zoneLayer.clearLayers(); vtxLayer.clearLayers(); vtxMk=[]; const z=S.zone;
   const poly=zonePoly();
   if(poly){ const bd=bands(); const c=bufferPoly(poly,bd.cont), b=bufferPoly(poly,bd.tot);
     if(b) L.polygon(b,{color:"#e0262b",weight:2,dashArray:"7 6",fill:true,fillColor:"#e0262b",fillOpacity:.05,interactive:false}).addTo(zoneLayer);
@@ -785,12 +787,23 @@ function drawZone(){ zoneLayer.clearLayers(); vtxLayer.clearLayers(); const z=S.
   if(z.type==="polygon"&&z.pts.length){ if(z.pts.length>=3) L.polygon(z.pts,{color:"#3d8bfd",weight:2.5,fillColor:"#3d8bfd",fillOpacity:.22}).addTo(zoneLayer);
     else L.polyline(z.pts,{color:"#3d8bfd",weight:2.5,dashArray:"5 5"}).addTo(zoneLayer);
     z.pts.forEach((p,i)=>{ const mk=L.marker(p,{draggable:true,icon:L.divIcon({className:"",html:'<div class="vtx"></div>',iconSize:[12,12],iconAnchor:[6,6]})}).addTo(vtxLayer);
-      mk.bindTooltip(String.fromCharCode(65+(i%26))+(i>=26?Math.floor(i/26):""),{permanent:false});
+      const lbl=String.fromCharCode(65+(i%26))+(i>=26?Math.floor(i/26):""); mk.bindTooltip(lbl,{permanent:false}); vtxMk[i]=mk;
+      if(mode!=="polygon"&&movingIdx===null){ const box=document.createElement("div"); box.className="vtxpop"; box.innerHTML=`<b>Sommet ${lbl}</b><div class="row" style="margin-top:6px;gap:6px"><button type="button" class="btn sm" data-a="mv">Déplacer</button><button type="button" class="btn sm" data-a="del">Supprimer</button></div>`;
+        box.querySelector('[data-a="mv"]').onclick=()=>{ mk.closePopup(); startVertexMove(i); }; box.querySelector('[data-a="del"]').onclick=()=>{ mk.closePopup(); deleteVertex(i); };
+        mk.bindPopup(box,{closeButton:false,offset:[0,-4]}); }
       mk.on("drag",ev=>{z.pts[i]=[+ev.latlng.lat.toFixed(6),+ev.latlng.lng.toFixed(6)];drawZoneLight();}); mk.on("dragend",()=>{drawZone();refresh();}); }); } }
 let lightTimer; function drawZoneLight(){ clearTimeout(lightTimer); lightTimer=setTimeout(()=>{ const keep=vtxLayer.getLayers(); zoneLayer.clearLayers(); const z=S.zone; const poly=zonePoly(); if(!poly) return;
   if(z.type==="circle") L.circle(z.center,{radius:z.radius,color:"#3d8bfd",weight:2.5,fillOpacity:.22}).addTo(zoneLayer); else L.polygon(z.pts,{color:"#3d8bfd",weight:2.5,fillOpacity:.22}).addTo(zoneLayer); updateZoneBox(); },16); }
 
-document.getElementById("tPoly").onclick=()=>{ setMode(mode==="polygon"?null:"polygon"); };
+/* ---- Sommets d'un polygone : clic sur un point -> Déplacer / Supprimer ---- */
+function deleteVertex(i){ if(S.zone.type!=="polygon"||!S.zone.pts[i]) return; S.zone.pts.splice(i,1); drawZone(); refresh(); toast("Sommet supprimé"); }
+function startVertexMove(i){ if(S.zone.type!=="polygon"||!S.zone.pts[i]) return; movingIdx=i; movingOrig=S.zone.pts[i].slice(); map.closePopup(); map.getContainer().classList.add("moving");
+  hint.innerHTML="<b>Déplace le point</b> avec le pointeur, puis <b>clique</b> pour le poser. <b>Échap</b> pour annuler."; }
+function endVertexMove(cancel){ if(movingIdx===null) return; if(cancel&&movingOrig) S.zone.pts[movingIdx]=movingOrig; movingIdx=null; movingOrig=null; map.getContainer().classList.remove("moving"); setMode(null); refresh(); }
+map.on("mousemove",e=>{ if(movingIdx===null) return; const p=[+e.latlng.lat.toFixed(6),+e.latlng.lng.toFixed(6)]; S.zone.pts[movingIdx]=p; if(vtxMk[movingIdx]) vtxMk[movingIdx].setLatLng(p); drawZoneLight(); });
+map.on("click",e=>{ if(movingIdx===null) return; S.zone.pts[movingIdx]=[+e.latlng.lat.toFixed(6),+e.latlng.lng.toFixed(6)]; endVertexMove(false); });
+document.addEventListener("keydown",e=>{ if(e.key==="Escape"&&movingIdx!==null) endVertexMove(true); });
+document.getElementById("tPoly").onclick=()=>{ if(movingIdx!==null) endVertexMove(true); setMode(mode==="polygon"?null:"polygon"); };
 document.getElementById("tCircle").onclick=()=>setMode(mode==="circle"?null:"circle");
 document.getElementById("tUndo").onclick=()=>{ if(S.zone.type==="polygon"&&S.zone.pts.length){S.zone.pts.pop();drawZone();refresh();} };
 document.getElementById("tDone").onclick=()=>{ setMode(null); refresh(); const p=zonePoly(); if(p) map.fitBounds(L.latLngBounds(p).pad(.4)); };

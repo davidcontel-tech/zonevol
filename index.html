@@ -396,7 +396,7 @@ table.t th{color:var(--mut);font-weight:500}
     <section class="view" id="v-dos">
       <h2>Dossier de vol</h2>
       <div id="chkBox"></div>
-      <div class="card"><b>Dossier de vol PDF</b><p class="small">Document complet de la mission : vue d'ensemble, déclarant, télépilote, machines, classification réglementaire, contraintes détaillées, autorisations, information aéronautique, météo et points de passage – avec cartes.</p>
+      <div class="card"><b>Dossier de vol PDF</b><p class="small">Document complet de la mission : vue d'ensemble, déclarant, télépilote, aéronefs, classification réglementaire, contraintes détaillées, autorisations, information aéronautique, météo et points de passage – avec cartes.</p>
         <div class="row"><button class="btn pri" id="pdfGo">📄 Générer le dossier de vol (PDF)</button><span class="small" id="pdfState"></span></div></div>
       <h3>Autres exports</h3>
       <div class="row" style="margin-bottom:10px">
@@ -610,7 +610,7 @@ const FIELDS = [
  {id:"m_dept",l:"Département",t:"dept",half:1},
  {id:"m_desc",l:"Description des opérations",t:"area"},
  {s:"Exploitant & télépilote"},
- {id:"m_pilot",l:"Télépilote (depuis l'page Mon compte)",t:"fleetPilot"},
+ {id:"m_pilot",l:"Télépilote (depuis la page Mon compte)",t:"fleetPilot"},
  {id:"op_name",l:"Exploitant (société)",t:"text"},
  {id:"op_resp",l:"Responsable",t:"text",half:1},
  {id:"op_uas",l:"N° d'exploitant UAS (FRA…)",t:"text",half:1},
@@ -636,7 +636,7 @@ const FIELDS = [
  {id:"d_ridnum",l:"N° d'identification à distance",t:"text",half:1},
  {id:"d_rid",l:"Signalement électronique (Remote ID) actif",t:"check",v:true},
  {id:"d_equip",l:"Équipements additionnels",t:"multi",o:["Caméra","Caméra thermique","Capteur barométrique","Parachute avec alimentation indépendante","Coupe-circuit avec alimentation indépendante","Coupe-circuit sans alimentation indépendante","Dispositif d'identification lumineux","Feux de navigation / anticollision","Kit de classe C5"]},
- {id:"m_uas2",l:"Machines complémentaires (flotte)",t:"fleetMulti"},
+ {id:"m_uas2",l:"Aéronefs complémentaires (flotte)",t:"fleetMulti"},
  {s:"Volume de vol"},
  {id:"v_vlos",l:"Mode de vol",t:"select",o:["VLOS – vue directe","EVLOS – avec observateurs","BVLOS – hors vue"]},
  {id:"v_dist",l:"Distance max au télépilote (m)",t:"number",v:"500",half:1},
@@ -876,7 +876,7 @@ async function importPdfFiles(files){ if(!files.length) return; const st=documen
   if(st) st.textContent=""; renderFleet(); buildForm(); refreshLight(); toast(total?`${total} élément(s) importé(s) depuis ${files.length} PDF`:"Rien de reconnu dans ce PDF",!total);
   if(bad.length) openModal(`<h2>PDF non reconnu</h2><p class="small">Je n'ai trouvé ni numéro d'exploitant (FRA…) ni aéronef (UAS-FR-…) dans ${bad.length>1?"ces fichiers":"ce fichier"}. Voici le texte lu : s'il est vide, le PDF est une image scannée. Sinon, copie-le dans le champ « coller » ci-dessous, ou envoie-le moi pour adapter la lecture.</p>${bad.map(b=>`<b class="small">${esc(b.name)}</b><textarea class="mono" rows="7" style="width:100%;background:#0b1626;border:1px solid var(--line);border-radius:8px;padding:8px;margin:4px 0 10px" readonly>${esc(b.text.slice(0,2500))}</textarea>`).join("")}<div class="row"><button class="btn" onclick="closeModal()">Fermer</button></div>`); }
 function uasLabel(u){ return `${u.reg||"(sans n°)"} – ${[u.maker,u.model].filter(Boolean).join(" ")||"modèle ?"}`; }
-/* ---- Mon compte : profil exploitant, pilotes (diplômes), aéronefs ---- */
+/* ---- Mon compte : profil exploitant, télépilotes (diplômes), aéronefs ---- */
 let FS="home";
 const DIPL=["Catégorie ouverte A1/A3","Catégorie ouverte A2","CATS STS-01","CATS STS-02","CATT S1/S2/S3","Vol de nuit (formation)","Autre"];
 function dFR(s){ const m=String(s||"").match(/(\d{2})\/(\d{2})\/(\d{4})/); return m?new Date(+m[3],+m[2]-1,+m[1]):null; }
@@ -897,13 +897,13 @@ function accountIssuesAt(m){ const out=[]; if(!m.m_date) return out; const ref=p
   return out; }
 function fIn(l,attr,v,ph,full){ return `<div class="fld"${full?' style="grid-column:1/-1"':""}><label>${l}</label><input ${attr} value="${esc(v||"")}" placeholder="${ph||""}"></div>`; }
 function renderFleet(){ const el=document.getElementById("fleetBox"); if(!el) return; normF(); const o=F.op, al=accountAlerts();
-  const NAV=[["home","Tableau de bord","M3 12l9-8 9 8M5 10v10h5v-6h4v6h5V10"],["profil","Mon profil","M12 4a4 4 0 1 0 0 8 4 4 0 0 0 0-8zM4 21c0-4.4 3.6-7 8-7s8 2.6 8 7"],["pilots","Pilotes ("+F.pilots.length+")","M4 14v-2a8 8 0 0 1 16 0v2M4 14h3v5H4zM17 14h3v5h-3z"],["uas","Machines ("+F.uas.length+")","M6 6l12 12M18 6L6 18M4 4h4v4H4zM16 4h4v4h-4zM4 16h4v4H4zM16 16h4v4h-4z"],["models","Modèles de drones","M3 11l18-7-7 18-2-8z"],["imp","Importer AlphaTango","M12 3v12M7 10l5 5 5-5M5 21h14"]];
+  const NAV=[["home","Tableau de bord","M3 12l9-8 9 8M5 10v10h5v-6h4v6h5V10"],["profil","Mon profil","M12 4a4 4 0 1 0 0 8 4 4 0 0 0 0-8zM4 21c0-4.4 3.6-7 8-7s8 2.6 8 7"],["pilots","Télépilotes ("+F.pilots.length+")","M4 14v-2a8 8 0 0 1 16 0v2M4 14h3v5H4zM17 14h3v5h-3z"],["uas","Aéronefs ("+F.uas.length+")","M6 6l12 12M18 6L6 18M4 4h4v4H4zM16 4h4v4h-4zM4 16h4v4H4zM16 16h4v4h-4z"],["models","Modèles de drones","M3 11l18-7-7 18-2-8z"],["imp","Importer AlphaTango","M12 3v12M7 10l5 5 5-5M5 21h14"]];
   const nav=NAV.map(([k,l,ic])=>`<button class="${FS===k?"act":""}" data-fs="${k}"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="${ic}"/></svg>${l}</button>`).join("");
   let h="";
   if(FS==="home"){
     const up=MISSIONS.filter(x=>x.m&&x.m.m_date&&parseDate(x.m.m_date)>=new Date(new Date().setHours(0,0,0,0))).sort((a,b)=>a.m.m_date<b.m.m_date?-1:1).slice(0,6), le=lastExport();
-    h+=`<h3 style="margin-top:0">Tableau de bord</h3><div class="kpis"><div class="kpi"><b>${MISSIONS.length}</b><span>Missions</span></div><div class="kpi"><b>${F.pilots.length}</b><span>Pilotes</span></div><div class="kpi"><b>${F.uas.length}</b><span>Machines</span></div><div class="kpi ${al.length?"bad":""}"><b>${al.length}</b><span>Validités à surveiller</span></div></div>
-    <div class="card"><b>Validités à surveiller</b>${al.length?`<ul class="small" style="padding-left:18px;line-height:1.7;margin:6px 0 0">${al.map(a=>`<li><span class="bdg ${a.lv}">${a.lv==="red"?"expiré":"bientôt"}</span> ${esc(a.t)}</li>`).join("")}</ul>`:`<p class="small" style="margin:6px 0 0">Rien à signaler${(F.op.valid||F.pilots.some(p=>p.dipl.length)||F.uas.some(u=>u.regEnd))?"":" (renseigne les dates de fin de validité dans ton profil, tes diplômes et tes machines pour être alerté)"}.</p>`}</div>
+    h+=`<h3 style="margin-top:0">Tableau de bord</h3><div class="kpis"><div class="kpi"><b>${MISSIONS.length}</b><span>Missions</span></div><div class="kpi"><b>${F.pilots.length}</b><span>Télépilotes</span></div><div class="kpi"><b>${F.uas.length}</b><span>Aéronefs</span></div><div class="kpi ${al.length?"bad":""}"><b>${al.length}</b><span>Validités à surveiller</span></div></div>
+    <div class="card"><b>Validités à surveiller</b>${al.length?`<ul class="small" style="padding-left:18px;line-height:1.7;margin:6px 0 0">${al.map(a=>`<li><span class="bdg ${a.lv}">${a.lv==="red"?"expiré":"bientôt"}</span> ${esc(a.t)}</li>`).join("")}</ul>`:`<p class="small" style="margin:6px 0 0">Rien à signaler${(F.op.valid||F.pilots.some(p=>p.dipl.length)||F.uas.some(u=>u.regEnd))?"":" (renseigne les dates de fin de validité dans ton profil, tes diplômes et tes aéronefs pour être alerté)"}.</p>`}</div>
     <div class="card"><b>Prochaines missions</b>${up.length?`<table class="t">${up.map(x=>`<tr><td><b>${esc(x.m.m_name||"Mission #"+x.id)}</b><br><span class="small">${parseDate(x.m.m_date).toLocaleDateString("fr-FR")}</span></td><td style="text-align:right"><button class="btn sm" data-gomis="${x.id}">Ouvrir dans Prévol</button></td></tr>`).join("")}</table>`:'<p class="small" style="margin:6px 0 0">Aucune mission datée à venir.</p>'}</div>
     <div class="card"><b>Sauvegarde</b><p class="small" style="margin:6px 0 0">Dernier export : ${le?new Date(le).toLocaleString("fr-FR")+" ("+ageTxt(le)+")":"<span style='color:var(--ora)'>jamais</span>"}. <button class="btn sm" data-gomis="list">Exporter depuis Missions</button></p></div>`;
   } else if(FS==="profil"){
@@ -915,13 +915,13 @@ function renderFleet(){ const el=document.getElementById("fleetBox"); if(!el) re
     <h3>Assurance</h3><div class="card"><div class="grid2">${fIn("Assureur",'data-op="ins"',o.ins)}${fIn("N° de police",'data-op="pol"',o.pol)}</div>${fIn("Fin de validité du contrat",'data-op="insEnd" data-re',o.insEnd,"jj/mm/aaaa")}<p class="small">${o.insEnd?bdg(o.insEnd):""}</p></div>
     <p class="small">Ces informations préremplissent la fiche mission, le PDF et le Cerfa. Elles restent sur cet appareil (pense à l'export JSON de l'onglet Missions).</p>`;
   } else if(FS==="pilots"){
-    h+=`<h3>Pilotes</h3>`+(F.pilots.length?F.pilots.map((p,i)=>`<details class="card" ${F.pilots.length===1?"open":""}><summary><b>${esc(pilotName(p)||"Nouveau pilote")}</b> <span class="small">${esc(p.cert||"aucun diplôme")}</span></summary>
+    h+=`<h3>Télépilotes</h3>`+(F.pilots.length?F.pilots.map((p,i)=>`<details class="card" ${F.pilots.length===1?"open":""}><summary><b>${esc(pilotName(p)||"Nouveau télépilote")}</b> <span class="small">${esc(p.cert||"aucun diplôme")}</span></summary>
       <div class="grid2" style="margin-top:8px"><div class="fld"><label>Civilité</label><select data-pi="${i}" data-pk="civ"><option${p.civ==="Mme"?"":" selected"}>M</option><option${p.civ==="Mme"?" selected":""}>Mme</option></select></div><div></div>
       ${fIn("Prénom",`data-pi="${i}" data-pk="first"`,p.first)}${fIn("Nom",`data-pi="${i}" data-pk="last"`,p.last)}${fIn("E-mail",`data-pi="${i}" data-pk="mail"`,p.mail)}${fIn("Téléphone",`data-pi="${i}" data-pk="phone"`,p.phone)}${fIn("Date de naissance",`data-pi="${i}" data-pk="birth"`,p.birth,"jj/mm/aaaa")}${fIn("N° de télépilote",`data-pi="${i}" data-pk="tpNum"`,p.tpNum,"FRA-RP-…")}</div>
       <b class="small">Diplômes, formations et attestations</b>
       ${p.dipl.map((d,j)=>`<div class="grid2" style="margin:6px 0;align-items:end"><div class="fld"><label>Type</label><select data-pi="${i}" data-di="${j}" data-pk="t" data-re>${DIPL.map(x=>`<option${x===d.t?" selected":""}>${x}</option>`).join("")}</select></div>${fIn("Référence / n°",`data-pi="${i}" data-di="${j}" data-pk="ref"`,d.ref)}${fIn("Délivré le",`data-pi="${i}" data-di="${j}" data-pk="from"`,d.from,"jj/mm/aaaa")}${fIn("Valable jusqu'au",`data-pi="${i}" data-di="${j}" data-pk="to" data-re`,d.to,"jj/mm/aaaa")}<div>${bdg(d.to)} <button class="btn sm" data-deld="${i}:${j}">✕</button></div></div>`).join("")||'<p class="small">Aucun diplôme saisi.</p>'}
       ${p.legacy?`<p class="small">Ancienne saisie : ${esc(p.legacy)}</p>`:""}
-      <div class="row" style="gap:6px;margin-top:6px"><button class="btn sm" data-addd="${i}">+ Diplôme</button><button class="btn sm" data-delp="${i}">Supprimer ce pilote</button></div></details>`).join(""):'<div class="card small">Aucun pilote enregistré.</div>')+`<button class="btn pri sm" id="pAdd" style="margin-top:8px">+ Ajouter un pilote</button>`;
+      <div class="row" style="gap:6px;margin-top:6px"><button class="btn sm" data-addd="${i}">+ Diplôme</button><button class="btn sm" data-delp="${i}">Supprimer ce télépilote</button></div></details>`).join(""):'<div class="card small">Aucun télépilote enregistré.</div>')+`<button class="btn pri sm" id="pAdd" style="margin-top:8px">+ Ajouter un télépilote</button>`;
   } else if(FS==="uas"){
     h+=`<h3>Aéronefs</h3>`+(F.uas.length?F.uas.map((u,i)=>`<details class="card"><summary><b class="mono">${esc(u.reg||"(sans n°)")}</b> ${esc([u.maker,u.model].filter(Boolean).join(" ")||"modèle ?")} ${u.regEnd?bdg(u.regEnd):""}</summary>
       <div class="fld" style="margin-top:8px"><label>Choisir dans la base de modèles (remplit marque, modèle, masse, classe)</label><input list="droneList" autocomplete="off" data-ui="${i}" data-uk="_pick" placeholder="ex. DJI Mavic 3 Pro"></div>
@@ -1023,12 +1023,12 @@ function buildForm(){ const box=document.getElementById("missionForm"); let html
     let inp="";
     if(f.t==="select") inp=`<select id="${f.id}">${f.o.map(o=>`<option>${o}</option>`).join("")}</select>`;
     else if(f.t==="dept") inp=`<select id="${f.id}">${deptOpts}</select>`;
-    else if(f.t==="fleetUas") inp=`<select id="${f.id}"><option value="">${F.uas.length?"— choisir dans la flotte —":"— flotte vide : importe-la dans l'page Mon compte —"}</option>${F.uas.map((u,i)=>`<option value="${i}">${esc(uasLabel(u))}</option>`).join("")}</select>`;
+    else if(f.t==="fleetUas") inp=`<select id="${f.id}"><option value="">${F.uas.length?"— choisir dans la flotte —":"— flotte vide : importe-la dans la page Mon compte —"}</option>${F.uas.map((u,i)=>`<option value="${i}">${esc(uasLabel(u))}</option>`).join("")}</select>`;
     else if(f.t==="fleetPilot") inp=`<select id="${f.id}"><option value="">${F.pilots.length?"— choisir —":"— aucun télépilote enregistré —"}</option>${F.pilots.map((p,i)=>`<option value="${i}">${esc(p.name)}</option>`).join("")}</select>`;
     else if(f.t==="area") inp=`<textarea id="${f.id}" placeholder="${f.ph||""}"></textarea>`;
     else if(f.t==="check"){ flush(); html+=`<label class="chk"><input type="checkbox" id="${f.id}"> ${f.l}</label>`; return; }
     else if(f.t==="multi"||f.t==="fleetMulti"){ flush(); const opts=f.t==="multi"?f.o.map(o=>[o,o]):F.uas.map((u,i)=>[String(i),uasLabel(u)]);
-      const nSel=opts.filter(([v])=>(S.m[f.id]||[]).includes(v)).length; html+=`<div class="fld"><div class="mhead"><label>${f.l}</label>${opts.length?`<span class="mcnt" data-mcnt="${f.id}">${nSel} / ${opts.length}</span>`:""}</div><div class="mchk">${opts.length?opts.map(([v,l])=>`<label class="chk"><input type="checkbox" data-multi="${f.id}" value="${esc(v)}" ${(S.m[f.id]||[]).includes(v)?"checked":""}> ${esc(l)}</label>`).join(""):'<span class="small">Flotte vide : importe-la dans l\'page Mon compte.</span>'}</div></div>`; return; }
+      const nSel=opts.filter(([v])=>(S.m[f.id]||[]).includes(v)).length; html+=`<div class="fld"><div class="mhead"><label>${f.l}</label>${opts.length?`<span class="mcnt" data-mcnt="${f.id}">${nSel} / ${opts.length}</span>`:""}</div><div class="mchk">${opts.length?opts.map(([v,l])=>`<label class="chk"><input type="checkbox" data-multi="${f.id}" value="${esc(v)}" ${(S.m[f.id]||[]).includes(v)?"checked":""}> ${esc(l)}</label>`).join(""):'<span class="small">Flotte vide : importe-la dans la page Mon compte.</span>'}</div></div>`; return; }
     else inp=`<input type="${f.t}" id="${f.id}" placeholder="${f.ph||""}" ${f.t==="number"?'step="any"':""} ${f.id==="d_model"?'list="droneList" autocomplete="off"':""}>`;
     const el=`<div class="fld"><label for="${f.id}">${f.l}</label>${inp}</div>`;
     if(f.half){ halfBuf.push(el); if(halfBuf.length===2) flush(); } else { flush(); html+=el; }
@@ -1131,7 +1131,7 @@ function analyze(){
   if(poly&&T){ const dmax=Math.max(...poly.map(p=>hav([T.lat,T.lon],p))); const lim=+m.v_dist||500; add(dmax>lim?"orange":"green","🧍",`Distance max télépilote ↔ zone : ${fmtD(dmax)}`,dmax>lim?`Supérieure à la distance maximale prévue (${fmtD(lim)}) : vérifier la vue directe ou ajouter des observateurs.`:"Compatible avec la distance maximale prévue."); }
   if(poly&&!(S.wps||[]).some(w=>w.t==="Décollage")) add("blue","📌","Point de décollage non placé","Place le décollage, le télépilote et un atterrissage d'urgence (bouton 📌 Point) : ils figurent dans le dossier de vol.");
   // AlphaTango / exploitant
-  if(!m.op_uas) add("blue","🪪","N° d'exploitant UAS non renseigné","Renseigne l'exploitant dans l'page Mon compte (extrait du registre) pour l'ajouter aux déclarations.",CT.at);
+  if(!m.op_uas) add("blue","🪪","N° d'exploitant UAS non renseigné","Renseigne l'exploitant dans la page Mon compte (extrait du registre) pour l'ajouter aux déclarations.",CT.at);
   if(F.op.valid&&m.m_date){ const [dd,mm,yy]=F.op.valid.split("/").map(Number); if(yy&&new Date(yy,mm-1,dd)<parseDate(m.m_date)) add("red","🪪","Enregistrement exploitant expiré à la date du vol",`Fin de validité ${F.op.valid} – renouveler dans AlphaTango.`,CT.at); }
   accountIssuesAt(m).forEach(x=>add(x.lv==="red"?"red":"orange","🪪",x.t,"Vérifie et renouvelle dans AlphaTango (page Mon compte).",CT.at));
   if((+m.d_mass||0)>=0.8&&!/UAS-FR-\d+/i.test(m.d_reg||"")) add("orange","🏷️","Aéronef ≥ 800 g : n° d'enregistrement UAS-FR à renseigner","L'enregistrement de l'aéronef dans AlphaTango est requis ; sélectionne-le dans la flotte importée.",CT.at);
@@ -1480,7 +1480,7 @@ function renderMissions(){ const box=document.getElementById("mList"); if(!box) 
   const list=MISSIONS.slice().sort((a,b)=>(b.m.m_date||"").localeCompare(a.m.m_date||"")||b.created-a.created).filter(s=>!q||(s.m.m_name+" "+s.m.m_commune+" "+s.id).toLowerCase().includes(q));
   box.innerHTML=list.length?list.map(s=>{ const cur=s.id===S.id, op=openCard===s.id;
     return `<div class="sc" style="cursor:pointer;${cur?"border-color:var(--acc)":""}" data-mcard="${s.id}"><div class="hd"><div><span class="small mono">#${s.id}</span> <b>${esc(s.m.m_name||"Nouvelle mission")}</b><div class="small">${s.m.m_date?fdate(parseDate(s.m.m_date))+", "+(s.m.m_start||"")+" – "+(s.m.m_end||""):"Date à définir"}${s.m.m_commune?" · "+esc(s.m.m_commune):""}</div></div><span class="pill ${STCOL[s.status]||"blue"}">${esc(s.status)}</span></div>
-      ${op?`<div class="small" style="margin:6px 0">Pilote référent : ${esc(s.m.pilot_name||"—")} · Machine principale : ${esc(s.m.d_model||"—")}${cur?' · <b style="color:var(--acc)">mission ouverte</b>':""}</div>
+      ${op?`<div class="small" style="margin:6px 0">Télépilote référent : ${esc(s.m.pilot_name||"—")} · Aéronef principal : ${esc(s.m.d_model||"—")}${cur?' · <b style="color:var(--acc)">mission ouverte</b>':""}</div>
       <div class="row"><button class="btn pri sm" data-mact="open" data-id="${s.id}">✏️ Éditer</button><button class="btn sm" data-mact="pdf" data-id="${s.id}">📄 Dossier de vol</button><button class="btn sm" data-mact="dup" data-id="${s.id}">Dupliquer</button>
       <select class="btn sm" data-mstat="${s.id}">${STATUS.map(x=>`<option ${x===s.status?"selected":""}>${x}</option>`).join("")}</select><button class="btn sm" data-mact="del" data-id="${s.id}">Supprimer</button></div>`:""}</div>`; }).join(""):'<p class="small">Aucune mission.</p>';
   missionsLayer.clearLayers(); MISSIONS.forEach(s=>{ const c=mCenter(s); if(!c||s.id===S.id) return; L.circleMarker(c,{radius:6,color:"#fff",weight:2,fillColor:"#8aa0c0",fillOpacity:.9}).bindTooltip(`#${s.id} ${esc(s.m.m_name||"")}`).on("click",()=>openMission(s.id)).addTo(missionsLayer); });
@@ -1656,11 +1656,11 @@ async function makePDF(){
   H1(2,"Informations générales");
   H2("2.1","Déclarant"); KV([["Société",m.op_name],["Responsable",m.op_resp],["N° d'exploitant UAS",m.op_uas],["Adresse",m.op_addr],["Téléphone",m.op_phone],["Email",m.op_mail]]);
   if((m.op_docs||[]).length){ P_("Le déclarant atteste être en possession des documents ci-dessous :"); BL(m.op_docs); y+=2; }
-  H2("2.2","Pilote référent"); KV([["Nom",m.pilot_name],["Téléphone",m.pilot_phone],["Email",m.pilot_mail||"—"]]);
-  P_("Le pilote a déclaré être en possession des documents ci-dessous :"); BL(m.pilot_cert||[]); y+=2;
-  H2("2.3","Machine principale"); KV([["Modèle",m.d_model],["Classe",m.d_class],["Masse",m.d_mass?m.d_mass+" kg":"—"],["Vitesse maximale (km/h)",m.d_vmax||"—"],["Numéro de série",m.d_serial],["N° d'identification à distance",m.d_ridnum||"—"],["N° d'enregistrement",m.d_reg||"—"],["Signalement électronique",m.d_rid?"Oui":"Non"]]);
-  if((m.d_equip||[]).length){ P_("Outre ses équipements de série, la machine est dotée des équipements additionnels suivants :"); BL(m.d_equip); y+=2; }
-  (m.m_uas2||[]).forEach((ix,k)=>{ const u=F.uas[+ix]; if(!u) return; H2(`2.${4+k}`,`Machine complémentaire #${k+1}`); KV([["Modèle",[u.maker,u.model].filter(Boolean).join(" ")],["Classe",u.cls||"—"],["Masse",u.massRange||(u.mass!=null?u.mass+" kg":"—")],["Numéro de série",u.serial],["N° d'enregistrement",u.reg],["Signalement électronique",u.rid?"Oui":"Non"]]); });
+  H2("2.2","Télépilote référent"); KV([["Nom",m.pilot_name],["Téléphone",m.pilot_phone],["Email",m.pilot_mail||"—"]]);
+  P_("Le télépilote a déclaré être en possession des documents ci-dessous :"); BL(m.pilot_cert||[]); y+=2;
+  H2("2.3","Aéronef principal"); KV([["Modèle",m.d_model],["Classe",m.d_class],["Masse",m.d_mass?m.d_mass+" kg":"—"],["Vitesse maximale (km/h)",m.d_vmax||"—"],["Numéro de série",m.d_serial],["N° d'identification à distance",m.d_ridnum||"—"],["N° d'enregistrement",m.d_reg||"—"],["Signalement électronique",m.d_rid?"Oui":"Non"]]);
+  if((m.d_equip||[]).length){ P_("Outre ses équipements de série, l'aéronef est doté des équipements additionnels suivants :"); BL(m.d_equip); y+=2; }
+  (m.m_uas2||[]).forEach((ix,k)=>{ const u=F.uas[+ix]; if(!u) return; H2(`2.${4+k}`,`Aéronef complémentaire #${k+1}`); KV([["Modèle",[u.maker,u.model].filter(Boolean).join(" ")],["Classe",u.cls||"—"],["Masse",u.massRange||(u.mass!=null?u.mass+" kg":"—")],["Numéro de série",u.serial],["N° d'enregistrement",u.reg],["Signalement électronique",u.rid?"Oui":"Non"]]); });
   if(m.insurance){ KV([["Assurance RC",m.insurance]]); }
   // --- 3
   H1(3,"Classification"); P_("La classification de vol sélectionnée pour cette mission est la suivante :");
@@ -2041,7 +2041,7 @@ async function makeCerfa(){ const P=await loadPdfLib(); const resp=await fetch("
   const pl=splitName(m.pilot_name); T("Télépilote 1Nom",pl.last); T("Télépilote 1Prénom",pl.first); T("Télépilote 1Téléphone portable",m.pilot_phone); T("Télépilote 1Courriel",m.pilot_mail);
   // 4. Dates et heures
   T("Texte53",d2(m.m_date)); T("Texte54",hh(m.m_start)); T("Texte55",mn(m.m_start)); T("Texte56",d2(m.m_date2||m.m_date)); T("Texte57",hh(m.m_end)); T("Texte58",mn(m.m_end));
-  // 5. Aéronefs : principal, puis une machine complémentaire
+  // 5. Aéronefs : principal, puis un aéronef complémentaire
   const u1=F.uas[+m.m_uas], mm=makerModel(u1,m.d_model);
   T("Texte61",mm.maker); T("Texte62",mm.model); T("Texte63",mm.type); T("Texte64",m.d_mass); T("Texte65",m.d_serial);
   R("Groupe43",m.d_class==="C5"?2:3); R("Groupe44",1);

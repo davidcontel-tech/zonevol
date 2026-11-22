@@ -393,6 +393,7 @@ table.t th{color:var(--mut);font-weight:500}
         <button class="btn pri sm" id="copySum">Copier le résumé</button>
         <button class="btn sm" id="copyKml">Copier le KML</button>
         <button class="btn sm" id="dlKml">Télécharger KML</button>
+        <button class="btn sm" data-cerfa="1">📝 Cerfa 15476*04</button>
         <button class="btn sm" id="dlGeo">GeoJSON</button>
         <button class="btn sm" id="dlPng">Plan de vol (image)</button>
         <button class="btn sm" id="copyJson">Exporter (JSON)</button>
@@ -1166,7 +1167,8 @@ function renderAuth(r){
     <li><b>Catégorie spécifique</b> : notification en ligne via <a href="https://alphatango.aviation-civile.gouv.fr" target="_blank" rel="noopener">AlphaTango</a> (voie privilégiée).</li>
     <li><b>Catégorie ouverte en agglomération</b> : CERFA 15476*04 + annexe obligatoire, par mail à l'adresse ci-dessus (<a href="https://entreprendre.service-public.gouv.fr/vosdroits/R42699" target="_blank" rel="noopener">formulaire</a>).</li>
     <li>Joindre : KML/KMZ de la zone, attestation d'assurance, accord du propriétaire, accord ATS si requis, plan de sécurisation.</li>
-    <li>Nuit ou > 120 m : formulaire de dérogation R5-UAS-DEROG au préfet, 30 jours avant.</li></ul>`;
+    <li>Nuit ou > 120 m : formulaire de dérogation R5-UAS-DEROG au préfet, 30 jours avant.</li></ul>
+    <div class="row" style="margin-bottom:10px"><button class="btn pri sm" data-cerfa="1">📝 Cerfa 15476*04 pré-rempli (PDF)</button><span class="small">À relire, dater et signer. Les attestations et l'annexe des sites supplémentaires restent à compléter à la main.</span></div>`;
   const pSubj=`Déclaration préalable vol UAS – ${m.m_commune||"[commune]"} – ${m.m_date||"[date]"}`;
   const pBody=`Madame, Monsieur,
 
@@ -1926,6 +1928,51 @@ document.addEventListener("click",e=>{ if(e.target.closest("[data-dapply]")){ co
   if(e.target.closest("[data-dadd]")){ const t=(S.m.d_model||"").trim(); if(!t) return; const L=customDrones(); L.push({maker:"",model:t,mass:+S.m.d_mass||0,cls:S.m.d_class||"",wind:+S.m.d_wind||0,vmax:+S.m.d_vmax||0}); try{ localStorage.setItem("zonevol_drones",JSON.stringify(L)); }catch(err){} fillDroneList(); renderDroneInfo(); toast("Modèle ajouté à la base de cet appareil"); } });
 function syncWind(){ const w=document.getElementById("windLim"); if(w&&S.m.d_wind&&document.activeElement!==w&&w.value!==String(S.m.d_wind)){ w.value=S.m.d_wind; if(typeof renderMeteo==="function"&&METEO) renderMeteo(); } }
 fillDroneList();
+
+/* =========================================================
+   CERFA 15476*04 PRÉ-REMPLI (formulaire officiel data/cerfa_15476.pdf, rempli sur l'appareil)
+   Les attestations, la date et la signature restent à la main.
+   ========================================================= */
+function loadPdfLib(){ return window.PDFLib?Promise.resolve(window.PDFLib):new Promise((res,rej)=>{ const s=document.createElement("script"); s.src="https://cdnjs.cloudflare.com/ajax/libs/pdf-lib/1.17.1/pdf-lib.min.js"; s.onload=()=>res(window.PDFLib); s.onerror=()=>rej(new Error("module PDF non chargé (connexion requise)")); document.head.appendChild(s); }); }
+function splitName(full){ const t=String(full||"").trim().split(/\s+/).filter(Boolean); if(t.length<2) return {first:"",last:t[0]||""};
+  const caps=t.filter(x=>x.length>1&&x===x.toUpperCase()&&/[A-ZÀ-Ý]/.test(x)); if(caps.length&&caps.length<t.length) return {first:t.filter(x=>!caps.includes(x)).join(" "),last:caps.join(" ")};
+  return {first:t.slice(0,-1).join(" "),last:t[t.length-1]}; }
+function makerModel(u,txt){ if(u&&(u.maker||u.model)) return {maker:u.maker||"",model:u.model||"",type:u.type||""}; const d=findDrone(txt);
+  if(d&&d.maker&&droneKey(txt).startsWith(droneKey(d.maker))) return {maker:d.maker,model:String(txt).replace(new RegExp("^\\s*"+d.maker+"\\s*","i"),""),type:""};
+  const t=String(txt||"").trim().split(/\s+/); return {maker:t.length>1?t[0]:"",model:t.length>1?t.slice(1).join(" "):(t[0]||""),type:""}; }
+async function makeCerfa(){ const P=await loadPdfLib(); const resp=await fetch("data/cerfa_15476.pdf"); if(!resp.ok) throw new Error("formulaire officiel introuvable sur le site (data/cerfa_15476.pdf)");
+  const pdf=await P.PDFDocument.load(await resp.arrayBuffer(),{ignoreEncryption:true}), form=pdf.getForm(), m=S.m, r=analyze(), ret=retained(r), miss=[];
+  const T=(n,v)=>{ if(v==null||String(v).trim()==="") return; try{ form.getTextField(n).setText(String(v)); }catch(e){ miss.push(n); } };
+  const C=n=>{ try{ form.getCheckBox(n).check(); }catch(e){ miss.push(n); } };
+  const R=(n,wi)=>{ try{ const f=form.getRadioGroup(n); f.select(f.acroField.getWidgets()[wi].getOnValue().decodeText()); }catch(e){ miss.push(n+"#"+wi); } };
+  const d2=s=>s?parseDate(s).toLocaleDateString("fr-FR"):"", hh=s=>(s||"").split(":")[0]||"", mn=s=>(s||"").split(":")[1]||"";
+  // 1. Exploitant (personne morale) et déclarant
+  T("Raison sociale ou dénomination",m.op_name); T("Adresse du siège social",m.op_addr); T("Identifiant SIRENSIRET RCSRNE",F.op.siret);
+  const rp=splitName(m.op_resp); T("Nom_2",rp.last); T("Prénom_2",rp.first); T("Qualité",m.op_resp?"Responsable":""); T("Texte39",m.op_phone); T("Fixe  Portable Courriel_2",m.op_mail);
+  // 3. Régime des vols (seulement ce qui correspond exactement à un choix du formulaire)
+  if(ret.code==="OUVERTE-A1"){ C("Catégorie ouverte"); C("Souscatégorie A1"); } else if(ret.code==="OUVERTE-A2"){ C("Catégorie ouverte"); C("Souscatégorie A2"); } else if(ret.code==="OUVERTE-A3"){ C("Catégorie ouverte"); C("Souscatégorie A3"); }
+  else if(ret.code==="SPECIFIQUE-STS-01") C("Scénario standard européen STS01 joindre une copie de laccusé de réception de déclaration dactivité émis par la DGAC");
+  // Télépilote 1
+  const pl=splitName(m.pilot_name); T("Télépilote 1Nom",pl.last); T("Télépilote 1Prénom",pl.first); T("Télépilote 1Téléphone portable",m.pilot_phone); T("Télépilote 1Courriel",m.pilot_mail);
+  // 4. Dates et heures
+  T("Texte53",d2(m.m_date)); T("Texte54",hh(m.m_start)); T("Texte55",mn(m.m_start)); T("Texte56",d2(m.m_date2||m.m_date)); T("Texte57",hh(m.m_end)); T("Texte58",mn(m.m_end));
+  // 5. Aéronefs : principal, puis une machine complémentaire
+  const u1=F.uas[+m.m_uas], mm=makerModel(u1,m.d_model);
+  T("Texte61",mm.maker); T("Texte62",mm.model); T("Texte63",mm.type); T("Texte64",m.d_mass); T("Texte65",m.d_serial);
+  R("Groupe43",m.d_class==="C5"?2:3); R("Groupe44",1);
+  T("Texte114",String(m.d_reg||"").replace(/^UAS-?/i,"")); T("Texte115",m.d_ridnum);
+  const u2=F.uas[+(m.m_uas2||[])[0]]; if(u2){ T("Texte66",u2.maker); T("Texte67",u2.model); T("Texte68",u2.type); T("Texte69",u2.serial); T("Texte70",u2.mass); T("Texte77",String(u2.reg||"").replace(/^UAS-?/i,"")); R("Groupe44",3); R("Groupe45",1); }
+  // 6. Site n° 1
+  const pop=m.e_pop.startsWith("Zone peuplée")||m.e_pop.startsWith("Rassemblement"); if(pop) C("Site n 1"); if(m.e_pop.startsWith("Rassemblement")){ C("En agglomération"); T("Texte94",m.m_desc||"rassemblement de personnes"); }
+  T("Texte95",(m.m_desc||m.m_type||"").replace(/\s+/g," ").slice(0,95)); T("Texte96",m.m_client);
+  T("Texte97",r.c?`${[m.m_address,m.m_commune].filter(Boolean).join(", ")} (centre ${r.c[0].toFixed(5)}, ${r.c[1].toFixed(5)})`.slice(0,95):[m.m_address,m.m_commune].filter(Boolean).join(", "));
+  T("Code postalRow1",S.geo&&S.geo.postcode||""); T("LocalitéRow1",m.m_commune); T("AdresseRow1",m.m_address);
+  R("5",0); C("Dates"); R("Groupe50",String(m.v_vlos).startsWith("BVLOS")?1:0); T("Texte99",m.v_dist); T("Texte100",S.height);
+  T("proximité des opérations",`Zone contrôlée au sol de ${bands().tot} m (contingence ${bands().cont} m + tampon ${bands().gb} m). Dossier de vol joint.`);
+  form.updateFieldAppearances(await pdf.embedFont(P.StandardFonts.Helvetica));
+  const out=await pdf.save(); const fn=`Cerfa_15476-04_${(m.m_name||"mission").replace(/[^\w-]+/g,"_").slice(0,40)}.pdf`;
+  await saveFile(fn,new Blob([out],{type:"application/pdf"}),"application/pdf"); if(miss.length) console.warn("Cerfa : champs non remplis",miss); return {fn,miss}; }
+document.addEventListener("click",async e=>{ if(!e.target.closest("[data-cerfa]")) return; try{ toast("Préparation du Cerfa…"); await makeCerfa(); toast("Cerfa pré-rempli : relis chaque case, puis date et signe"); }catch(err){ toast("Cerfa impossible : "+(err.message||err),true); console.error(err); } });
 
 /* ---- init ---- */
 renderFleet(); buildForm(); setMode(null); refresh(); renderMissions(); renderBackup(); initSIA();

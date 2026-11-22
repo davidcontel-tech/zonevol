@@ -129,7 +129,7 @@ h3{font-size:13px;text-transform:uppercase;letter-spacing:.6px;color:var(--mut);
 .fld .mchk .small{display:block;padding:9px 12px}
 .mhead{display:flex;justify-content:space-between;align-items:baseline;gap:8px}
 .mcnt{font-size:11px;color:var(--mut);white-space:nowrap}
-.stat{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.stat{display:grid;grid-template-columns:repeat(2,1fr);gap:8px}
 .stat div{background:#0b1626;border:1px solid var(--line);border-radius:8px;padding:8px}
 .stat b{display:block;font-size:16px}
 .stat span{font-size:11px;color:var(--mut)}
@@ -283,7 +283,6 @@ table.t th{color:var(--mut);font-weight:500}
       <div class="stat" id="zoneStats">
         <div><b id="sArea">–</b><span>Surface</span></div>
         <div><b id="sPer">–</b><span>Périmètre</span></div>
-        <div><b id="sPts">0</b><span>Sommets</span></div>
       </div>
       <h3>Centre de la zone</h3>
       <div class="card mono" id="zCenter">Aucune zone tracée</div>
@@ -1117,15 +1116,14 @@ function refreshInner(noQ){
   // Zone
   const poly=r.poly;
   if(poly){ const ap=S.zone.type==="circle"?{a:Math.PI*S.zone.radius**2,per:2*Math.PI*S.zone.radius}:areaPer(poly);
-    sArea.textContent=fmtA(ap.a); sPer.textContent=fmtD(ap.per); sPts.textContent=S.zone.type==="circle"?"⭕ R "+fmtD(S.zone.radius):S.zone.pts.length;
-    zCenter.innerHTML=`${r.c[0].toFixed(6)}, ${r.c[1].toFixed(6)}<br>${dms(r.c[0],1)} ${dms(r.c[1],0)}<br>Format aéro : ${dmTxt(r.c)}${S.geo?"<br>"+esc(S.geo.label):""}<br><span style="color:#8aa0c0">Département : ${r.dept?esc(r.dept[0]+" – "+r.dept[1]):"–"}${r.deptAuto?(deptFromGeo()?" (d'après l'adresse)":" (estimé – confirmer dans Mission)"):""}</span>`;
+    sArea.textContent=fmtA(ap.a); sPer.textContent=fmtD(ap.per);    zCenter.innerHTML=`${r.c[0].toFixed(6)}, ${r.c[1].toFixed(6)}<br>${dms(r.c[0],1)} ${dms(r.c[1],0)}<br>Format aéro : ${dmTxt(r.c)}${S.geo?"<br>"+esc(S.geo.label):""}<br><span style="color:#8aa0c0">Département : ${r.dept?esc(r.dept[0]+" – "+r.dept[1]):"–"}${r.deptAuto?(deptFromGeo()?" (d'après l'adresse)":" (estimé – confirmer dans Mission)"):""}</span>`;
     zVerts.innerHTML=S.zone.type==="circle"?`<div class="mono">Centre ${S.zone.center.map(v=>v.toFixed(6)).join(", ")} · rayon ${S.zone.radius} m</div>`:
       `<table class="t mono">${S.zone.pts.map((p,i)=>`<tr><td>${String.fromCharCode(65+(i%26))}</td><td>${p[0].toFixed(6)}</td><td>${p[1].toFixed(6)}</td></tr>`).join("")}</table>`;
     const [la,lo]=r.c;
     zLinks.innerHTML=`<a class="lnk" target="_blank" rel="noopener" href="https://cartes.gouv.fr/explorer-les-cartes/">cartes.gouv.fr – restrictions UAS (ex-Géoportail) <span>↗</span></a>
       <a class="lnk" target="_blank" rel="noopener" href="https://www.openstreetmap.org/?mlat=${la}&mlon=${lo}#map=16/${la}/${lo}">OpenStreetMap <span>↗</span></a>
       <a class="lnk" target="_blank" rel="noopener" href="https://www.google.com/maps/@${la},${lo},17z/data=!3m1!1e3">Google Maps satellite <span>↗</span></a>`;
-  } else { sArea.textContent="–"; sPer.textContent="–"; sPts.textContent=S.zone.pts.length; zCenter.textContent="Aucune zone tracée"; }
+  } else { sArea.textContent="–"; sPer.textContent="–"; zCenter.textContent="Aucune zone tracée"; }
   { const ci=document.getElementById("contIn"), gi=document.getElementById("gbMfrIn"); if(document.activeElement!==ci) ci.value=bands().cont; if(document.activeElement!==gi) gi.value=S.gbMfr||""; } document.getElementById("heightIn").value=S.height;
   // Contraintes
   const order={red:0,orange:1,blue:2,green:3};

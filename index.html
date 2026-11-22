@@ -225,8 +225,8 @@ table.t th{color:var(--mut);font-weight:500}
     <div class="hint" id="hint">Choisis <b>Polygone</b> ou <b>Cercle</b>, puis clique sur la carte pour découper ta zone de vol.</div>
     <div class="layers" id="layersBox">
       <b>Fond</b>
-      <label><input type="radio" name="base" value="plan" checked> Plan IGN</label>
-      <label><input type="radio" name="base" value="ortho"> Photo aérienne</label>
+      <label><input type="radio" name="base" value="plan"> Plan IGN</label>
+      <label><input type="radio" name="base" value="ortho" checked> Photo aérienne</label>
       <label><input type="radio" name="base" value="osm"> OpenStreetMap</label>
       <b style="margin-top:6px">Calques</b>
       <label><input type="checkbox" id="lyUas" checked> Restrictions UAS (DGAC)</label>
@@ -721,7 +721,7 @@ const GPF=(layer,fmt,maxN)=>L.tileLayer(`https://data.geopf.fr/wmts?SERVICE=WMTS
 const BASES={plan:GPF("GEOGRAPHICALGRIDSYSTEMS.PLANIGNV2","image/png",19),ortho:GPF("ORTHOIMAGERY.ORTHOPHOTOS","image/jpeg",19),
   osm:L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png",{maxZoom:19,attribution:'© <a href="https://www.openstreetmap.org/copyright" target="_blank">OpenStreetMap</a>'})};
 const UAS=GPF("TRANSPORTS.DRONES.RESTRICTIONS","image/png",15); UAS.setOpacity(.75); UAS.setZIndex(5);
-let curBase=BASES.plan; curBase.addTo(map); UAS.addTo(map);
+let curBase=BASES.ortho; curBase.addTo(map); UAS.addTo(map);
 let tileErr=0, tileOk=0;
 Object.values(BASES).concat([UAS]).forEach(l=>{ l.on("tileerror",()=>{tileErr++; if(tileErr===4&&!tileOk) offline(true);}); l.on("tileload",()=>{tileOk++; offline(false);}); });
 function offline(on){ ONLINE=!on; if(on){ map.addLayer(fallbackLayer); } else { map.removeLayer(fallbackLayer); } if(typeof upCities==="function") upCities(); document.getElementById("offmap").style.display=on?"block":"none"; document.getElementById("tileWarn").style.display=on?"block":"none"; document.getElementById("layerState").textContent=on?"⚠ fonds officiels non chargés ici":"✓ données IGN / DGAC en ligne"; }

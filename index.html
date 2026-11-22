@@ -53,6 +53,10 @@ header .mname{color:var(--mut);font-size:13px;white-space:nowrap;overflow:hidden
 .btn.pri{background:var(--acc);border-color:var(--acc);color:#fff}
 .btn.sm{padding:4px 9px;font-size:12px}
 .btn.on{background:var(--acc);border-color:var(--acc);color:#fff}
+.bkchip{border-color:rgba(245,165,36,.6);color:var(--ora)}
+.bkchip:hover{background:rgba(245,165,36,.12)}
+.snaps{display:flex;flex-direction:column;gap:6px;margin-top:6px}
+.snaps .snp{display:flex;justify-content:space-between;align-items:center;gap:8px;background:#0b1626;border:1px solid var(--line);border-radius:8px;padding:6px 9px;font-size:12px}
 main{display:grid;grid-template-columns:1fr 470px;height:calc(100% - 52px)}
 #mapwrap{position:relative;min-height:300px}
 #map{position:absolute;inset:0;background:radial-gradient(ellipse at 50% 40%,#10243f 0%,#0a1322 75%)}
@@ -191,6 +195,7 @@ table.t th{color:var(--mut);font-weight:500}
   </div>
   <div class="mname" id="hdrName">Nouvelle mission</div>
   <div class="sp"></div>
+  <button class="btn sm bkchip" id="bkChip" style="display:none" title="Tes missions ne sont stockées que dans ce navigateur : exporte une sauvegarde">⚠ Sauvegarder</button>
   <button class="btn sm" id="btnNew">Nouvelle</button>
   <button class="btn sm pri" id="btnSave">Enregistrer</button>
 </header>
@@ -262,8 +267,12 @@ table.t th{color:var(--mut);font-weight:500}
     <!-- MISSIONS -->
     <section class="view act" id="v-list">
       <div class="row" style="justify-content:space-between;margin-bottom:10px"><h2 style="margin:0">Mes missions</h2><button class="btn pri sm" id="btnCreate">+ Créer une mission</button></div>
+      <div id="bkWarn"></div>
       <div class="fld"><input id="mSearch" placeholder="Rechercher une mission…"></div>
       <div id="mList"></div>
+      <h3>Sauvegarde</h3>
+      <div class="card" id="bkBox"></div>
+      <input type="file" id="bkFile" accept=".json,application/json" hidden>
     </section>
 
     <!-- 1 ZONE -->
@@ -307,7 +316,7 @@ table.t th{color:var(--mut);font-weight:500}
     <!-- 3 CONTRAINTES -->
     <section class="view" id="v-cst">
       <h2>Contraintes de la zone</h2>
-      <div class="warnbox">Analyse indicative calculée à partir d'une base embarquée (aérodromes principaux, sites sensibles) et de tes saisies. Elle ne remplace pas la carte officielle des restrictions UAS (cartes.gouv.fr), la carte VAC ni la consultation NOTAM / SUP AIP.</div>
+      <div class="warnbox">Analyse indicative calculée à partir d'une base embarquée (aérodromes principaux, sites sensibles) et de tes saisies. Elle ne remplace pas la carte officielle des restrictions UAS (cartes.gouv.fr), la carte VAC ni la consultation NOTAM / SUP AIP.<div id="cstFoot"></div></div>
       <div id="cstList"></div>
     </section>
 
@@ -360,6 +369,7 @@ table.t th{color:var(--mut);font-weight:500}
     <section class="view" id="v-scn">
       <h2>Réglementation – scénarios de vol</h2>
       <p class="small">Évalués à partir de la fiche mission (classe du drone, masse, vue directe, hauteur, environnement). Les scénarios nationaux S-1, S-2, S-3 ne sont plus utilisables depuis le 1er janvier 2026 : seuls la catégorie Ouverte, les STS européens et les autorisations (PDRA / SORA) restent possibles.</p>
+      <div id="rulesBox"></div>
       <div id="scnList"></div>
     </section>
 
@@ -1210,7 +1220,37 @@ ${m.pilot_name||""} – ${m.op_name||""} ${m.op_mail||""}`;
 }
 function bestScn(r){ return retained(r).code; }
 
-function renderScn(r){
+/* ---- Règles codées dans l'outil : date et relecture par un télépilote ---- */
+const RULES={coded:"2026-11-22",items:[
+ ["Préavis préfecture (zone peuplée)","Envoi au plus tôt 10 jours ouvrables avant le vol, au plus tard 30 jours ouvrables ; dimanches et jours fériés exclus.","Arrêté du 3 déc. 2020 modifié (préavis de 10 jours depuis le 01/01/2026)"],
+ ["Dérogation nuit / hauteur > 120 m","Demande au préfet 30 jours avant le vol (formulaire R5-UAS-DEROG).","Arrêté du 3 déc. 2020 modifié"],
+ ["Jour aéronautique","De 30 min avant le lever à 30 min après le coucher du soleil ; en dehors : vol de nuit.","Arrêté du 3 déc. 2020 modifié"],
+ ["Zone tampon risque sol (STS-01)","Hauteur ≤ 30 m : 10 m (≤ 10 kg) / 20 m ; ≤ 60 m : 15 / 30 m ; ≤ 90 m : 20 / 45 m ; ≤ 120 m : 25 / 60 m. Contingence minimale 10 m.","Règl. (UE) 2019/947, appendice 1, UAS.STS-01.020"],
+ ["Scénarios Ouverte A1 / A2 / A3","Classe de l'aéronef, formation A1/A3 ou certificat A2, vue directe, 120 m max, distances aux personnes (A2 : 30 m, 5 m en mode basse vitesse ; A3 : 150 m des zones habitées).","Règl. (UE) 2019/947, UAS.OPEN.020 / .030 / .040"],
+ ["Scénarios STS-01 / STS-02","C5 ou C3 + kit C5 (STS-01), C6 (STS-02), CATS correspondant, zone contrôlée au sol, STS-02 : 1 km (2 km avec observateurs).","Règl. (UE) 2019/947, appendice 1"],
+ ["Scénarios nationaux S-1, S-2, S-3","Plus utilisables depuis le 1er janvier 2026.","Arrêté du 3 déc. 2020 modifié"],
+ ["ZICAD","Captation de données interdite sans dérogation, demandée au moins 2 mois avant.","Arrêté du 17 nov. 2025"],
+ ["Contacts des préfectures","Adresses du tableau DGAC « Contacts drones préfectures » (avril 2025, en cours de constitution).","DGAC"]]};
+const RV_KEY="zonevol_rules_review";
+function rulesReview(){ try{ return JSON.parse(localStorage.getItem(RV_KEY)||"null"); }catch(e){ return null; } }
+function rulesStatus(){ const rv=rulesReview(), c=parseDate(RULES.coded); if(!rv||!rv.by) return {lv:"orange",txt:"Pas encore relues par un télépilote"};
+  const d=parseDate(rv.date); if(d<c) return {lv:"orange",txt:`Relues par ${rv.by} le ${d.toLocaleDateString("fr-FR")}, mais modifiées depuis (${c.toLocaleDateString("fr-FR")}) : relecture à refaire`};
+  const age=Math.floor((Date.now()-d)/864e5); if(age>180) return {lv:"orange",txt:`Relues par ${rv.by} le ${d.toLocaleDateString("fr-FR")} : plus de 6 mois, à refaire`};
+  return {lv:"green",txt:`Relues par ${rv.by} le ${d.toLocaleDateString("fr-FR")}`}; }
+function rulesLine(){ const s=rulesStatus(); return `Règles codées le ${parseDate(RULES.coded).toLocaleDateString("fr-FR")} · ${s.txt}`; }
+function renderRules(){ const el=document.getElementById("rulesBox"); if(!el) return; const s=rulesStatus(), rv=rulesReview()||{};
+  el.innerHTML=`<div class="card" style="border-color:${s.lv==="green"?"var(--grn)":"var(--ora)"}"><div class="row" style="justify-content:space-between"><b>Règles utilisées par l'outil</b><span class="pill ${s.lv}">${s.lv==="green"?"Relues":"À relire"}</span></div>
+   <p class="small" style="margin:6px 0">Codées le <b>${parseDate(RULES.coded).toLocaleDateString("fr-FR")}</b> (dernière mise à jour du code). ${esc(s.txt)}.</p>
+   <details><summary class="small" style="cursor:pointer;color:var(--acc)">Voir les ${RULES.items.length} règles à relire et leurs sources</summary>
+    <table class="t" style="margin-top:6px">${RULES.items.map(x=>`<tr><td><b>${esc(x[0])}</b><br><span class="small">${esc(x[1])}</span><br><span class="small mono" style="font-size:10.5px">${esc(x[2])}</span></td></tr>`).join("")}</table></details>
+   <h3 style="margin-top:12px">Relecture par un télépilote</h3>
+   <div class="grid2"><div class="fld"><label>Relu par</label><input id="rvBy" value="${esc(rv.by||"")}" placeholder="Nom du télépilote"></div><div class="fld"><label>Le</label><input type="date" id="rvDate" value="${esc(rv.date||new Date().toISOString().slice(0,10))}"></div></div>
+   <div class="row"><button class="btn pri sm" id="rvSave">Enregistrer la relecture</button>${rv.by?'<button class="btn sm" id="rvClear">Effacer</button>':""}</div>
+   <p class="small" style="margin:8px 0 0">La relecture est gardée dans ce navigateur. L'outil n'est pas une source officielle : en cas de doute, la réglementation en vigueur et la DSAC font foi.</p></div>`;
+  document.getElementById("rvSave").onclick=()=>{ const by=document.getElementById("rvBy").value.trim(), d=document.getElementById("rvDate").value; if(!by||!d){ toast("Indique le nom et la date",true); return; } try{ localStorage.setItem(RV_KEY,JSON.stringify({by,date:d})); }catch(e){} renderRules(); renderCstFoot(); toast("Relecture enregistrée"); };
+  const c=document.getElementById("rvClear"); if(c) c.onclick=()=>{ try{ localStorage.removeItem(RV_KEY); }catch(e){} renderRules(); renderCstFoot(); }; }
+function renderCstFoot(){ const el=document.getElementById("cstFoot"); if(el) el.innerHTML=`<p class="small" style="margin-top:8px">${esc(rulesLine())}</p>`; }
+function renderScn(r){ renderRules(); renderCstFoot();
   const list=scenarios(r), ret=retained(r);
   document.getElementById("scnList").innerHTML=`<div class="card" style="border-color:var(--acc)"><span class="small">Scénario retenu pour le dossier</span><br><b style="font-size:16px">${esc(ret.code)}</b> ${S.scn?"":'<span class="small">(choisi automatiquement)</span>'}</div>`+list.map(s=>{
     const st=s.auth?(s.recommended?["orange","Seule option"]:["blue","Toujours possible"]):s.ok?["green","Compatible"]:["red","Incompatible"];
@@ -1331,7 +1371,7 @@ function zoomToMission(anim=true){ const p=zonePoly(); let pts=[];
 function openMission(id){ const s=MISSIONS.find(x=>x.id===id); if(!s) return; save(true); S=s; openCard=id; loadCurrent(); renderMissions(); }
 function newMission(){ save(true); S=blank(); MISSIONS.unshift(S); openCard=S.id; loadCurrent(true); map.setView([46.6,2.4],6); showTab("zone"); toast("Nouvelle mission #"+S.id+" créée"); }
 document.getElementById("btnCreate").onclick=newMission;
-function showTab(v){ document.querySelectorAll(".tab").forEach(x=>x.classList.toggle("act",x.dataset.v===v)); document.querySelectorAll(".view").forEach(x=>x.classList.toggle("act",x.id==="v-"+v)); if(v==="meteo") loadMeteo(); }
+function showTab(v){ document.querySelectorAll(".tab").forEach(x=>x.classList.toggle("act",x.dataset.v===v)); document.querySelectorAll(".view").forEach(x=>x.classList.toggle("act",x.id==="v-"+v)); if(v==="meteo") loadMeteo(); if(v==="list") renderBackup(); }
 
 /* =========================================================
    POINTS DE PASSAGE / CONTEXTE
@@ -1720,13 +1760,58 @@ document.getElementById("dlPng").onclick=async()=>{ const p=zonePoly(); if(!p){t
 function toast(t,err){ const el=document.getElementById("toast"); el.style.pointerEvents="none"; el.textContent=t; el.style.background=err?"var(--red)":"var(--grn)"; el.style.color=err?"#fff":"#04240f"; el.classList.add("show"); clearTimeout(el._t); el._t=setTimeout(()=>el.classList.remove("show"),2200); }
 function copyText(t){ const ok=()=>toast("Copié dans le presse-papiers"); try{ navigator.clipboard.writeText(t).then(ok).catch(()=>fallbackCopy(t)); }catch(e){ fallbackCopy(t); } }
 function fallbackCopy(t){ openModal(`<h2>Copier</h2><p class="small">La copie automatique est bloquée : sélectionne le texte ci-dessous puis copie-le.</p><textarea class="mono" style="width:100%;height:260px;background:#0b1626;border:1px solid var(--line);border-radius:8px;padding:8px">${esc(t)}</textarea><div class="row" style="margin-top:8px"><button class="btn" onclick="closeModal()">Fermer</button></div>`); const ta=mbox.querySelector("textarea"); ta.focus(); ta.select(); }
-let saveT; function save(silent){ clearTimeout(saveT); saveT=setTimeout(()=>{ S.updated=Date.now(); const i=MISSIONS.findIndex(x=>x.id===S.id); if(i>=0) MISSIONS[i]=S; else MISSIONS.unshift(S); renderMissions(); try{ localStorage.setItem("zonevol_missions",JSON.stringify({cur:S.id,list:MISSIONS})); if(!silent) toast("Mission enregistrée sur cet appareil"); }catch(e){ if(!silent) toast("Stockage local indisponible – utilise Exporter",true); } }, silent?400:0); }
+let saveT; function save(silent){ clearTimeout(saveT); saveT=setTimeout(()=>{ S.updated=Date.now(); const i=MISSIONS.findIndex(x=>x.id===S.id); if(i>=0) MISSIONS[i]=S; else MISSIONS.unshift(S); renderMissions(); try{ localStorage.setItem("zonevol_missions",JSON.stringify({cur:S.id,list:MISSIONS})); if(!silent) toast("Mission enregistrée sur cet appareil"); }catch(e){ if(!silent) toast("Stockage local indisponible – utilise Exporter",true); } try{ snapBackup(); updateBkChip(); }catch(e){} }, silent?400:0); }
 document.getElementById("btnSave").onclick=()=>save(false);
 document.getElementById("btnNew").onclick=()=>newMission();
 document.getElementById("tabs").addEventListener("click",e=>{ const b=e.target.closest(".tab"); if(!b) return; showTab(b.dataset.v); });
 
+/* =========================================================
+   SAUVEGARDE DES MISSIONS : export fichier, copies automatiques, rappel
+   ========================================================= */
+const BK_KEY="zonevol_lastexport", BK_DAYS=7;
+function lastExport(){ try{ return +localStorage.getItem(BK_KEY)||0; }catch(e){ return 0; } }
+function hasContent(){ return MISSIONS.some(s=>s.m.m_name||s.zone.type); }
+function ageTxt(t){ const d=Math.floor((Date.now()-t)/864e5); if(d<1){ const h=Math.floor((Date.now()-t)/36e5); return h<1?"il y a moins d'une heure":"il y a "+h+" h"; } return "il y a "+d+" jour"+(d>1?"s":""); }
+function allData(){ return {app:"BFV Prévol",v:2,exported:new Date().toISOString(),cur:S.id,missions:MISSIONS,fleet:F}; }
+function bkOverdue(){ return hasContent()&&(Date.now()-lastExport()>BK_DAYS*864e5); }
+function updateBkChip(){ const c=document.getElementById("bkChip"); if(c) c.style.display=bkOverdue()?"":"none";
+  const w=document.getElementById("bkWarn"); if(w) w.innerHTML=bkOverdue()?`<div class="warnbox"><b>Pense à sauvegarder.</b> Tes missions ne sont stockées que dans ce navigateur : elles disparaissent si tu vides les données du site ou si l'adresse web change. ${lastExport()?"Dernière sauvegarde : "+ageTxt(lastExport())+".":"Aucune sauvegarde enregistrée pour l'instant."}<div class="row" style="margin-top:8px"><button class="btn pri sm" data-bk="export">⬇ Exporter maintenant</button></div></div>`:""; }
+// Copies automatiques dans IndexedDB (5 dernières, au plus une toutes les 15 min)
+let snapBusy=false;
+async function snapBackup(force){ if(snapBusy||!hasContent()) return; snapBusy=true;
+  try{ const list=(await idbGet("snaps"))||[]; const now=Date.now(); const json=JSON.stringify(allData());
+    const sig=JSON.stringify(MISSIONS.map(s=>[s.id,s.updated||0]));
+    if(list.length&&list[0].sig===sig){ return; }
+    if(!force&&list.length&&now-list[0].t<15*60e3){ return; }
+    list.unshift({t:now,n:MISSIONS.length,sig,json}); await idbSet("snaps",list.slice(0,5)); }
+  catch(e){} finally{ snapBusy=false; } }
+async function renderBackup(){ const el=document.getElementById("bkBox"); if(!el) return; const snaps=(await idbGet("snaps"))||[]; const le=lastExport();
+  let pers=null; try{ if(navigator.storage&&navigator.storage.persisted) pers=await navigator.storage.persisted(); }catch(e){}
+  el.innerHTML=`<p class="small" style="margin:0 0 8px">Chaque modification est enregistrée automatiquement dans <b>ce navigateur</b>. Le fichier exporté est la vraie sauvegarde : il se garde, s'envoie et se réimporte sur n'importe quel appareil.</p>
+   <table class="t"><tr><th>Missions</th><td>${MISSIONS.length}</td></tr><tr><th>Dernier export</th><td>${le?new Date(le).toLocaleString("fr-FR")+" ("+ageTxt(le)+")":"<span style='color:var(--ora)'>jamais</span>"}</td></tr>${pers!==null?`<tr><th>Stockage protégé</th><td>${pers?"oui":"non (le navigateur peut le purger en cas de manque de place)"}</td></tr>`:""}</table>
+   <div class="row" style="margin-top:10px"><button class="btn pri sm" data-bk="export">⬇ Exporter toutes les missions</button><button class="btn sm" data-bk="import">⬆ Importer une sauvegarde</button></div>
+   <h3 style="margin-top:14px">Copies automatiques (${snaps.length})</h3>
+   ${snaps.length?`<div class="snaps">${snaps.map((s,i)=>`<div class="snp"><span>${new Date(s.t).toLocaleString("fr-FR")} · ${s.n} mission${s.n>1?"s":""}</span><button class="btn sm" data-bk="restore" data-i="${i}">Récupérer les missions manquantes</button></div>`).join("")}</div><p class="small">Une copie est faite au plus toutes les 15 minutes ; seules les 5 dernières sont gardées. Elles aident après une suppression par erreur, pas après un nettoyage du navigateur.</p>`:'<p class="small">Aucune copie pour l\'instant : elle se crée dès qu\'une mission a un nom ou une zone.</p>'}`;
+  updateBkChip(); }
+// Fusion de missions : ajoute les absentes ; avec overwrite, remplace si la version importée est plus récente
+function mergeData(o,overwrite){ let add=0,upd=0; const list=Array.isArray(o.missions)?o.missions:(o.m&&o.zone?[o]:[]);
+  list.forEach(x=>{ const n=norm(x); const i=MISSIONS.findIndex(s=>s.id===n.id); if(i<0){ MISSIONS.push(n); add++; } else if(overwrite&&(n.updated||0)>(MISSIONS[i].updated||0)){ const wasCur=MISSIONS[i]===S; MISSIONS[i]=n; if(wasCur) S=n; upd++; } });
+  if(o.fleet){ (o.fleet.uas||[]).forEach(u=>{ if(!F.uas.some(x=>(x.reg&&x.reg===u.reg)||(x.serial&&x.serial===u.serial))) F.uas.push(u); });
+    (o.fleet.pilots||[]).forEach(p=>{ if(!F.pilots.some(x=>x.name===p.name)) F.pilots.push(p); });
+    ["name","fra","siret","valid","mail","resp","phone","addr"].forEach(k=>{ if(!F.op[k]&&o.fleet.op&&o.fleet.op[k]) F.op[k]=o.fleet.op[k]; }); saveF(); renderFleet(); }
+  return {add,upd}; }
+function afterMerge(r){ save(true); buildForm(); drawZone(); refresh(true); renderMissions(); renderBackup(); toast(`${r.add} mission(s) ajoutée(s)${r.upd?", "+r.upd+" mise(s) à jour":""}`,!r.add&&!r.upd); }
+document.addEventListener("click",async e=>{ const b=e.target.closest("[data-bk]"); if(!b) return; const a=b.dataset.bk;
+  if(a==="export"||b.id==="bkChip"){ const d=new Date().toISOString().slice(0,10); await saveFile(`BFV-Prevol_sauvegarde_${d}.json`,JSON.stringify(allData(),null,1),"application/json"); try{ localStorage.setItem(BK_KEY,String(Date.now())); }catch(err){} renderBackup(); toast("Sauvegarde exportée : garde le fichier en lieu sûr"); }
+  if(a==="import") document.getElementById("bkFile").click();
+  if(a==="restore"){ const snaps=(await idbGet("snaps"))||[]; const s=snaps[+b.dataset.i]; if(!s) return; try{ afterMerge(mergeData(JSON.parse(s.json),false)); }catch(err){ toast("Copie illisible",true); } } });
+document.getElementById("bkChip").onclick=()=>{ showTab("list"); document.querySelector('[data-bk="export"]').click(); };
+document.getElementById("bkFile").onchange=e=>{ const f=e.target.files[0]; e.target.value=""; if(!f) return; const rd=new FileReader(); rd.onload=()=>{ try{ const o=JSON.parse(rd.result); if(!(o.missions||(o.m&&o.zone))) throw new Error("format"); afterMerge(mergeData(o,true)); }catch(err){ toast("Fichier de sauvegarde non reconnu",true); } }; rd.readAsText(f,"utf-8"); };
+setInterval(updateBkChip,60000);
+try{ if(navigator.storage&&navigator.storage.persist) navigator.storage.persist(); }catch(e){}
+
 /* ---- init ---- */
-renderFleet(); buildForm(); setMode(null); refresh(); renderMissions(); initSIA();
+renderFleet(); buildForm(); setMode(null); refresh(); renderMissions(); renderBackup(); initSIA();
 const p0=zonePoly(); if(p0) map.fitBounds(L.latLngBounds(p0).pad(.4));
 setTimeout(()=>map.invalidateSize(),200);
 </script>

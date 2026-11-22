@@ -53,6 +53,8 @@ header .mname{color:var(--mut);font-size:13px;white-space:nowrap;overflow:hidden
 .btn.pri{background:var(--acc);border-color:var(--acc);color:#fff}
 .btn.sm{padding:4px 9px;font-size:12px}
 .btn.on{background:var(--acc);border-color:var(--acc);color:#fff}
+.fld input.flag,.fld textarea.flag{border-color:var(--red)!important;background:rgba(242,84,91,.08)}
+.fld.flash,.flash{box-shadow:0 0 0 2px var(--acc)!important;border-radius:8px;transition:box-shadow .3s}
 .bkchip{border-color:rgba(245,165,36,.6);color:var(--ora)}
 .bkchip:hover{background:rgba(245,165,36,.12)}
 .snaps{display:flex;flex-direction:column;gap:6px;margin-top:6px}
@@ -383,6 +385,7 @@ table.t th{color:var(--mut);font-weight:500}
     <!-- 7 DOSSIER -->
     <section class="view" id="v-dos">
       <h2>Dossier de vol</h2>
+      <div id="chkBox"></div>
       <div class="card"><b>Dossier de vol PDF</b><p class="small">Document complet de la mission : vue d'ensemble, déclarant, télépilote, machines, classification réglementaire, contraintes détaillées, autorisations, information aéronautique, météo et points de passage – avec cartes.</p>
         <div class="row"><button class="btn pri" id="pdfGo">📄 Générer le dossier de vol (PDF)</button><span class="small" id="pdfState"></span></div></div>
       <h3>Autres exports</h3>
@@ -810,7 +813,7 @@ function queryUAS(){ clearTimeout(wfsT); wfsT=setTimeout(async()=>{ const poly=z
   const seq=++wfsSeq; UASD={status:"loading",hits:[],count:0}; refreshLight();
   try{ const ctl=new AbortController(); const to=setTimeout(()=>ctl.abort(),15000); const r=await fetch(url,{signal:ctl.signal}); clearTimeout(to); if(!r.ok) throw new Error("HTTP "+r.status);
     const gj=await r.json(); const hits=[]; (gj.features||[]).forEach(f=>{ const rings=ringsOf(f.geometry); const touch=rings.some(rg=>polysTouch(b,rg)); if(touch){ const lb=propsLabel(f.properties); hits.push({rings,props:f.properties,...lb,inZone:rings.some(rg=>polysTouch(poly,rg))}); } });
-    if(seq!==wfsSeq) return; UASD={status:"ok",hits,count:(gj.features||[]).length,url}; }
+    if(seq!==wfsSeq) return; UASD={status:"ok",hits,count:(gj.features||[]).length,url,at:Date.now()}; }
   catch(e){ if(seq!==wfsSeq) return; UASD={status:"error",hits:[],count:0,err:String(e.message||e),url}; }
   drawUasHits(); refreshLight(); },500); }
 function drawUasHits(){ uasHitLayer.clearLayers(); UASD.hits.forEach(h=>h.rings.forEach(rg=>L.polygon(rg,{color:h.zc.c,weight:2.5,fill:false,dashArray:"2 4"}).bindPopup(`<b style="color:${h.zc.c}">${h.zc.n}</b><br><span style="color:#8aa0c0">${esc(h.txt)}</span>`).addTo(uasHitLayer))); }
@@ -1252,7 +1255,7 @@ function renderRules(){ const el=document.getElementById("rulesBox"); if(!el) re
 function renderCstFoot(){ const el=document.getElementById("cstFoot"); if(el) el.innerHTML=`<p class="small" style="margin-top:8px">${esc(rulesLine())}</p>`; }
 function renderScn(r){ renderRules(); renderCstFoot();
   const list=scenarios(r), ret=retained(r);
-  document.getElementById("scnList").innerHTML=`<div class="card" style="border-color:var(--acc)"><span class="small">Scénario retenu pour le dossier</span><br><b style="font-size:16px">${esc(ret.code)}</b> ${S.scn?"":'<span class="small">(choisi automatiquement)</span>'}</div>`+list.map(s=>{
+  document.getElementById("scnList").innerHTML=`<div class="card" style="border-color:var(--acc)"><span class="small">Scénario retenu pour le dossier</span><br><b style="font-size:16px">${esc(ret.code)}</b> ${S.scn?"":'<span class="small">(choisi automatiquement)</span>'}</div>`+renderConfirm(ret)+list.map(s=>{
     const st=s.auth?(s.recommended?["orange","Seule option"]:["blue","Toujours possible"]):s.ok?["green","Compatible"]:["red","Incompatible"];
     return `<div class="sc" style="${ret===s?"border-color:var(--acc);box-shadow:0 0 0 1px var(--acc)":""}"><div class="hd"><div><b>${s.name}</b><div class="small">${s.sub}</div></div><span class="pill ${st[0]}">${st[1]}</span></div>
      <ul>${s.conds.map(c=>`<li class="${c[0]?"ok":"ko"}">${c[0]?"✓":"✗"} ${esc(c[1])}<br><span class="small mono" style="font-size:10.5px">${esc(c[2]||"")}</span></li>`).join("")}</ul>
@@ -1286,7 +1289,7 @@ function renderNotams(r){
     <button class="btn sm" data-deln="${i}" style="margin-top:6px">Retirer</button></div></div>`; }).join("");
   document.getElementById("supList").innerHTML=S.sup.map((s,i)=>`<div class="cst orange"><div style="flex:1"><b>SUP AIP ${esc(s.n)}</b><p>${esc(s.v)}${s.v&&s.o?" · ":""}${esc(s.o)}</p><button class="btn sm" data-dels="${i}" style="margin-top:6px">Retirer</button></div></div>`).join("");
   document.getElementById("czList").innerHTML=S.cz.map((z,i)=>`<div class="cst red"><div style="flex:1"><b>${esc(z.t+" "+z.n)}</b><p>${z.c[0].toFixed(4)}, ${z.c[1].toFixed(4)} · R ${fmtD(z.r)}</p><button class="btn sm" data-delz="${i}" style="margin-top:6px">Retirer</button></div></div>`).join("");
-  document.getElementById("aeroChecks").innerHTML=AERO_CHECKS.map((c,i)=>`<label class="chk"><input type="checkbox" data-chk="${i}" ${S.checks[i]?"checked":""}> ${c}</label>`).join("");
+  document.getElementById("aeroChecks").innerHTML=AERO_CHECKS.map((c,i)=>`<label class="chk"><input type="checkbox" data-chk="${i}" ${S.checks[i]?"checked":""}> <span>${c}${typeof S.checks[i]==="number"?`<br><span class="small">vérifié le ${stamp(S.checks[i])}</span>`:""}</span></label>`).join("");
 }
 document.addEventListener("click",e=>{ const t=e.target;
   if(t.dataset.deln!=null){S.notams.splice(+t.dataset.deln,1);refresh();}
@@ -1294,7 +1297,8 @@ document.addEventListener("click",e=>{ const t=e.target;
   if(t.dataset.delz!=null){S.cz.splice(+t.dataset.delz,1);refresh();}
   if(t.dataset.copy){ copyText(document.getElementById(t.dataset.copy).textContent); }
 });
-document.addEventListener("change",e=>{ if(e.target.dataset.chk!=null){ S.checks[e.target.dataset.chk]=e.target.checked; save(true); renderDossier(window._r); } });
+const stamp=t=>typeof t==="number"?new Date(t).toLocaleString("fr-FR",{day:"2-digit",month:"2-digit",year:"numeric",hour:"2-digit",minute:"2-digit"}):"";
+document.addEventListener("change",e=>{ if(e.target.dataset.chk!=null){ S.checks[e.target.dataset.chk]=e.target.checked?Date.now():false; save(true); renderDossier(window._r); renderNotams(window._r); } });
 
 /* ---- Dossier ---- */
 function kml(){ const p=zonePoly(); if(!p) return ""; const ring=p.concat([p[0]]).map(q=>`${q[1].toFixed(7)},${q[0].toFixed(7)},0`).join(" ");
@@ -1307,7 +1311,34 @@ function kml(){ const p=zonePoly(); if(!p) return ""; const ring=p.concat([p[0]]
 <Placemark><name>Zone de vol – ${nm}</name><description>Hauteur max ${S.height} m sol – ${esc(datesTxt())}</description><styleUrl>#z</styleUrl><Polygon><outerBoundaryIs><LinearRing><coordinates>${ring}</coordinates></LinearRing></outerBoundaryIs></Polygon></Placemark>
 ${b?`<Placemark><name>Zone controlee au sol (${S.buffer} m)</name><styleUrl>#b</styleUrl><Polygon><outerBoundaryIs><LinearRing><coordinates>${bring}</coordinates></LinearRing></outerBoundaryIs></Polygon></Placemark>`:""}
 </Document></kml>`; }
-function renderDossier(r){ const m=S.m, scn=scenarios(r);
+/* ---- « Je confirme » par exigence du scénario retenu ---- */
+function confirmItems(ret){ return ret.conds.map((c,i)=>({k:ret.code+"|c"+i,t:c[1],ok:c[0],ref:c[2]})).concat(ret.eng.map((t,i)=>({k:ret.code+"|e"+i,t,ok:true}))); }
+function renderConfirm(ret){ S.confirm=S.confirm||{}; const items=confirmItems(ret), n=items.filter(x=>S.confirm[x.k]).length;
+  return `<div class="card"><div class="row" style="justify-content:space-between"><b>Je confirme · ${esc(ret.code)}</b><span class="pill ${n===items.length?"green":"orange"}">${n}/${items.length}</span></div>
+   <p class="small" style="margin:6px 0">Coche chaque exigence que tu peux attester pour cette mission. La date et l'heure sont enregistrées et reprises dans le dossier de vol. Une exigence non remplie dans la fiche ne peut pas être confirmée.</p>
+   ${items.map(x=>`<label class="chk"><input type="checkbox" data-conf="${esc(x.k)}" ${S.confirm[x.k]?"checked":""} ${x.ok===false?"disabled":""}> <span>${esc(x.t)}${x.ok===false?' <span class="pill red">non remplie</span>':""}${typeof S.confirm[x.k]==="number"?`<br><span class="small">confirmé le ${stamp(S.confirm[x.k])}</span>`:""}</span></label>`).join("")}</div>`; }
+document.addEventListener("change",e=>{ const k=e.target.dataset&&e.target.dataset.conf; if(k==null) return; S.confirm=S.confirm||{}; S.confirm[k]=e.target.checked?Date.now():false; save(true); renderScn(window._r); });
+
+/* ---- Contrôle du dossier : champs manquants et textes brouillons ---- */
+const DRAFT_RE=/\[[^\]]{0,40}\]|\.{4,}|…{2,}|_{3,}|\bx{3,}\b|\?\?+|à compléter|a completer|à définir|a definir|\btodo\b|\btbd\b|lorem ipsum|brouillon|nouvelle mission|mission sans titre|\(copie\)/i;
+const REQ_FIELDS=[["m_name","red"],["m_date","red"],["op_name","red"],["op_uas","red"],["pilot_name","red"],["pilot_phone","red"],["d_model","red"],["m_address","orange"],["m_commune","orange"],["insurance","orange"],["d_serial","orange"],["m_desc","orange"],["op_mail","orange"]];
+function fLabel(id){ const f=FIELDS.find(x=>x.id===id); return f?f.l:id; }
+function draftIssues(r){ const m=S.m, out=[], add=(lv,label,msg,go)=>out.push({lv,label,msg,go});
+  if(!r.poly) add("red","Zone de vol","aucune zone tracée sur la carte","zone");
+  REQ_FIELDS.forEach(([id,lv])=>{ if(!String(m[id]??"").trim()) add(lv,fLabel(id),"à renseigner",id); });
+  if((+m.d_mass||0)>=0.8&&!/UAS-FR-\d+/i.test(m.d_reg||"")) add("red",fLabel("d_reg"),"requis pour un aéronef de 800 g ou plus","d_reg");
+  if(!(m.pilot_cert||[]).length) add("orange",fLabel("pilot_cert"),"aucune pièce cochée","pilot_cert");
+  if(m.m_date&&parseDate(m.m_date)<new Date(new Date().setHours(0,0,0,0))) add("orange","Date du vol","date déjà passée","m_date");
+  Object.keys(m).forEach(id=>{ const v=m[id]; if(typeof v!=="string"||!v) return; const mt=v.match(DRAFT_RE); if(mt&&!out.some(x=>x.go===id&&x.flag)){ out.push({lv:"orange",label:fLabel(id),msg:`texte provisoire (« ${mt[0].slice(0,30)} »)`,go:id,flag:true}); } });
+  (S.wps||[]).forEach(w=>{ if(w.n&&DRAFT_RE.test(w.n)) out.push({lv:"orange",label:"Point de passage "+w.t,msg:"intitulé provisoire",go:"zone",flag:false}); });
+  return out; }
+function gotoField(id){ if(id==="zone"){ showTab("zone"); return; } showTab("mission"); setTimeout(()=>{ const el=document.getElementById(id)||document.querySelector(`[data-multi="${id}"]`); if(el){ el.scrollIntoView({block:"center",behavior:"smooth"}); const t=el.closest(".fld")||el; t.classList.add("flash"); setTimeout(()=>t.classList.remove("flash"),1800); if(el.focus) el.focus({preventScroll:true}); } },60); }
+function renderCheck(r){ const el=document.getElementById("chkBox"); if(!el) return; const is=draftIssues(r), red=is.filter(x=>x.lv==="red").length, ora=is.length-red;
+  document.querySelectorAll("#missionForm .flag").forEach(x=>x.classList.remove("flag")); is.filter(x=>x.flag).forEach(x=>{ const i=document.getElementById(x.go); if(i) i.classList.add("flag"); });
+  el.innerHTML=`<div class="card" style="border-color:${red?"var(--red)":ora?"var(--ora)":"var(--grn)"}"><div class="row" style="justify-content:space-between"><b>Contrôle du dossier</b><span class="pill ${red?"red":ora?"orange":"green"}">${is.length?`${red} bloquant${red>1?"s":""} · ${ora} à vérifier`:"Complet"}</span></div>
+   ${is.length?`<div style="margin-top:8px">${is.map(x=>`<div class="ctn" style="margin-bottom:6px"><span class="cti">${x.lv==="red"?"🔴":"🟠"}</span><div style="flex:1"><b>${esc(x.label)}</b><span>${esc(x.msg)}</span></div><button class="btn sm" data-goto="${esc(x.go||"")}">Corriger</button></div>`).join("")}</div>`:'<p class="small" style="margin:6px 0 0">Aucun champ obligatoire manquant ni texte provisoire détecté.</p>'}</div>`; }
+document.addEventListener("click",e=>{ const b=e.target.closest("[data-goto]"); if(b&&b.dataset.goto) gotoField(b.dataset.goto); });
+function renderDossier(r){ renderCheck(r); const m=S.m, scn=scenarios(r);
   const lines=[
   `DOSSIER DE MISSION UAS – ${m.m_name||"(sans nom)"}`,`Généré le ${new Date().toLocaleString("fr-FR")}`,"",
   "▌MISSION",`Type : ${m.m_type}${m.m_client?" – client : "+m.m_client:""}`,`Date(s) : ${datesTxt()}`,`Lieu : ${m.m_address||"-"}, ${m.m_commune||"-"} – dépt ${r.dept?r.dept[0]+" "+r.dept[1]:"-"}`,m.m_desc?`Description : ${m.m_desc}`:"","",
@@ -1409,7 +1440,7 @@ async function loadMeteo(force){ const p=zonePoly(), box=document.getElementById
     try{ const k=await (await fetch("https://services.swpc.noaa.gov/products/noaa-planetary-k-index-forecast.json")).json();
       const kl=(Array.isArray(k[0])?k.slice(1).map(a=>({t:a[0],kp:+a[1]})):k.map(o=>({t:o.time_tag,kp:+o.kp}))).map(o=>({d:new Date(o.t.replace(" ","T")+(o.t.endsWith("Z")?"":"Z")),kp:o.kp}));
       rows.forEach(rw=>{ const d=new Date(rw.t+":00"); const b=kl.filter(o=>o.d<=d&&d-o.d<3*3600e3).pop(); if(b) rw.kp=b.kp; }); }catch(e){}
-    METEO={key,rows,err:null}; }
+    METEO={key,rows,err:null,at:Date.now()}; }
   catch(e){ METEO={key,rows:[],err:String(e.message||e)}; }
   meteoBusy=false; renderMeteo(); return METEO; }
 function meteoMission(){ if(!METEO||!METEO.rows.length||!S.m.m_date) return []; const d1=S.m.m_date, d2=S.m.m_date2||S.m.m_date, a=S.m.m_start||"00:00", b=S.m.m_end||"23:59";
@@ -1502,7 +1533,18 @@ async function makePDF(){
   H1(1,"Vue d'ensemble");
   KV([["Titre",m.m_name],["Activité",m.m_type],["Client",m.m_client||"—"]]);
   P_("Zone de vol",{b:true,c:NAVY}); IMG(imgZone,105);
-  P_("Lecture du plan : zone de vol en bleu (trait plein) ; contingence en orange pointillé ("+bd.cont+" m, espace réservé aux manoeuvres d'urgence) ; zone tampon risque sol en rouge pointillé ("+bd.tot+" m au total autour de la zone), où aucune personne non impliquée ne doit se trouver.",{s:9,c:GREY});
+  // --- 1.1 Comment lire ce plan (légende dessinée)
+  const hex=h=>[1,3,5].map(i=>parseInt(h.slice(i,i+2),16));
+  const LEG=rows=>rows.forEach(([kind,col,label])=>{ need(7); doc.setDrawColor(...col); doc.setFillColor(...col); doc.setLineWidth(.9);
+    if(kind==="fill") doc.rect(M+1,y-3.3,10,4.6,"F"); else if(kind==="line") doc.line(M+1,y-1,M+11,y-1); else if(kind==="dash"){ doc.setLineDashPattern([1.6,1.1],0); doc.line(M+1,y-1,M+11,y-1); doc.setLineDashPattern([],0); } else if(kind==="dot"){ doc.circle(M+6,y-1,1.9,"F"); }
+    doc.setFont("helvetica","normal"); doc.setFontSize(9.5); doc.setTextColor(30,30,30); doc.splitTextToSize(PDFT(label),PW-2*M-16).forEach(l=>{ doc.text(l,M+15,y); y+=4.6; }); y+=1.2; });
+  H2("1.1","Comment lire ce plan");
+  P_("Le fond est la photo aérienne de l'IGN. Les restrictions de la DGAC (catégorie Ouverte) sont superposées en transparence quand la carte est disponible.",{s:9.5});
+  LEG([["line",[31,111,229],"Zone de vol : trait plein bleu, intérieur teinté."],["dash",[240,140,0],"Contingence ("+bd.cont+" m, 10 m au minimum) : marge réservée aux manoeuvres d'urgence autour de la zone."],["dash",[224,38,43],"Zone tampon risque sol ("+bd.gb+" m) : avec la contingence, zone contrôlée au sol de "+bd.tot+" m. Aucune personne non impliquée ne doit s'y trouver."],
+    ["fill",[224,38,43],"Restriction DGAC rouge : vol interdit."],["fill",[243,155,176],"Restriction DGAC rose : hauteur maximale 30 m."],["fill",[245,208,0],"Restriction DGAC jaune : hauteur maximale 50 m."],["fill",[251,243,166],"Restriction DGAC jaune pâle : hauteur maximale 100 m."],
+    ["dot",[224,138,0],"Aérodrome civil (code OACI à côté) ; en violet : aérodrome militaire."],["dash",[224,38,43],"Cercle rouge pointillé : site sensible, rayon indicatif."]]);
+  P_("Pastilles numérotées : points de passage et de contexte, listés au chapitre 8 (D décollage, A atterrissage, T télépilote, U atterrissage d'urgence, O observateur, P point d'intérêt). Échelle en bas à gauche, nord en haut à droite. Une zone sans couleur n'a pas de restriction publiée sur la carte DGAC (120 m maximum) ; NOTAM, ZICAD et agglomérations restent à vérifier.",{s:9,c:GREY});
+  H2("1.2","Caractéristiques du vol");
   const ap=poly?(S.zone.type==="circle"?{a:Math.PI*S.zone.radius**2}:areaPer(poly)):null;
   KV([["Localisation",[m.m_address,m.m_commune,r.dept?r.dept[1]:"","France"].filter(Boolean).join(", ")],["Coordonnées (centre)",r.c?`${dms(r.c[0],1)} ${dms(r.c[1],0)} (${r.c[0].toFixed(5)}, ${r.c[1].toFixed(5)})`:"—"],["Surface",ap?fmtA(ap.a):"—"],["Bandes de sécurité",`Contingence ${bd.cont} m + zone tampon ${bd.gb} m = zone contrôlée au sol à ${bd.tot} m`],["Format aéronautique",dmTxt(r.c)],["Altitude sol / plafond",S.ground!=null?ceilTxt():"—"],["Date",dt],["Hauteur maximum (mètres)",String(S.height)],["Vitesse maximale (km/h)",m.m_speed||"—"],["Durée de vol prévue",m.m_dur?m.m_dur+" min":"—"],["Mode de vol",m.v_vlos]]);
   if(m.m_desc){ P_("Informations complémentaires",{b:true,c:NAVY}); P_(m.m_desc); }
@@ -1522,8 +1564,9 @@ async function makePDF(){
   H2("3.1","Critères"); P_("Le déclarant a expressément mentionné les éléments suivants :");
   BL([m.v_vlos.replace(/ – /," : "),m.e_pop,m.e_ground?"Zone d'exclusion des tiers (zone contrôlée au sol)":null,m.e_over?"Survol de personnes non impliquées":"Mission sans survol de tiers",m.e_ctr?"Évolution en espace aérien contrôlé":null,r.night?"Vol de nuit":"Vol de jour"].filter(Boolean)); y+=2;
   H2("3.2","Réglementation"); P_("Le vol est confronté aux exigences réglementaires qui définissent la classification retenue :");
-  ret.conds.forEach(c=>{ need(12); doc.setFont("helvetica","bold"); doc.setFontSize(9); doc.setTextColor(...(c[0]?[22,128,72]:[200,40,50])); doc.text(c[0]?"CONFORME":"A VERIFIER",M,y); doc.setTextColor(...NAVY); doc.text(PDFT(c[2]||""),M+24,y); y+=4.4; P_(c[1],{ind:24,s:9.5,after:1.5}); });
-  H2("3.3","Restrictions"); P_("Conformément au scénario de vol, le déclarant s'engage à respecter les dispositions suivantes :"); BL(ret.eng);
+  ret.conds.forEach((c,i)=>{ need(16); doc.setFont("helvetica","bold"); doc.setFontSize(9); doc.setTextColor(...(c[0]?[22,128,72]:[200,40,50])); doc.text(c[0]?"CONFORME":"A VERIFIER",M,y); doc.setTextColor(...NAVY); doc.text(PDFT(c[2]||""),M+24,y); y+=4.4; P_(c[1],{ind:24,s:9.5,after:.6});
+    const cf=(S.confirm||{})[ret.code+"|c"+i]; P_(typeof cf==="number"?"Confirmé par l'exploitant le "+stamp(cf):"Non confirmé par l'exploitant",{ind:24,s:8.5,c:typeof cf==="number"?[22,128,72]:[200,120,0],after:2}); });
+  H2("3.3","Restrictions"); P_("Conformément au scénario de vol, le déclarant s'engage à respecter les dispositions suivantes :"); BL(ret.eng.map((t,i)=>{ const cf=(S.confirm||{})[ret.code+"|e"+i]; return t+(typeof cf==="number"?" (confirmé le "+stamp(cf)+")":" (à confirmer)"); }));
   // --- 4
   H1(4,"Contraintes"); const cl=r.list.filter(x=>x.t!=="Aucune zone tracée"); const lvl={red:"Bloquant",orange:"Attention",blue:"Information",green:"Conforme"};
   H2("4.1","Liste"); P_("Les contraintes suivantes ont été détectées :");
@@ -1533,16 +1576,28 @@ async function makePDF(){
   // --- 5
   H1(5,"Qui contacter"); const populated=!m.e_pop.startsWith("Hors");
   const dl=demarches(r); P_(`${dl.filter(x=>!/Si besoin|À lire/.test(x.lv)).length} démarche(s) avant de voler, classées par urgence :`);
-  TB(["#","Service","Niveau","Échéance","État"],dl.map((x,i)=>[String(i+1).padStart(2,"0"),x.t,x.lv,x.due?x.due.toLocaleDateString("fr-FR"):(x.delay||"—"),(S.steps||{})[x.k]||"À faire"]),{cs:{0:{cellWidth:10},3:{cellWidth:26},4:{cellWidth:20}}});
-  H2("5.1","Préfecture"); const w=m.m_date?sendWindow(parseDate(m.m_date)):null;
+  H2("5.1","Services sollicités et état des démarches");
+  TB(["#","Service","Niveau","Échéance","État","Mis à jour le"],dl.map((x,i)=>[String(i+1).padStart(2,"0"),x.t,x.lv,x.due?x.due.toLocaleDateString("fr-FR"):(x.delay||"—"),(S.steps||{})[x.k]||"À faire",stamp((S.stepsAt||{})[x.k])||"—"]),{fs:8.5,cs:{0:{cellWidth:9},3:{cellWidth:22},4:{cellWidth:18},5:{cellWidth:28}},cell:d=>{ if(d.section==="body"&&d.column.index===4){ const v=d.cell.raw; d.cell.styles.fontStyle="bold"; d.cell.styles.textColor=v==="Accord"?[22,128,72]:v==="Refus"?[200,40,50]:v==="Envoyée"?[40,90,170]:[200,120,0]; } }});
+  H2("5.2","Préfecture"); const w=m.m_date?sendWindow(parseDate(m.m_date)):null;
   KV([["Département",r.dept?r.dept[0]+" – "+r.dept[1]:"—"],["Contact drones",r.dept?r.dept[2]:"—"],["Déclaration requise",populated||r.night||S.height>120?"Oui (zone peuplée / nuit / hauteur)":"Non a priori"],["Envoi au plus tôt",w?fdate(w.first):"—"],["Envoi au plus tard",w?fdate(w.last):"—"],["Dérogation nuit / hauteur",m.m_date?"avant le "+fdate(addD(parseDate(m.m_date),-30)):"—"]]);
-  H2("5.2","Aérodromes et contrôle aérien"); TB(["Aérodrome","Type","Distance","Relèvement"],r.ads.slice(0,4).map(x=>[`${x.a[0]} ${x.a[1]}`,x.a[4]==="M"?"Militaire":x.a[4]==="C"?"Civil contrôlé":"Civil",fmtD(x.d),`${Math.round(x.b)}° ${card16(x.b)}`]));
+  H2("5.3","Aérodromes et contrôle aérien"); TB(["Aérodrome","Type","Distance","Relèvement"],r.ads.slice(0,4).map(x=>[`${x.a[0]} ${x.a[1]}`,x.a[4]==="M"?"Militaire":x.a[4]==="C"?"Civil contrôlé":"Civil",fmtD(x.d),`${Math.round(x.b)}° ${card16(x.b)}`]));
   if(r.ads.some(x=>x.d<10000)||m.e_ctr) BL(["Accord préalable de l'organisme de la circulation aérienne (protocole) avant le vol","Appel de l'organisme avant décollage, joignable en permanence, appel de fin d'activité"]);
   // --- 6
   H1(6,"Information aéronautique");
   H2("6.1","NOTAM"); if(S.notams.length) TB(["NOTAM","Validité","Niveaux","Texte"],S.notams.map(n=>[n.id||"—",n.b?`${nDate(n.b)} -> ${nDate(n.cc)}`:"—",n.fl||"—",n.e.slice(0,220)]),{fs:8,cs:{3:{cellWidth:85}}}); else P_("Aucun NOTAM saisi dans le dossier.",{c:GREY});
   H2("6.2","SUP AIP et zones réglementées"); const sz=S.sup.map(s=>["SUP AIP "+s.n,s.v,s.o]).concat(S.cz.map(z=>[`${z.t} ${z.n}`,"",`Rayon ${fmtD(z.r)}`])); if(sz.length) TB(["Référence","Validité","Objet"],sz); else P_("Aucun SUP AIP ni zone manuelle saisi.",{c:GREY});
-  H2("6.3","Vérifications"); TB(["","Vérification"],AERO_CHECKS.map((c,i)=>[S.checks[i]?"OK":"—",c]),{cs:{0:{cellWidth:12,halign:"center"}}});
+  H2("6.3","Vérifications horodatées"); TB(["Vérification","Statut","Date et heure"],AERO_CHECKS.map((c,i)=>[c,S.checks[i]?"Faite":"Non faite",typeof S.checks[i]==="number"?stamp(S.checks[i]):"—"]),{cs:{1:{cellWidth:24},2:{cellWidth:38}},cell:d=>{ if(d.section==="body"&&d.column.index===1){ d.cell.styles.fontStyle="bold"; d.cell.styles.textColor=d.cell.raw==="Faite"?[22,128,72]:[200,120,0]; } }});
+  H2("6.4","Sources consultées pour ce dossier");
+  const srcRows=[["Carte des restrictions UAS (DGAC / IGN)",UASD.status==="ok"?`${UASD.hits.length} zone(s) touchée(s) dans la zone et sa zone tampon`:UASD.status==="error"?"Non interrogée (service indisponible)":"Non interrogée",UASD.at?stamp(UASD.at):"—"],
+    ["Zones géographiques UAS du SIA",SIA.st==="ok"?`${SIA.zones.length} zones${SIA.date?", fichier du "+SIA.date.split("-").reverse().join("/"):""}`:"Fichier non chargé",SIA.st==="ok"?(SIA.date?"fichier du "+SIA.date.split("-").reverse().join("/"):"—"):"—"],
+    ["ZICAD (arrêté du 17/11/2025)",ZIC.st==="ok"?`${(r.zic||[]).length} zone(s) touchée(s)`:"Non chargée",ZIC.at?stamp(ZIC.at):"—"],
+    ["Environnement au sol (IGN BD TOPO)",ENV.st==="ok"?`${ENV.bat??"?"} bâtiments, ${ENV.roads.length} route(s), ${ENV.rails.length} voie(s) ferrée(s) à moins de 300 m`:"Non analysé",ENV.at?stamp(ENV.at):"—"],
+    ["Altitude du sol (IGN)",S.ground!=null?Math.round(S.ground)+" m":"Non disponible",ALT.at?stamp(ALT.at):"—"],
+    ["Météo (Open-Meteo, NOAA)",METEO&&!METEO.err&&METEO.rows.length?"Prévisions chargées":"Non disponible",METEO&&METEO.at?stamp(METEO.at):"—"],
+    ["NOTAM / SUP AIP",`${S.notams.length} NOTAM et ${S.sup.length} SUP AIP saisis à la main`,"saisie manuelle"],
+    ["Règles de l'outil",rulesLine(),"—"]];
+  TB(["Source","Résultat","Consultée le"],srcRows,{fs:8.5,cs:{2:{cellWidth:36}}});
+  P_("Les consultations automatiques datent du dernier calcul affiché dans l'outil avant la génération de ce dossier : la veille et le jour du vol, vérifier à nouveau NOTAM, SUP AIP, restrictions et météo.",{s:8.5,c:GREY});
   // --- 7
   H1(7,"Météo");
   if(mm.length) TB(["Heure","Ciel","T°C","Pluie (mm)","Vent (km/h)","Rafales (km/h)","Cap","Kp"],mm.map(x=>[`${x.t.slice(8,10)}/${x.t.slice(5,7)} ${x.t.slice(11,16)}`,WMO(x.code)[1],Math.round(x.T),x.P.toFixed(1),Math.round(x.W),Math.round(x.G),`${Math.round(x.D)}° ${card16(x.D)}`,x.kp!=null?x.kp.toFixed(0):"—"]));
@@ -1554,6 +1609,7 @@ async function makePDF(){
   if((m.e_gear||[]).length){ H2("8.4","Matériel prévu"); BL(m.e_gear); }
   // --- 9
   H1(9,"Engagement");
+  { const di=draftIssues(r); if(di.length) P_("Points restant à corriger au moment de la génération de ce dossier : "+di.map(x=>`${x.label} (${x.msg})`).join(" ; ")+".",{s:9,c:[200,40,50],after:4}); }
   P_(`Je soussigné(e) ${m.op_resp||m.pilot_name||"……………………"}, représentant l'exploitant ${m.op_name||"……………………"}, atteste l'exactitude des informations contenues dans le présent dossier et m'engage à respecter la réglementation applicable ainsi que les conditions des accords obtenus.`);
   y+=6; KV([["Fait à",""],["Le",""],["Signature",""]]); doc.setDrawColor(180); doc.rect(M+58,y-12,80,28); y+=20;
   P_("Document généré avec BFV Prévol (BearFoot Visual). Analyse indicative : elle ne remplace ni la consultation des sources officielles (SIA, cartes.gouv.fr, NOTAM) ni la responsabilité de l'exploitant.",{s:8,c:GREY});
@@ -1567,7 +1623,11 @@ async function makePDF(){
   if(DL){ try{ await DL.save({filename:fn,data:blob}); toast("Dossier de vol enregistré"); }catch(e){ if(e&&e.code!=="declined") toast("Téléchargement refusé : "+(e.code||e),true); } }
   else { doc.save(fn); toast("Dossier de vol généré"); }
 }
-document.getElementById("pdfGo").onclick=()=>makePDF().catch(e=>{ document.getElementById("pdfState").textContent=""; toast("Erreur PDF : "+e.message,true); console.error(e); });
+const runPDF=()=>makePDF().catch(e=>{ document.getElementById("pdfState").textContent=""; toast("Erreur PDF : "+e.message,true); console.error(e); });
+document.getElementById("pdfGo").onclick=()=>{ const bad=draftIssues(analyze()).filter(x=>x.lv==="red"); if(!bad.length){ runPDF(); return; }
+  openModal(`<h2>Dossier incomplet</h2><p class="small">${bad.length} point${bad.length>1?"s":""} bloquant${bad.length>1?"s":""} à corriger avant d'envoyer ce dossier :</p><ul class="small" style="padding-left:18px;line-height:1.6">${bad.map(x=>`<li><b>${esc(x.label)}</b> : ${esc(x.msg)}</li>`).join("")}</ul><div class="row"><button class="btn pri" id="pdfFix">Corriger</button><button class="btn" id="pdfAny">Générer quand même</button></div>`);
+  document.getElementById("pdfFix").onclick=()=>{ closeModal(); const f=bad.find(x=>x.go); if(f) gotoField(f.go); };
+  document.getElementById("pdfAny").onclick=()=>{ closeModal(); runPDF(); }; };
 
 
 /* ---- Encart de zone (façon Flyby) ---- */
@@ -1597,7 +1657,7 @@ function dmTxt(c){ return c?`${dm(c[0],1)} ${dm(c[1],0)}`:"—"; }
 // ---- Altitude sol IGN + plafond
 let ALT={key:"",z:null};
 async function loadAlt(){ const p=zonePoly(); if(!p) return; const c=centroid(p), key=c.map(v=>v.toFixed(4)).join(); if(ALT.key===key) return; ALT={key,z:null};
-  try{ const r=await fetch(`https://data.geopf.fr/altimetrie/1.0/calcul/alti/rest/elevation.json?lon=${c[1].toFixed(6)}&lat=${c[0].toFixed(6)}&resource=ign_rge_alti_wld&zonly=true`); const j=await r.json(); const z=j.elevations&&j.elevations[0]; ALT.z=(typeof z==="number"&&z>-500)?z:null; }catch(e){}
+  try{ const r=await fetch(`https://data.geopf.fr/altimetrie/1.0/calcul/alti/rest/elevation.json?lon=${c[1].toFixed(6)}&lat=${c[0].toFixed(6)}&resource=ign_rge_alti_wld&zonly=true`); const j=await r.json(); const z=j.elevations&&j.elevations[0]; ALT.z=(typeof z==="number"&&z>-500)?z:null; ALT.at=Date.now(); }catch(e){}
   if(ALT.key===key){ S.ground=ALT.z; updateZoneBox(); renderZoneExtra(); } }
 function ceilTxt(){ if(S.ground==null) return ""; const c=S.ground+(+S.height||0); return `sol ${Math.round(S.ground)} m · plafond ${Math.round(c)} m d'altitude (${Math.round(c*3.28084)} ft)`; }
 // ---- Adresse (géocodage IGN) : recherche + adresse de la zone
@@ -1671,7 +1731,7 @@ function parseKML(txt){ const doc=new DOMParser().parseFromString(txt,"text/xml"
     const uniq=[]; rings.forEach(r=>{ if(!uniq.some(u=>u.length===r.length&&u[0][0]===r[0][0])) uniq.push(r); });
     if(uniq.length){ const all=uniq.flat(); out.push({name:name.trim(),desc,rings:uniq,bb:[Math.min(...all.map(p=>p[0])),Math.min(...all.map(p=>p[1])),Math.max(...all.map(p=>p[0])),Math.max(...all.map(p=>p[1]))]}); } }); return out; }
 async function loadZICAD(){ if(ZIC.st==="ok"||ZIC.st==="loading") return; ZIC.st="loading";
-  try{ const r=await fetch("https://data.geopf.fr/annexes/ressources/documentation/ZICAD_17-11-2025.zip"); const f=await unzipFirst(await r.arrayBuffer(),/\.kml$/i); ZIC={st:"ok",zones:parseKML(f.text)}; drawZIC(); refresh(true); }
+  try{ const r=await fetch("https://data.geopf.fr/annexes/ressources/documentation/ZICAD_17-11-2025.zip"); const f=await unzipFirst(await r.arrayBuffer(),/\.kml$/i); ZIC={st:"ok",zones:parseKML(f.text),at:Date.now()}; drawZIC(); refresh(true); }
   catch(e){ ZIC={st:"err",zones:[],err:String(e.message||e)}; } }
 function drawZIC(){ zicLayer.clearLayers(); if(ZIC.st!=="ok") return; ZIC.zones.forEach(z=>z.rings.forEach(rg=>L.polygon(rg,{renderer:canvasR,color:"#9333ea",weight:1.5,fillColor:"#9333ea",fillOpacity:.18}).bindPopup(`<b>ZICAD</b><br>${esc(z.name)}<br><span style="color:#8aa0c0">Captation de données interdite (photo, vidéo, capteurs) sauf dérogation.</span>`).addTo(zicLayer))); }
 document.getElementById("lyZic").onchange=e=>{ if(e.target.checked){ zicLayer.addTo(map); loadZICAD(); } else map.removeLayer(zicLayer); };
@@ -1683,7 +1743,7 @@ function lineTouch(line,poly){ if(line.some(p=>inPoly(p,poly))) return true; for
 async function wfsJSON(type,bb,count=400){ const r=await fetch(`https://data.geopf.fr/wfs/ows?SERVICE=WFS&VERSION=2.0.0&REQUEST=GetFeature&TYPENAMES=${type}&OUTPUTFORMAT=application/json&SRSNAME=EPSG:4326&COUNT=${count}&BBOX=${bb}`); if(!r.ok) throw new Error(r.status); return (await r.json()).features||[]; }
 async function loadEnv(){ const p=zonePoly(); if(!p) return; const key=JSON.stringify(p.map(x=>x.map(v=>v.toFixed(5))))+"|"+bands().tot; if(ENV.key===key) return; ENV={key,st:"loading"}; renderZoneExtra();
   const ctrl=bufferPoly(p,bands().tot)||p, ring300=bufferPoly(p,300); const la=ring300.map(x=>x[0]),lo=ring300.map(x=>x[1]);
-  const a=toM(Math.min(...la),Math.min(...lo)), b=toM(Math.max(...la),Math.max(...lo)), bb=`${a[0]},${a[1]},${b[0]},${b[1]},EPSG:3857`; const res={key,st:"ok",roads:[],rails:[],power:[],obst:[],bat:null,err:[]};
+  const a=toM(Math.min(...la),Math.min(...lo)), b=toM(Math.max(...la),Math.max(...lo)), bb=`${a[0]},${a[1]},${b[0]},${b[1]},EPSG:3857`; const res={key,st:"ok",at:Date.now(),roads:[],rails:[],power:[],obst:[],bat:null,err:[]};
   const L2=g=>g.type==="LineString"?[g.coordinates.map(c=>[c[1],c[0]])]:g.type==="MultiLineString"?g.coordinates.map(l=>l.map(c=>[c[1],c[0]])):[];
   await Promise.all([
     (async()=>{ try{ const r=await fetch(`https://data.geopf.fr/wfs/ows?SERVICE=WFS&VERSION=2.0.0&REQUEST=GetFeature&TYPENAMES=BDTOPO_V3:batiment&RESULTTYPE=hits&BBOX=${bb}`); const x=await r.text(); res.bat=+((x.match(/numberMatched="(\d+)"/)||[])[1]||0); }catch(e){ res.err.push("bâtiments"); } })(),
@@ -1741,7 +1801,7 @@ function renderDemarches(r){ const list=demarches(r), today=new Date(); today.se
      ${/Si besoin|À lire/.test(x.lv)&&x.lv!=="Obligatoire"&&x.k!=="proprio"&&x.k!=="mairie"?"":`<div class="row">${DSTAT.map(s=>`<button class="btn sm ${s===st?"on":""}" data-dstep="${esc(x.k)}" data-dval="${s}">${s}</button>`).join("")}</div>`}
      ${x.src?`<p class="small" style="margin:6px 0 0;font-size:11px">Source : ${esc(x.src)}</p>`:""}</div>`; });
   return h; }
-document.addEventListener("click",e=>{ const b=e.target.closest("[data-dstep]"); if(!b) return; S.steps=S.steps||{}; S.steps[b.dataset.dstep]=b.dataset.dval; refresh(true); });
+document.addEventListener("click",e=>{ const b=e.target.closest("[data-dstep]"); if(!b) return; S.steps=S.steps||{}; S.stepsAt=S.stepsAt||{}; S.steps[b.dataset.dstep]=b.dataset.dval; S.stepsAt[b.dataset.dstep]=Date.now(); refresh(true); });
 
 // ---- Exports GeoJSON et plan PNG
 function geojson(){ const p=zonePoly(); if(!p) return null; const ring=a=>a.concat([a[0]]).map(q=>[+q[1].toFixed(7),+q[0].toFixed(7)]); const b=bands();

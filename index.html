@@ -852,6 +852,17 @@ function importExtract(t){ let n=0; const op=t.match(/(FRA[a-z0-9]{8,16})/i); if
     const u={reg:g(/(UAS-FR-\d+)/i),type:g(/Type d.a[ée]ronef\s*:\s*([^\n]+)/i),maker:g(/Constructeur\s*:\s*([^\n]+)/i),model:g(/Mod[eè]le\s*:\s*([^\n]+)/i),serial:g(/Num[ée]ro de s[ée]rie\s*:\s*([^\n\s]+)/i),massRange:g(/Plage de masse\s*:\s*([^\n]+)/i),rid:/signalement [ée]lectronique\s*:\s*Oui/i.test(b),status:g(/Statut\s*:\s*([^\n]+)/i),cls:""};
     u.mass=massKg(u.massRange); const ex=F.uas.findIndex(x=>x.reg===u.reg); if(ex>=0) F.uas[ex]=Object.assign(F.uas[ex],u); else F.uas.push(u); n++; });
   saveF(); return n; }
+/* ---- Lecture des PDF AlphaTango (pdf.js chargé à la demande, texte lu sur l'appareil) ---- */
+function loadPdfJs(){ return window.pdfjsLib?Promise.resolve(window.pdfjsLib):new Promise((res,rej)=>{ const s=document.createElement("script"); s.src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"; s.onload=()=>{ pdfjsLib.GlobalWorkerOptions.workerSrc="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js"; res(pdfjsLib); }; s.onerror=()=>rej(new Error("module de lecture PDF non chargé (connexion requise)")); document.head.appendChild(s); }); }
+async function pdfText(file){ const lib=await loadPdfJs(); const doc=await lib.getDocument({data:await file.arrayBuffer()}).promise; let out="";
+  for(let p=1;p<=doc.numPages;p++){ const tc=await (await doc.getPage(p)).getTextContent(); const lines=[];
+    tc.items.forEach(it=>{ if(!it.str||!it.str.trim()) return; const y=it.transform[5]; let L=lines.find(l=>Math.abs(l.y-y)<=2.5); if(!L){ L={y,it:[]}; lines.push(L); } L.it.push({x:it.transform[4],s:it.str}); });
+    lines.sort((a,b)=>b.y-a.y); out+=lines.map(l=>l.it.sort((a,b)=>a.x-b.x).map(i=>i.s).join(" ").replace(/\s+/g," ").trim()).join("\n")+"\n"; }
+  return out; }
+async function importPdfFiles(files){ if(!files.length) return; const st=document.getElementById("fleetPdfState"); let total=0; const bad=[];
+  for(const f of files){ try{ if(st) st.textContent="Lecture de "+f.name+"…"; const t=await pdfText(f); const n=importExtract(t); total+=n; if(!n) bad.push({name:f.name,text:t}); }catch(e){ bad.push({name:f.name,text:"(illisible : "+(e.message||e)+")"}); } }
+  if(st) st.textContent=""; renderFleet(); buildForm(); refreshLight(); toast(total?`${total} élément(s) importé(s) depuis ${files.length} PDF`:"Rien de reconnu dans ce PDF",!total);
+  if(bad.length) openModal(`<h2>PDF non reconnu</h2><p class="small">Je n'ai trouvé ni numéro d'exploitant (FRA…) ni aéronef (UAS-FR-…) dans ${bad.length>1?"ces fichiers":"ce fichier"}. Voici le texte lu : s'il est vide, le PDF est une image scannée. Sinon, copie-le dans le champ « coller » ci-dessous, ou envoie-le moi pour adapter la lecture.</p>${bad.map(b=>`<b class="small">${esc(b.name)}</b><textarea class="mono" rows="7" style="width:100%;background:#0b1626;border:1px solid var(--line);border-radius:8px;padding:8px;margin:4px 0 10px" readonly>${esc(b.text.slice(0,2500))}</textarea>`).join("")}<div class="row"><button class="btn" onclick="closeModal()">Fermer</button></div>`); }
 function uasLabel(u){ return `${u.reg||"(sans n°)"} – ${[u.maker,u.model].filter(Boolean).join(" ")||"modèle ?"}`; }
 function renderFleet(){ const el=document.getElementById("fleetBox"); if(!el) return; const o=F.op;
   el.innerHTML=`
@@ -870,12 +881,16 @@ function renderFleet(){ const el=document.getElementById("fleetBox"); if(!el) re
   <h3>Flotte (${F.uas.length} aéronef${F.uas.length>1?"s":""})</h3>
   <div class="card">${F.uas.length?`<table class="t">${F.uas.map((u,i)=>`<tr><td><b class="mono">${esc(u.reg||"—")}</b><br>${esc([u.maker,u.model].filter(Boolean).join(" "))}<br><span class="small">S/N ${esc(u.serial||"—")} · ${esc(u.massRange||(u.mass!=null?u.mass+" kg":"masse ?"))}${u.cls?" · "+u.cls:""} · RID ${u.rid?"oui":"non"}${u.status?" · "+esc(u.status):""}</span></td><td style="text-align:right"><button class="btn sm" data-useu="${i}">Utiliser</button> <button class="btn sm" data-delu="${i}">✕</button></td></tr>`).join("")}</table>`:'<span class="small">Aucun aéronef. Importe ta liste AlphaTango ci-dessous.</span>'}</div>
   <h3>Importer depuis AlphaTango</h3><div class="card">
-   <ul class="steps"><li>AlphaTango → <b>Mes aéronefs</b> → bouton d'export <b>.csv</b>, puis choisis le fichier ou colle son contenu.</li><li>Ou ouvre l'<b>extrait du registre</b> (exploitant ou aéronef, PDF), sélectionne tout le texte et colle-le.</li></ul>
+   <ul class="steps"><li>AlphaTango → <b>Mes aéronefs</b> → bouton d'export <b>.csv</b>, puis choisis le fichier ou colle son contenu.</li><li>Ou télécharge l'<b>extrait du registre</b> (exploitant ou aéronef, PDF) et dépose le fichier ci-dessous : le texte est lu sur ton appareil, rien n'est envoyé.</li></ul>
+   <div class="fld"><label>Extraits PDF d'AlphaTango (un ou plusieurs fichiers, glisser-déposer possible)</label><input type="file" id="fleetPdf" accept=".pdf,application/pdf" multiple><span class="small" id="fleetPdfState"></span></div>
    <div class="fld"><label>Fichier CSV</label><input type="file" id="fleetFile" accept=".csv,.txt"></div>
    <div class="fld"><label>…ou coller le CSV / le texte de l'extrait</label><textarea id="fleetPaste" rows="5" class="mono"></textarea></div>
    <button class="btn pri sm" id="fleetImp">Importer</button></div>`;
   el.querySelectorAll("[data-op]").forEach(i=>i.oninput=()=>{ F.op[i.dataset.op]=i.value; saveF(); refreshLight(); });
   document.getElementById("npAdd").onclick=()=>{ const n=npName.value.trim(); if(!n) return; F.pilots.push({name:n,phone:npPhone.value.trim(),cert:npCert.value.trim()}); saveF(); renderFleet(); buildForm(); };
+  document.getElementById("fleetPdf").onchange=e=>{ const fs=[...e.target.files]; e.target.value=""; importPdfFiles(fs); };
+  el.ondragover=e=>{ if([...(e.dataTransfer?.types||[])].includes("Files")) e.preventDefault(); };
+  el.ondrop=e=>{ const fs=[...(e.dataTransfer?.files||[])].filter(f=>/\.pdf$/i.test(f.name)); if(!fs.length) return; e.preventDefault(); importPdfFiles(fs); };
   document.getElementById("fleetFile").onchange=e=>{ const f=e.target.files[0]; if(!f) return; const rd=new FileReader(); rd.onload=()=>{ const n=importFleetCSV(rd.result); toast(n+" aéronef(s) importé(s)",!n); renderFleet(); buildForm(); }; rd.readAsText(f,"utf-8"); };
   document.getElementById("fleetImp").onclick=()=>{ const t=fleetPaste.value; if(!t.trim()) return; const n=/UAS-FR-\d+|FRA[a-z0-9]{8}/i.test(t)&&/Constructeur|EXPLOITANT/i.test(t)?importExtract(t):importFleetCSV(t); toast(n?n+" élément(s) importé(s)":"Rien de reconnu",!n); renderFleet(); buildForm(); refreshLight(); };
 }

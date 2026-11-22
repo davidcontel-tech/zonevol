@@ -1716,7 +1716,7 @@ async function idbSet(k,v){ try{ const db=await idb(); await new Promise(res=>{ 
 let SIA={st:"none",zones:[],file:"",date:""}; const siaLayer=L.layerGroup(); const canvasR=L.canvas({padding:.3});
 const RESTR={PROHIBITED:["Interdite","#e0262b"],REQ_AUTHORISATION:["Autorisation requise","#f08c00"],CONDITIONAL:["Conditions","#e6c200"],NO_RESTRICTION:["Information","#3d8bfd"]};
 function isoDays(d){ if(!d) return null; const m=String(d).match(/P(?:(\d+)D)?(?:T(?:(\d+)H)?)?/); if(!m) return null; return (+m[1]||0)+((+m[2]||0)/24); }
-function parseSIA(text,fname){ const j=JSON.parse(text); const feats=j.features||j.UASZoneList||j; const out=[];
+function parseSIA(text,fname){ const j=JSON.parse(String(text).replace(/^﻿/,"")); const feats=j.features||j.UASZoneList||j; const out=[];
   (Array.isArray(feats)?feats:[]).forEach(f=>{ (f.geometry||[]).forEach(g=>{ const hp=g.horizontalProjection||g; let rings=[];
       if(hp.type==="Circle"&&hp.center) rings=[circlePts([hp.center[1],hp.center[0]],+hp.radius||0,48)];
       else if(hp.type==="Polygon") rings=[hp.coordinates[0].map(c=>[c[1],c[0]])];

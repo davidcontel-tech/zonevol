@@ -1035,6 +1035,7 @@ function analyze(){
   // Zones UAS du SIA / ZICAD / environnement
   r.sia=siaHits(); r.zic=zicHits(); r.geo=S.geo;
   if(poly&&SIA.st!=="ok") add("blue","🗂️","Zones géographiques UAS du SIA non chargées","Charge le ZIP du SIA (onglet NOTAM / SUP AIP) pour connaître les zones exactes, leurs gestionnaires et leurs contacts.");
+  else if(poly&&siaCycle()&&siaCycle().expired) add("orange","🗂️","Zones UAS du SIA : cycle dépassé","Le fichier chargé date du "+fdate2(siaCycle().start)+" : un cycle AIRAC plus récent est publié. Les zones et contacts affichés peuvent être périmés.");
   r.sia.forEach(z=>{ const lv=z.restr==="PROHIBITED"?"red":z.restr==="REQ_AUTHORISATION"?"orange":z.restr==="CONDITIONAL"?"orange":"blue"; const a=z.auth[0]||{};
     add(lv,"🛩️",`Zone UAS SIA : ${z.name}${z.inZone?"":" (zone tampon)"}`,`${(RESTR[z.restr]||[z.restr])[0]} · ${limTxt(z.lo,z.loRef)} → ${limTxt(z.up,z.upRef)}${a.name?" · gestionnaire : "+a.name:""}${z.msg?" – "+z.msg.slice(0,220):""}`,a.name||a.email||a.phone?{n:a.name||"Gestionnaire de la zone",s:[a.service,a.contact,a.days?"préavis "+Math.ceil(a.days)+" j":""].filter(Boolean).join(" · ")||"Gestionnaire publié par le SIA",mail:a.email,tel:a.phone,links:a.url?[["Site du gestionnaire",a.url]]:[],go:"ctSteps"}:null); });
   r.zic.forEach(z=>add("red","📵",`ZICAD : ${z.name}`,"Captation de données (photo, vidéo, capteurs) interdite sauf dérogation, à demander au moins 2 mois avant.",CT.zicad));
@@ -1740,8 +1741,12 @@ function siaHits(){ const p=zonePoly(); if(!p||SIA.st!=="ok") return []; const b
   return SIA.zones.filter(z=>!(z.bb[2]<bb[0]||z.bb[0]>bb[2]||z.bb[3]<bb[1]||z.bb[1]>bb[3])).filter(z=>{ if(z.lo!=null){ if(/AGL|SFC/i.test(z.loRef)&&z.lo>H) return false; if(/AMSL|MSL/i.test(z.loRef)&&ceil!=null&&z.lo>ceil) return false; } return z.rings.some(rg=>polysTouch(b,rg)); })
     .map(z=>({...z,inZone:z.rings.some(rg=>polysTouch(p,rg))})); }
 function renderSiaBox(){ const el=document.getElementById("siaBox"); if(!el) return;
-  el.innerHTML=SIA.st==="ok"?`<div class="cst green"><div style="flex:1"><b>${SIA.zones.length} zones chargées</b><p>Fichier ${esc(SIA.file)}${SIA.date?" · en vigueur au "+SIA.date.split("-").reverse().join("/"):""} · source : ${SIA.src==="site"?"dossier data/ du site":"cet appareil"}. À renouveler à chaque cycle AIRAC (28 jours).</p></div></div>`:
-   SIA.st==="err"?`<div class="cst red"><div><b>Fichier non lu</b><p>${esc(SIA.err||"")}</p></div></div>`:`<p class="small">Aucun fichier chargé.</p>`; }
+  const cy=siaCycle();
+  el.innerHTML=SIA.st==="ok"?`<div class="cst ${cy&&cy.expired?"orange":"green"}"><div style="flex:1"><b>${SIA.zones.length} zones chargées${cy&&cy.expired?" · cycle dépassé":""}</b><p>Fichier ${esc(SIA.file)} · source : ${SIA.src==="site"?"dossier data/ du site (chargé pour tous les appareils)":"cet appareil seulement"}.${cy?` Cycle du ${fdate2(cy.start)}, ${cy.expired?`<b>valable jusqu'au ${fdate2(new Date(cy.next-864e5))} : un nouveau cycle est publié, renouvelle le ZIP</b>`:`valable jusqu'au ${fdate2(new Date(cy.next-864e5))} (encore ${cy.days} jour${cy.days>1?"s":""}) ; prochain ZIP à récupérer le ${fdate2(cy.next)}`}.`:" À renouveler à chaque cycle AIRAC (28 jours)."}</p></div></div>`:
+   SIA.st==="err"?`<div class="cst red"><div><b>Fichier non lu</b><p>${esc(SIA.err||"")}</p></div></div>`:`<div class="cst orange"><div><b>Aucun fichier de zones SIA</b><p>Les gestionnaires et contacts publiés par le SIA ne s'affichent pas. Charge le ZIP ci-dessus, ou place-le dans le dossier <span class="mono">data/uaszones.zip</span> du site pour le charger d'office sur tous les appareils.</p></div></div>`; }
+function fdate2(d){ return d.toLocaleDateString("fr-FR",{day:"2-digit",month:"2-digit",year:"numeric",timeZone:"UTC"}); }
+// Cycle AIRAC : le ZIP du SIA est daté du jour d'entrée en vigueur ; validité 28 jours
+function siaCycle(){ if(SIA.st!=="ok"||!SIA.date) return null; const [y,m,d]=SIA.date.split("-").map(Number); const start=new Date(Date.UTC(y,m-1,d)), next=new Date(start.getTime()+28*864e5), now=Date.now(); return {start,next,expired:now>=next.getTime(),days:Math.max(0,Math.ceil((next.getTime()-now)/864e5))}; }
 document.getElementById("siaFile").onchange=e=>{ const f=e.target.files[0]; if(!f) return; f.arrayBuffer().then(b=>loadSIA(b,f.name,true)); };
 
 // ---- ZICAD (arrêté du 17/11/2025, KML IGN)

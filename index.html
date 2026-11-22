@@ -1944,7 +1944,7 @@ const BK_KEY="zonevol_lastexport", BK_DAYS=7;
 function lastExport(){ try{ return +localStorage.getItem(BK_KEY)||0; }catch(e){ return 0; } }
 function hasContent(){ return MISSIONS.some(s=>s.m.m_name||s.zone.type); }
 function ageTxt(t){ const d=Math.floor((Date.now()-t)/864e5); if(d<1){ const h=Math.floor((Date.now()-t)/36e5); return h<1?"il y a moins d'une heure":"il y a "+h+" h"; } return "il y a "+d+" jour"+(d>1?"s":""); }
-function allData(){ return {app:"UAS Assistant",v:2,exported:new Date().toISOString(),cur:S.id,missions:MISSIONS,fleet:F}; }
+function allData(){ return {app:"UAS Assistant",v:2,exported:new Date().toISOString(),cur:S.id,missions:MISSIONS,fleet:F,drones:customDrones()}; }
 function bkOverdue(){ return hasContent()&&(Date.now()-lastExport()>BK_DAYS*864e5); }
 function updateBkChip(){ const c=document.getElementById("bkChip"); if(c) c.style.display=bkOverdue()?"":"none";
   const w=document.getElementById("bkWarn"); if(w) w.innerHTML=bkOverdue()?`<div class="warnbox"><b>Pense à sauvegarder.</b> Tes missions ne sont stockées que dans ce navigateur : elles disparaissent si tu vides les données du site ou si l'adresse web change. ${lastExport()?"Dernière sauvegarde : "+ageTxt(lastExport())+".":"Aucune sauvegarde enregistrée pour l'instant."}<div class="row" style="margin-top:8px"><button class="btn pri sm" data-bk="export">⬇ Exporter maintenant</button></div></div>`:""; }
@@ -1967,10 +1967,11 @@ async function renderBackup(){ const el=document.getElementById("bkBox"); if(!el
   updateBkChip(); }
 // Fusion de missions : ajoute les absentes ; avec overwrite, remplace si la version importée est plus récente
 function mergeData(o,overwrite){ let add=0,upd=0; const list=Array.isArray(o.missions)?o.missions:(o.m&&o.zone?[o]:[]);
+  if(Array.isArray(o.drones)&&o.drones.length){ const Lc=customDrones(); o.drones.forEach(d=>{ if(d&&d.model&&!Lc.some(x=>x.model===d.model&&(x.maker||"")===(d.maker||""))) Lc.push(d); }); try{ localStorage.setItem("zonevol_drones",JSON.stringify(Lc)); }catch(e){} fillDroneList(); }
   list.forEach(x=>{ const n=norm(x); const i=MISSIONS.findIndex(s=>s.id===n.id); if(i<0){ MISSIONS.push(n); add++; } else if(overwrite&&(n.updated||0)>(MISSIONS[i].updated||0)){ const wasCur=MISSIONS[i]===S; MISSIONS[i]=n; if(wasCur) S=n; upd++; } });
   if(o.fleet){ (o.fleet.uas||[]).forEach(u=>{ if(!F.uas.some(x=>(x.reg&&x.reg===u.reg)||(x.serial&&x.serial===u.serial))) F.uas.push(u); });
     (o.fleet.pilots||[]).forEach(p=>{ if(!F.pilots.some(x=>x.name===p.name)) F.pilots.push(p); });
-    ["name","fra","siret","valid","mail","resp","phone","addr"].forEach(k=>{ if(!F.op[k]&&o.fleet.op&&o.fleet.op[k]) F.op[k]=o.fleet.op[k]; }); saveF(); renderFleet(); }
+    Object.keys(o.fleet.op||{}).forEach(k=>{ if(!F.op[k]&&o.fleet.op[k]) F.op[k]=o.fleet.op[k]; }); saveF(); renderFleet(); }
   return {add,upd}; }
 function afterMerge(r){ save(true); buildForm(); drawZone(); refresh(true); renderMissions(); renderBackup(); toast(`${r.add} mission(s) ajoutée(s)${r.upd?", "+r.upd+" mise(s) à jour":""}`,!r.add&&!r.upd); }
 document.addEventListener("click",async e=>{ const b=e.target.closest("[data-bk]"); if(!b) return; const a=b.dataset.bk;

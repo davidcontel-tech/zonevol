@@ -107,6 +107,9 @@ main{display:grid;grid-template-columns:1fr 470px;height:calc(100% - 52px)}
 .tab .n{position:absolute;top:3px;left:5px;display:inline-grid;place-items:center;min-width:14px;height:14px;padding:0 2px;border-radius:7px;background:var(--card);font-size:9px;color:var(--mut)}
 .tab.act .n{background:var(--acc);color:#fff}
 .tab[data-v="list"] .n{display:none}
+.bdg{display:inline-block;padding:1px 8px;border-radius:9px;font-size:11px;font-weight:600;white-space:nowrap}
+.bdg.green{background:rgba(46,160,67,.2);color:#56d364}.bdg.orange{background:rgba(240,136,62,.2);color:#f0883e}.bdg.red{background:rgba(248,81,73,.2);color:#ff7b72}.bdg.na{background:rgba(139,148,158,.2);color:var(--mut)}
+#fleetBox details.card>summary{cursor:pointer;list-style:none}#fleetBox details.card>summary::-webkit-details-marker{display:none}#fleetBox details.card>summary::before{content:"▸ ";color:var(--mut)}#fleetBox details[open].card>summary::before{content:"▾ "}
 .view{display:none;overflow-y:auto;padding:14px;flex:1}
 .view.act{display:block}
 h2{font-size:16px;margin:2px 0 10px}
@@ -257,7 +260,7 @@ table.t th{color:var(--mut);font-weight:500}
       <button class="tab act" data-v="list" title="Missions"><span class="n">☰</span><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"/></svg><span class="tl">Missions</span></button>
       <button class="tab" data-v="zone" title="Zone"><span class="n">1</span><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3l8 5v8l-8 5-8-5V8z"/></svg><span class="tl">Zone</span></button>
       <button class="tab" data-v="mission" title="Mission"><span class="n">2</span><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="4" width="14" height="17" rx="2"/><path d="M9 4V3h6v1M9 10h6M9 14h6M9 18h3"/></svg><span class="tl">Mission</span></button>
-      <button class="tab" data-v="fleet" title="AlphaTango"><span class="n">3</span><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="6" cy="6" r="2.5"/><circle cx="18" cy="6" r="2.5"/><circle cx="6" cy="18" r="2.5"/><circle cx="18" cy="18" r="2.5"/><path d="M8 8l8 8M16 8l-8 8"/></svg><span class="tl">AlphaTango</span></button>
+      <button class="tab" data-v="fleet" title="Mon compte : exploitant, pilotes, aéronefs"><span class="n">3</span><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4.4 3.6-7 8-7s8 2.6 8 7"/></svg><span class="tl">Mon compte</span></button>
       <button class="tab" data-v="cst" title="Contraintes"><span class="n">4</span><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3L2 20h20zM12 10v4M12 17h.01"/></svg><span class="tl">Contraintes</span></button>
       <button class="tab" data-v="scn" title="Réglementation et scénarios"><span class="n">5</span><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v18M5 21h14M6 7h12M6 7l-3 7a3 3 0 0 0 6 0zM18 7l-3 7a3 3 0 0 0 6 0z"/></svg><span class="tl">Règles</span></button>
       <button class="tab" data-v="auth" title="Qui contacter"><span class="n">6</span><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 7l9 6 9-6"/></svg><span class="tl">Contacts</span></button>
@@ -310,7 +313,7 @@ table.t th{color:var(--mut);font-weight:500}
 
     <!-- ALPHATANGO -->
     <section class="view" id="v-fleet">
-      <h2>Exploitant & flotte (AlphaTango)</h2>
+      <h2>Mon compte</h2>
       <div id="fleetBox"></div>
     </section>
 
@@ -598,7 +601,7 @@ const FIELDS = [
  {id:"m_dept",l:"Département",t:"dept",half:1},
  {id:"m_desc",l:"Description des opérations",t:"area"},
  {s:"Exploitant & télépilote"},
- {id:"m_pilot",l:"Télépilote (depuis l'onglet AlphaTango)",t:"fleetPilot"},
+ {id:"m_pilot",l:"Télépilote (depuis l'onglet Mon compte)",t:"fleetPilot"},
  {id:"op_name",l:"Exploitant (société)",t:"text"},
  {id:"op_resp",l:"Responsable",t:"text",half:1},
  {id:"op_uas",l:"N° d'exploitant UAS (FRA…)",t:"text",half:1},
@@ -841,7 +844,7 @@ function importFleetCSV(t){ const rows=parseCSV(t.replace(/^﻿/,"")); if(rows.l
   const col=re=>H.findIndex(h=>re.test(h)); const ix={reg:col(/enregistrement|immatric|uas-fr|registration/),maker:col(/constructeur|fabricant|marque|manufact/),model:col(/mod[eè]le|model/),serial:col(/s[ée]rie|serial/),mass:col(/masse|poids|mass/),type:col(/^type|type d/),rid:col(/signalement|remote|identif/),cls:col(/classe|class/),status:col(/statut|status|validit/)};
   let n=0; rows.slice(1).forEach(r=>{ const g=k=>ix[k]>=0?(r[ix[k]]||"").trim():""; let reg=g("reg"); if(!/UAS-FR/i.test(reg)){ const f=r.find(v=>/UAS-FR-\d+/i.test(v)); if(f) reg=f.match(/UAS-FR-\d+/i)[0]; }
     const u={reg,maker:g("maker"),model:g("model"),serial:g("serial"),massRange:g("mass"),mass:massKg(g("mass")),type:g("type"),rid:/oui|yes|true|1/i.test(g("rid")),cls:(g("cls").match(/C[0-6]/i)||[""])[0].toUpperCase(),status:g("status")};
-    if(!u.reg&&!u.model&&!u.serial) return; const ex=F.uas.findIndex(x=>(x.reg&&x.reg===u.reg)||(x.serial&&x.serial===u.serial)); if(ex>=0) F.uas[ex]=Object.assign(F.uas[ex],u); else F.uas.push(u); n++; });
+    const dm=(g("status").match(/\d{2}\/\d{2}\/\d{4}/)||[])[0]; if(dm) u.regEnd=dm; if(!u.reg&&!u.model&&!u.serial) return; const ex=F.uas.findIndex(x=>(x.reg&&x.reg===u.reg)||(x.serial&&x.serial===u.serial)); if(ex>=0) F.uas[ex]=Object.assign(F.uas[ex],u); else F.uas.push(u); n++; });
   saveF(); return n; }
 function importExtract(t){ let n=0; const op=t.match(/(FRA[a-z0-9]{8,16})/i); if(op){ F.op.fra=op[1].toUpperCase(); n++; }
   const val=t.match(/FIN DE VALIDIT[ÉE]\s*:?\s*(?:\n.*?)?(\d{2}\/\d{2}\/\d{4})/i); if(val&&op) F.op.valid=val[1];
@@ -864,35 +867,84 @@ async function importPdfFiles(files){ if(!files.length) return; const st=documen
   if(st) st.textContent=""; renderFleet(); buildForm(); refreshLight(); toast(total?`${total} élément(s) importé(s) depuis ${files.length} PDF`:"Rien de reconnu dans ce PDF",!total);
   if(bad.length) openModal(`<h2>PDF non reconnu</h2><p class="small">Je n'ai trouvé ni numéro d'exploitant (FRA…) ni aéronef (UAS-FR-…) dans ${bad.length>1?"ces fichiers":"ce fichier"}. Voici le texte lu : s'il est vide, le PDF est une image scannée. Sinon, copie-le dans le champ « coller » ci-dessous, ou envoie-le moi pour adapter la lecture.</p>${bad.map(b=>`<b class="small">${esc(b.name)}</b><textarea class="mono" rows="7" style="width:100%;background:#0b1626;border:1px solid var(--line);border-radius:8px;padding:8px;margin:4px 0 10px" readonly>${esc(b.text.slice(0,2500))}</textarea>`).join("")}<div class="row"><button class="btn" onclick="closeModal()">Fermer</button></div>`); }
 function uasLabel(u){ return `${u.reg||"(sans n°)"} – ${[u.maker,u.model].filter(Boolean).join(" ")||"modèle ?"}`; }
-function renderFleet(){ const el=document.getElementById("fleetBox"); if(!el) return; const o=F.op;
-  el.innerHTML=`
-  <div class="card"><b>Accès AlphaTango</b><p class="small">AlphaTango (DGAC) ne propose pas d'interface publique de connexion automatique : la liaison se fait par <b>export CSV</b> de « Mes aéronefs » et par l'<b>extrait du registre</b> (PDF) que tu copies-colles ici. Les données restent sur ton appareil.</p>
-   <a class="lnk" href="https://alphatango.aviation-civile.gouv.fr/login.jsp" target="_blank" rel="noopener">Ouvrir AlphaTango <span>DGAC ↗</span></a>
-   <a class="lnk" href="https://www.ecologie.gouv.fr/politiques-publiques/alphatango" target="_blank" rel="noopener">Aide en ligne AlphaTango <span>↗</span></a></div>
-  <h3>Exploitant</h3><div class="card">
-   <div class="grid2"><div class="fld"><label>Nom / raison sociale</label><input data-op="name" value="${esc(o.name)}"></div><div class="fld"><label>N° exploitant UAS</label><input data-op="fra" value="${esc(o.fra)}" placeholder="FRAxxxxxxxxxxxx"></div>
-   <div class="fld"><label>SIRET</label><input data-op="siret" value="${esc(o.siret)}"></div><div class="fld"><label>Fin de validité</label><input data-op="valid" value="${esc(o.valid)}" placeholder="jj/mm/aaaa"></div></div>
-   <div class="grid2"><div class="fld"><label>Responsable</label><input data-op="resp" value="${esc(o.resp||"")}"></div><div class="fld"><label>Téléphone</label><input data-op="phone" value="${esc(o.phone||"")}"></div></div>
-   <div class="fld"><label>Adresse</label><input data-op="addr" value="${esc(o.addr||"")}"></div>
-   <div class="fld"><label>E-mail de contact</label><input data-op="mail" value="${esc(o.mail)}"></div></div>
-  <h3>Télépilotes</h3><div class="card">${F.pilots.map((p,i)=>`<div class="row" style="justify-content:space-between;margin-bottom:6px"><span>${esc(p.name)} · ${esc(p.phone)} · <span class="small">${esc(p.cert)}</span></span><button class="btn sm" data-delp="${i}">✕</button></div>`).join("")||'<span class="small">Aucun télépilote enregistré.</span>'}
-   <div class="grid2" style="margin-top:8px"><div class="fld"><label>Nom</label><input id="npName"></div><div class="fld"><label>Téléphone</label><input id="npPhone"></div></div>
-   <div class="fld"><label>Compétences</label><input id="npCert" placeholder="ex. A1/A3, A2, CATS STS-01"></div><button class="btn sm" id="npAdd">+ Ajouter</button></div>
-  <h3>Flotte (${F.uas.length} aéronef${F.uas.length>1?"s":""})</h3>
-  <div class="card">${F.uas.length?`<table class="t">${F.uas.map((u,i)=>`<tr><td><b class="mono">${esc(u.reg||"—")}</b><br>${esc([u.maker,u.model].filter(Boolean).join(" "))}<br><span class="small">S/N ${esc(u.serial||"—")} · ${esc(u.massRange||(u.mass!=null?u.mass+" kg":"masse ?"))}${u.cls?" · "+u.cls:""} · RID ${u.rid?"oui":"non"}${u.status?" · "+esc(u.status):""}</span></td><td style="text-align:right"><button class="btn sm" data-useu="${i}">Utiliser</button> <button class="btn sm" data-delu="${i}">✕</button></td></tr>`).join("")}</table>`:'<span class="small">Aucun aéronef. Importe ta liste AlphaTango ci-dessous.</span>'}</div>
-  <h3>Importer depuis AlphaTango</h3><div class="card">
-   <ul class="steps"><li>AlphaTango → <b>Mes aéronefs</b> → bouton d'export <b>.csv</b>, puis choisis le fichier ou colle son contenu.</li><li>Ou télécharge l'<b>extrait du registre</b> (exploitant ou aéronef, PDF) et dépose le fichier ci-dessous : le texte est lu sur ton appareil, rien n'est envoyé.</li></ul>
-   <div class="fld"><label>Extraits PDF d'AlphaTango (un ou plusieurs fichiers, glisser-déposer possible)</label><input type="file" id="fleetPdf" accept=".pdf,application/pdf" multiple><span class="small" id="fleetPdfState"></span></div>
-   <div class="fld"><label>Fichier CSV</label><input type="file" id="fleetFile" accept=".csv,.txt"></div>
-   <div class="fld"><label>…ou coller le CSV / le texte de l'extrait</label><textarea id="fleetPaste" rows="5" class="mono"></textarea></div>
-   <button class="btn pri sm" id="fleetImp">Importer</button></div>`;
-  el.querySelectorAll("[data-op]").forEach(i=>i.oninput=()=>{ F.op[i.dataset.op]=i.value; saveF(); refreshLight(); });
-  document.getElementById("npAdd").onclick=()=>{ const n=npName.value.trim(); if(!n) return; F.pilots.push({name:n,phone:npPhone.value.trim(),cert:npCert.value.trim()}); saveF(); renderFleet(); buildForm(); };
-  document.getElementById("fleetPdf").onchange=e=>{ const fs=[...e.target.files]; e.target.value=""; importPdfFiles(fs); };
-  el.ondragover=e=>{ if([...(e.dataTransfer?.types||[])].includes("Files")) e.preventDefault(); };
-  el.ondrop=e=>{ const fs=[...(e.dataTransfer?.files||[])].filter(f=>/\.pdf$/i.test(f.name)); if(!fs.length) return; e.preventDefault(); importPdfFiles(fs); };
-  document.getElementById("fleetFile").onchange=e=>{ const f=e.target.files[0]; if(!f) return; const rd=new FileReader(); rd.onload=()=>{ const n=importFleetCSV(rd.result); toast(n+" aéronef(s) importé(s)",!n); renderFleet(); buildForm(); }; rd.readAsText(f,"utf-8"); };
-  document.getElementById("fleetImp").onclick=()=>{ const t=fleetPaste.value; if(!t.trim()) return; const n=/UAS-FR-\d+|FRA[a-z0-9]{8}/i.test(t)&&/Constructeur|EXPLOITANT/i.test(t)?importExtract(t):importFleetCSV(t); toast(n?n+" élément(s) importé(s)":"Rien de reconnu",!n); renderFleet(); buildForm(); refreshLight(); };
+/* ---- Mon compte : profil exploitant, pilotes (diplômes), aéronefs ---- */
+let FS="profil";
+const DIPL=["Catégorie ouverte A1/A3","Catégorie ouverte A2","CATS STS-01","CATS STS-02","CATT S1/S2/S3","Vol de nuit (formation)","Autre"];
+function dFR(s){ const m=String(s||"").match(/(\d{2})\/(\d{2})\/(\d{4})/); return m?new Date(+m[3],+m[2]-1,+m[1]):null; }
+function vStatus(s,ref){ const d=dFR(s); if(!d) return {k:"na",t:"date ?",days:null}; const days=Math.round((d-(ref||new Date()))/864e5); return days<0?{k:"red",t:"expiré",days}:days<=60?{k:"orange",t:"expire dans "+days+" j",days}:{k:"green",t:"valide",days}; }
+function bdg(s){ if(!String(s||"").trim()) return ""; const v=vStatus(s); return `<span class="bdg ${v.k}">${v.t}</span>`; }
+function pilotName(p){ return [p.first,p.last].filter(Boolean).join(" ")||p.name||""; }
+function normF(){ F.op=Object.assign({name:"",fra:"",siret:"",valid:"",mail:""},F.op||{});
+  F.pilots=(F.pilots||[]).map(p=>{ if(!p.dipl){ p.dipl=[]; if(p.cert) p.legacy=p.cert; } if(p.first==null&&p.last==null&&p.name){ const w=p.name.trim().split(/\s+/); p.first=w.length>1?w.slice(0,-1).join(" "):""; p.last=w.length>1?w[w.length-1]:w[0]; }
+    p.name=pilotName(p); p.cert=[...new Set([p.legacy||"",...p.dipl.map(d=>d.t)].filter(Boolean))].join(", "); return p; }); }
+normF();
+function accountAlerts(){ const out=[], o=F.op; const chk=(lab,date)=>{ if(!date) return; const v=vStatus(date); if(v.k==="red"||v.k==="orange") out.push({lv:v.k,t:`${lab} : ${v.t} (${date})`}); };
+  chk("Enregistrement exploitant",o.valid); chk("Déclaration scénarios standard",o.stsEnd); chk("Assurance",o.insEnd);
+  F.pilots.forEach(p=>p.dipl.forEach(d=>chk(`${pilotName(p)} – ${d.t}`,d.to))); F.uas.forEach(u=>chk(`Aéronef ${u.reg||u.model||"?"}`,u.regEnd)); return out; }
+function accountIssuesAt(m){ const out=[]; if(!m.m_date) return out; const ref=parseDate(m.m_date); const chk=(lab,date,lv)=>{ const d=dFR(date); if(d&&d<ref) out.push({lv:lv||"red",t:`${lab} (fin de validité ${date})`}); };
+  chk("Déclaration scénarios standard expirée à la date du vol",F.op.stsEnd,"orange"); chk("Assurance expirée à la date du vol",F.op.insEnd,"orange");
+  const p=m.m_pilot!==""&&m.m_pilot!=null?F.pilots[+m.m_pilot]:null; if(p) p.dipl.forEach(d=>chk(`Diplôme « ${d.t} » de ${pilotName(p)} expiré à la date du vol`,d.to,"orange"));
+  const u=m.m_uas!==""&&m.m_uas!=null?F.uas[+m.m_uas]:null; if(u) chk(`Enregistrement de l'aéronef ${u.reg||u.model||""} expiré à la date du vol`,u.regEnd);
+  return out; }
+function fIn(l,attr,v,ph,full){ return `<div class="fld"${full?' style="grid-column:1/-1"':""}><label>${l}</label><input ${attr} value="${esc(v||"")}" placeholder="${ph||""}"></div>`; }
+function renderFleet(){ const el=document.getElementById("fleetBox"); if(!el) return; normF(); const o=F.op, al=accountAlerts();
+  const nav=[["profil","Profil"],["pilots","Pilotes ("+F.pilots.length+")"],["uas","Aéronefs ("+F.uas.length+")"],["imp","Importer AlphaTango"]].map(([k,l])=>`<button class="btn sm${FS===k?" pri":""}" data-fs="${k}">${l}</button>`).join(" ");
+  let h=`<div class="row" style="flex-wrap:wrap;gap:6px;margin-bottom:10px">${nav}</div>`;
+  if(al.length) h+=`<div class="card"><b>Validités à surveiller</b><ul class="small" style="padding-left:18px;line-height:1.7;margin:6px 0 0">${al.map(a=>`<li><span class="bdg ${a.lv}">${a.lv==="red"?"expiré":"bientôt"}</span> ${esc(a.t)}</li>`).join("")}</ul></div>`;
+  if(FS==="profil"){
+    h+=`<h3>Exploitant</h3><div class="card"><div class="grid2">${fIn("Société / raison sociale",'data-op="name"',o.name)}${fIn("Nom commercial",'data-op="trade"',o.trade)}${fIn("SIRET",'data-op="siret"',o.siret)}${fIn("N° d'exploitant UAS",'data-op="fra"',o.fra,"FRAxxxxxxxxxxxx")}
+      ${fIn("Fin de validité de l'enregistrement",'data-op="valid" data-re',o.valid,"jj/mm/aaaa")}${fIn("Code d'identification à distance",'data-op="rid"',o.rid)}
+      ${fIn("Fin de validité de la déclaration en scénarios standard",'data-op="stsEnd" data-re',o.stsEnd,"jj/mm/aaaa")}${fIn("Site DSAC de rattachement",'data-op="dsac"',o.dsac,"ex. DSAC-SO")}</div>
+      <p class="small">${o.valid?"Enregistrement : "+bdg(o.valid):""} ${o.stsEnd?" · Déclaration : "+bdg(o.stsEnd):""}</p></div>
+    <h3>Responsable et contact</h3><div class="card"><div class="grid2">${fIn("Responsable",'data-op="resp"',o.resp)}${fIn("Téléphone",'data-op="phone"',o.phone)}</div>${fIn("E-mail de contact",'data-op="mail"',o.mail)}${fIn("Adresse",'data-op="addr"',o.addr)}</div>
+    <h3>Assurance</h3><div class="card"><div class="grid2">${fIn("Assureur",'data-op="ins"',o.ins)}${fIn("N° de police",'data-op="pol"',o.pol)}</div>${fIn("Fin de validité du contrat",'data-op="insEnd" data-re',o.insEnd,"jj/mm/aaaa")}<p class="small">${o.insEnd?bdg(o.insEnd):""}</p></div>
+    <p class="small">Ces informations préremplissent la fiche mission, le PDF et le Cerfa. Elles restent sur cet appareil (pense à l'export JSON de l'onglet Missions).</p>`;
+  } else if(FS==="pilots"){
+    h+=`<h3>Pilotes</h3>`+(F.pilots.length?F.pilots.map((p,i)=>`<details class="card" ${F.pilots.length===1?"open":""}><summary><b>${esc(pilotName(p)||"Nouveau pilote")}</b> <span class="small">${esc(p.cert||"aucun diplôme")}</span></summary>
+      <div class="grid2" style="margin-top:8px"><div class="fld"><label>Civilité</label><select data-pi="${i}" data-pk="civ"><option${p.civ==="Mme"?"":" selected"}>M</option><option${p.civ==="Mme"?" selected":""}>Mme</option></select></div><div></div>
+      ${fIn("Prénom",`data-pi="${i}" data-pk="first"`,p.first)}${fIn("Nom",`data-pi="${i}" data-pk="last"`,p.last)}${fIn("E-mail",`data-pi="${i}" data-pk="mail"`,p.mail)}${fIn("Téléphone",`data-pi="${i}" data-pk="phone"`,p.phone)}${fIn("Date de naissance",`data-pi="${i}" data-pk="birth"`,p.birth,"jj/mm/aaaa")}${fIn("N° de télépilote",`data-pi="${i}" data-pk="tpNum"`,p.tpNum,"FRA-RP-…")}</div>
+      <b class="small">Diplômes, formations et attestations</b>
+      ${p.dipl.map((d,j)=>`<div class="grid2" style="margin:6px 0;align-items:end"><div class="fld"><label>Type</label><select data-pi="${i}" data-di="${j}" data-pk="t" data-re>${DIPL.map(x=>`<option${x===d.t?" selected":""}>${x}</option>`).join("")}</select></div>${fIn("Référence / n°",`data-pi="${i}" data-di="${j}" data-pk="ref"`,d.ref)}${fIn("Délivré le",`data-pi="${i}" data-di="${j}" data-pk="from"`,d.from,"jj/mm/aaaa")}${fIn("Valable jusqu'au",`data-pi="${i}" data-di="${j}" data-pk="to" data-re`,d.to,"jj/mm/aaaa")}<div>${bdg(d.to)} <button class="btn sm" data-deld="${i}:${j}">✕</button></div></div>`).join("")||'<p class="small">Aucun diplôme saisi.</p>'}
+      ${p.legacy?`<p class="small">Ancienne saisie : ${esc(p.legacy)}</p>`:""}
+      <div class="row" style="gap:6px;margin-top:6px"><button class="btn sm" data-addd="${i}">+ Diplôme</button><button class="btn sm" data-delp="${i}">Supprimer ce pilote</button></div></details>`).join(""):'<div class="card small">Aucun pilote enregistré.</div>')+`<button class="btn pri sm" id="pAdd" style="margin-top:8px">+ Ajouter un pilote</button>`;
+  } else if(FS==="uas"){
+    h+=`<h3>Aéronefs</h3>`+(F.uas.length?F.uas.map((u,i)=>`<details class="card"><summary><b class="mono">${esc(u.reg||"(sans n°)")}</b> ${esc([u.maker,u.model].filter(Boolean).join(" ")||"modèle ?")} ${u.regEnd?bdg(u.regEnd):""}</summary>
+      <div class="fld" style="margin-top:8px"><label>Choisir dans la base de modèles (remplit marque, modèle, masse, classe)</label><input list="droneList" autocomplete="off" data-ui="${i}" data-uk="_pick" placeholder="ex. DJI Mavic 3 Pro"></div>
+      <div class="grid2">${fIn("Marque",`data-ui="${i}" data-uk="maker"`,u.maker)}${fIn("Modèle",`data-ui="${i}" data-uk="model"`,u.model)}${fIn("N° d'enregistrement",`data-ui="${i}" data-uk="reg"`,u.reg,"UAS-FR-…")}${fIn("Fin de validité de l'enregistrement",`data-ui="${i}" data-uk="regEnd" data-re`,u.regEnd,"jj/mm/aaaa")}
+      ${fIn("N° de série",`data-ui="${i}" data-uk="serial"`,u.serial)}${fIn("Nom interne",`data-ui="${i}" data-uk="internal"`,u.internal)}${fIn("Masse (kg)",`data-ui="${i}" data-uk="mass"`,u.mass==null?"":u.mass)}${fIn("Classe (C0 à C6)",`data-ui="${i}" data-uk="cls"`,u.cls)}
+      ${fIn("Type",`data-ui="${i}" data-uk="type"`,u.type,"Multirotors")}${fIn("ID de signalement / ID à distance",`data-ui="${i}" data-uk="ridCode"`,u.ridCode)}${fIn("Scénarios déclarés",`data-ui="${i}" data-uk="sts"`,u.sts,"ex. STS-01")}</div>
+      <label class="chk"><input type="checkbox" data-ui="${i}" data-uk="rid"${u.rid?" checked":""}> Signalement électronique (identification à distance)</label>
+      ${fIn("Notes",`data-ui="${i}" data-uk="notes"`,u.notes)}
+      <div class="row" style="gap:6px;margin-top:6px"><button class="btn sm" data-useu="${i}">Utiliser dans la mission</button><button class="btn sm" data-delu="${i}">Supprimer</button></div></details>`).join(""):'<div class="card small">Aucun aéronef. Ajoute-en un ou importe ta liste AlphaTango.</div>')+`<button class="btn pri sm" id="uAdd" style="margin-top:8px">+ Ajouter un aéronef</button>`;
+  } else {
+    h+=`<div class="card"><b>Accès AlphaTango</b><p class="small">AlphaTango (DGAC) ne propose pas d'interface publique de connexion automatique : la liaison se fait par <b>export CSV</b> de « Mes aéronefs » et par le <b>relevé de situation</b> (PDF) que tu déposes ici. Les données restent sur ton appareil.</p>
+      <a class="lnk" href="https://alphatango.aviation-civile.gouv.fr/login.jsp" target="_blank" rel="noopener">Ouvrir AlphaTango <span>DGAC ↗</span></a>
+      <a class="lnk" href="https://www.ecologie.gouv.fr/politiques-publiques/alphatango" target="_blank" rel="noopener">Aide en ligne AlphaTango <span>↗</span></a></div>
+    <h3>Importer depuis AlphaTango</h3><div class="card">
+      <ul class="steps"><li>AlphaTango → <b>Mes aéronefs</b> → bouton <b>EXPORTER</b> (.csv), puis choisis le fichier ou colle son contenu.</li><li>Ou, dans <b>Mon activité</b>, <b>Télécharger un relevé de situation</b> (PDF) et dépose-le ci-dessous : le texte est lu sur ton appareil, rien n'est envoyé.</li></ul>
+      <div class="fld"><label>PDF AlphaTango (un ou plusieurs fichiers, glisser-déposer possible)</label><input type="file" id="fleetPdf" accept=".pdf,application/pdf" multiple><span class="small" id="fleetPdfState"></span></div>
+      <div class="fld"><label>Fichier CSV</label><input type="file" id="fleetFile" accept=".csv,.txt"></div>
+      <div class="fld"><label>…ou coller le CSV / le texte du relevé</label><textarea id="fleetPaste" rows="5" class="mono"></textarea></div>
+      <button class="btn pri sm" id="fleetImp">Importer</button></div>`;
+  }
+  el.innerHTML=h;
+  el.oninput=e=>{ const t=e.target, d=t.dataset; if(d.op!=null) F.op[d.op]=t.value;
+    else if(d.pi!=null&&d.pk){ const p=F.pilots[+d.pi]; if(!p) return; if(d.di!=null) p.dipl[+d.di][d.pk]=t.value; else p[d.pk]=t.value; }
+    else if(d.ui!=null&&d.uk&&d.uk!=="_pick"){ const u=F.uas[+d.ui]; if(!u) return; if(d.uk==="rid") u.rid=t.checked; else if(d.uk==="mass") u.mass=t.value.trim()===""?null:(+String(t.value).replace(",",".")||null); else u[d.uk]=t.value; }
+    else return; saveF(); refreshLight(); };
+  el.onchange=e=>{ const t=e.target, d=t.dataset; if(d.ui!=null&&d.uk==="_pick"){ const dd=findDrone(t.value); const u=F.uas[+d.ui]; if(dd&&u){ u.maker=dd.maker||u.maker; u.model=dd.model; u.mass=dd.mass; if(dd.cls) u.cls=dd.cls; saveF(); buildForm(); renderFleet(); toast("Modèle appliqué : à vérifier sur la fiche constructeur"); } return; }
+    if(d.op==null&&d.pk==null&&d.uk==null) return; saveF(); buildForm(); if(d.re!=null||d.uk==="rid"||d.pk==="first"||d.pk==="last"||d.uk==="reg"||d.uk==="maker"||d.uk==="model") renderFleet(); };
+  el.onclick=e=>{ const t=e.target.closest("button"); if(!t) return; const d=t.dataset;
+    if(d.fs){ FS=d.fs; renderFleet(); return; }
+    if(t.id==="pAdd"){ F.pilots.push({civ:"M",first:"",last:"",name:"",phone:"",cert:"",dipl:[]}); saveF(); renderFleet(); buildForm(); const ds=el.querySelectorAll("details"); if(ds.length) ds[ds.length-1].open=true; return; }
+    if(t.id==="uAdd"){ F.uas.push({reg:"",maker:"",model:"",serial:"",mass:null,cls:"",type:"",rid:false}); saveF(); renderFleet(); buildForm(); const ds=el.querySelectorAll("details"); if(ds.length) ds[ds.length-1].open=true; return; }
+    if(d.addd!=null){ F.pilots[+d.addd].dipl.push({t:DIPL[0],ref:"",from:"",to:""}); saveF(); renderFleet(); buildForm(); el.querySelectorAll("details")[+d.addd].open=true; return; }
+    if(d.deld){ const [i,j]=d.deld.split(":").map(Number); F.pilots[i].dipl.splice(j,1); saveF(); renderFleet(); buildForm(); el.querySelectorAll("details")[i].open=true; return; } };
+  const pdf=document.getElementById("fleetPdf"); if(pdf) pdf.onchange=e=>{ const fs=[...e.target.files]; e.target.value=""; importPdfFiles(fs); };
+  el.ondragover=e=>{ if(FS==="imp"&&[...(e.dataTransfer?.types||[])].includes("Files")) e.preventDefault(); };
+  el.ondrop=e=>{ if(FS!=="imp") return; const fs=[...(e.dataTransfer?.files||[])].filter(f=>/\.pdf$/i.test(f.name)); if(!fs.length) return; e.preventDefault(); importPdfFiles(fs); };
+  const ff=document.getElementById("fleetFile"); if(ff) ff.onchange=e=>{ const f=e.target.files[0]; if(!f) return; const rd=new FileReader(); rd.onload=()=>{ const n=importFleetCSV(rd.result); toast(n+" aéronef(s) importé(s)",!n); renderFleet(); buildForm(); }; rd.readAsText(f,"utf-8"); };
+  const fi=document.getElementById("fleetImp"); if(fi) fi.onclick=()=>{ const t=document.getElementById("fleetPaste").value; if(!t.trim()) return; const n=/UAS-FR-\d+|FRA[a-z0-9]{8}/i.test(t)&&/Constructeur|EXPLOITANT/i.test(t)?importExtract(t):importFleetCSV(t); toast(n?n+" élément(s) importé(s)":"Rien de reconnu",!n); renderFleet(); buildForm(); refreshLight(); };
 }
 function applyUas(i){ const u=F.uas[i]; if(!u) return; Object.assign(S.m,{m_uas:String(i),d_model:[u.maker,u.model].filter(Boolean).join(" "),d_serial:u.serial||"",d_reg:u.reg||"",d_rid:!!u.rid});
   const dd=findDrone([u.maker,u.model].filter(Boolean).join(" ")); if(dd){ if(dd.vmax) S.m.d_vmax=String(dd.vmax); if(dd.wind) S.m.d_wind=String(dd.wind); if(u.mass==null&&dd.mass) S.m.d_mass=String(dd.mass); if(!u.cls&&dd.cls) S.m.d_class=dd.cls; }
@@ -944,12 +996,12 @@ function buildForm(){ const box=document.getElementById("missionForm"); let html
     let inp="";
     if(f.t==="select") inp=`<select id="${f.id}">${f.o.map(o=>`<option>${o}</option>`).join("")}</select>`;
     else if(f.t==="dept") inp=`<select id="${f.id}">${deptOpts}</select>`;
-    else if(f.t==="fleetUas") inp=`<select id="${f.id}"><option value="">${F.uas.length?"— choisir dans la flotte —":"— flotte vide : importe-la dans l'onglet AlphaTango —"}</option>${F.uas.map((u,i)=>`<option value="${i}">${esc(uasLabel(u))}</option>`).join("")}</select>`;
+    else if(f.t==="fleetUas") inp=`<select id="${f.id}"><option value="">${F.uas.length?"— choisir dans la flotte —":"— flotte vide : importe-la dans l'onglet Mon compte —"}</option>${F.uas.map((u,i)=>`<option value="${i}">${esc(uasLabel(u))}</option>`).join("")}</select>`;
     else if(f.t==="fleetPilot") inp=`<select id="${f.id}"><option value="">${F.pilots.length?"— choisir —":"— aucun télépilote enregistré —"}</option>${F.pilots.map((p,i)=>`<option value="${i}">${esc(p.name)}</option>`).join("")}</select>`;
     else if(f.t==="area") inp=`<textarea id="${f.id}" placeholder="${f.ph||""}"></textarea>`;
     else if(f.t==="check"){ flush(); html+=`<label class="chk"><input type="checkbox" id="${f.id}"> ${f.l}</label>`; return; }
     else if(f.t==="multi"||f.t==="fleetMulti"){ flush(); const opts=f.t==="multi"?f.o.map(o=>[o,o]):F.uas.map((u,i)=>[String(i),uasLabel(u)]);
-      const nSel=opts.filter(([v])=>(S.m[f.id]||[]).includes(v)).length; html+=`<div class="fld"><div class="mhead"><label>${f.l}</label>${opts.length?`<span class="mcnt" data-mcnt="${f.id}">${nSel} / ${opts.length}</span>`:""}</div><div class="mchk">${opts.length?opts.map(([v,l])=>`<label class="chk"><input type="checkbox" data-multi="${f.id}" value="${esc(v)}" ${(S.m[f.id]||[]).includes(v)?"checked":""}> ${esc(l)}</label>`).join(""):'<span class="small">Flotte vide : importe-la dans l\'onglet AlphaTango.</span>'}</div></div>`; return; }
+      const nSel=opts.filter(([v])=>(S.m[f.id]||[]).includes(v)).length; html+=`<div class="fld"><div class="mhead"><label>${f.l}</label>${opts.length?`<span class="mcnt" data-mcnt="${f.id}">${nSel} / ${opts.length}</span>`:""}</div><div class="mchk">${opts.length?opts.map(([v,l])=>`<label class="chk"><input type="checkbox" data-multi="${f.id}" value="${esc(v)}" ${(S.m[f.id]||[]).includes(v)?"checked":""}> ${esc(l)}</label>`).join(""):'<span class="small">Flotte vide : importe-la dans l\'onglet Mon compte.</span>'}</div></div>`; return; }
     else inp=`<input type="${f.t}" id="${f.id}" placeholder="${f.ph||""}" ${f.t==="number"?'step="any"':""} ${f.id==="d_model"?'list="droneList" autocomplete="off"':""}>`;
     const el=`<div class="fld"><label for="${f.id}">${f.l}</label>${inp}</div>`;
     if(f.half){ halfBuf.push(el); if(halfBuf.length===2) flush(); } else { flush(); html+=el; }
@@ -1052,8 +1104,9 @@ function analyze(){
   if(poly&&T){ const dmax=Math.max(...poly.map(p=>hav([T.lat,T.lon],p))); const lim=+m.v_dist||500; add(dmax>lim?"orange":"green","🧍",`Distance max télépilote ↔ zone : ${fmtD(dmax)}`,dmax>lim?`Supérieure à la distance maximale prévue (${fmtD(lim)}) : vérifier la vue directe ou ajouter des observateurs.`:"Compatible avec la distance maximale prévue."); }
   if(poly&&!(S.wps||[]).some(w=>w.t==="Décollage")) add("blue","📌","Point de décollage non placé","Place le décollage, le télépilote et un atterrissage d'urgence (bouton 📌 Point) : ils figurent dans le dossier de vol.");
   // AlphaTango / exploitant
-  if(!m.op_uas) add("blue","🪪","N° d'exploitant UAS non renseigné","Renseigne l'exploitant dans l'onglet AlphaTango (extrait du registre) pour l'ajouter aux déclarations.",CT.at);
+  if(!m.op_uas) add("blue","🪪","N° d'exploitant UAS non renseigné","Renseigne l'exploitant dans l'onglet Mon compte (extrait du registre) pour l'ajouter aux déclarations.",CT.at);
   if(F.op.valid&&m.m_date){ const [dd,mm,yy]=F.op.valid.split("/").map(Number); if(yy&&new Date(yy,mm-1,dd)<parseDate(m.m_date)) add("red","🪪","Enregistrement exploitant expiré à la date du vol",`Fin de validité ${F.op.valid} – renouveler dans AlphaTango.`,CT.at); }
+  accountIssuesAt(m).forEach(x=>add(x.lv==="red"?"red":"orange","🪪",x.t,"Vérifie et renouvelle dans AlphaTango (onglet Mon compte).",CT.at));
   if((+m.d_mass||0)>=0.8&&!/UAS-FR-\d+/i.test(m.d_reg||"")) add("orange","🏷️","Aéronef ≥ 800 g : n° d'enregistrement UAS-FR à renseigner","L'enregistrement de l'aéronef dans AlphaTango est requis ; sélectionne-le dans la flotte importée.",CT.at);
   if(m.m_uas!==""&&F.uas[+m.m_uas]&&F.uas[+m.m_uas].status&&!/valide/i.test(F.uas[+m.m_uas].status)) add("red","🏷️","Statut de l'aéronef dans AlphaTango : "+F.uas[+m.m_uas].status,"Un aéronef suspendu, perdu ou volé ne peut pas être utilisé.",CT.at);
   if(!m.d_rid && !/^C0$/.test(m.d_class)) add("orange","📶","Signalement électronique","Les drones en catégorie Spécifique doivent être équipés d'un signalement électronique européen ; en Ouverte, obligatoire selon la classe et la masse (≥ 250 g).");
